@@ -31,12 +31,14 @@ class TestApiGateway:
         stacks = response["Stacks"]
         return {output["OutputKey"]: output["OutputValue"] for output in stacks[0]["Outputs"]}
 
-    def test_get_random_cards(self, stack_outputs):
-        """ Call the random cards endpoint and check the response """
-        response = requests.get(stack_outputs["GetRandomCardsApi"])
+    def test_open_box(self, stack_outputs):
+        """ Call the open box endpoint and check the response """
+        response = requests.post(stack_outputs["OpenBoxApi"])
 
         assert response.status_code == 200
-        assert response.json() == {"cards": []}
+        cards = response.json()["cards"]
+        assert len(cards) == 1
+        assert set(cards[0]) == {"name", "rarity", "file_name"}
 
     def test_get_user_cards(self, stack_outputs):
         """ Call the user cards endpoint and check the response """

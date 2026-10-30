@@ -2,7 +2,7 @@
 
 This project contains source code and supporting files for a serverless application that you can deploy with the SAM CLI. It includes the following files and folders.
 
-- get_random_cards - Code for the Lambda function that returns random cards from DynamoDB.
+- open_box - Code for the Lambda function that opens a box and returns cards from DynamoDB.
 - get_user_cards - Code for the Lambda function that returns the cards a user owns.
 - events - Invocation events that you can use to invoke the function.
 - tests - Unit tests for the application code. 
@@ -67,7 +67,7 @@ Test a single function by invoking it directly with a test event. An event is a 
 Run functions locally and invoke them with the `sam local invoke` command.
 
 ```bash
-mystic-box-back$ sam local invoke GetRandomCardsFunction --event events/event.json
+mystic-box-back$ sam local invoke OpenBoxFunction --event events/event.json
 ```
 
 The SAM CLI can also emulate your application's API. Use the `sam local start-api` to run the API locally on port 3000.
@@ -81,11 +81,11 @@ The SAM CLI reads the application template to determine the API's routes and the
 
 ```yaml
       Events:
-        GetRandomCards:
+        OpenBox:
           Type: Api
           Properties:
-            Path: /cards/random
-            Method: get
+            Path: /box/open
+            Method: post
 ```
 
 ## Add a resource to your application
@@ -98,7 +98,7 @@ To simplify troubleshooting, SAM CLI has a command called `sam logs`. `sam logs`
 `NOTE`: This command works for all AWS Lambda functions; not just the ones you deploy using SAM.
 
 ```bash
-mystic-box-back$ sam logs -n GetRandomCardsFunction --stack-name "mystic-box-back" --tail
+mystic-box-back$ sam logs -n OpenBoxFunction --stack-name "mystic-box-back" --tail
 ```
 
 You can find more information and examples about filtering Lambda function logs in the [SAM CLI Documentation](https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/serverless-sam-cli-logging.html).

@@ -2,7 +2,7 @@ import json
 
 import pytest
 
-from get_random_cards import app as get_random_cards
+from open_box import app as open_box
 from get_user_cards import app as get_user_cards
 
 
@@ -63,12 +63,13 @@ def apigw_event():
     }
 
 
-def test_get_random_cards_handler(apigw_event):
-    ret = get_random_cards.lambda_handler(apigw_event, "")
+def test_open_box_handler(apigw_event):
+    ret = open_box.lambda_handler(apigw_event, "")
     data = json.loads(ret["body"])
 
     assert ret["statusCode"] == 200
-    assert data == {"cards": []}
+    assert len(data["cards"]) == 1
+    assert data["cards"][0] in open_box.CHARACTERS
 
 
 def test_get_user_cards_handler(apigw_event):

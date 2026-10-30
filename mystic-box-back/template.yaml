@@ -26,10 +26,10 @@ Resources:
       - AttributeName: cardId
         KeyType: HASH
 
-  GetRandomCardsFunction:
+  OpenBoxFunction:
     Type: AWS::Serverless::Function
     Properties:
-      CodeUri: get_random_cards/
+      CodeUri: open_box/
       Handler: app.lambda_handler
       Runtime: python3.14
       Architectures:
@@ -41,11 +41,11 @@ Resources:
       - DynamoDBReadPolicy:
           TableName: !Ref CardsTable
       Events:
-        GetRandomCards:
+        OpenBox:
           Type: Api
           Properties:
-            Path: /cards/random
-            Method: get
+            Path: /box/open
+            Method: post
 
   GetUserCardsFunction:
     Type: AWS::Serverless::Function
@@ -82,15 +82,15 @@ Resources:
         Ref: ApplicationResourceGroup
       AutoConfigurationEnabled: 'true'
 Outputs:
-  GetRandomCardsApi:
-    Description: API Gateway endpoint URL for the random cards function
-    Value: !Sub "https://${ServerlessRestApi}.execute-api.${AWS::Region}.${AWS::URLSuffix}/Prod/cards/random"
+  OpenBoxApi:
+    Description: API Gateway endpoint URL for the open box function
+    Value: !Sub "https://${ServerlessRestApi}.execute-api.${AWS::Region}.${AWS::URLSuffix}/Prod/box/open"
   GetUserCardsApi:
     Description: API Gateway endpoint URL for the user cards function
     Value: !Sub "https://${ServerlessRestApi}.execute-api.${AWS::Region}.${AWS::URLSuffix}/Prod/users/{userId}/cards"
-  GetRandomCardsFunction:
-    Description: Get Random Cards Lambda Function ARN
-    Value: !GetAtt GetRandomCardsFunction.Arn
+  OpenBoxFunction:
+    Description: Open Box Lambda Function ARN
+    Value: !GetAtt OpenBoxFunction.Arn
   GetUserCardsFunction:
     Description: Get User Cards Lambda Function ARN
     Value: !GetAtt GetUserCardsFunction.Arn
