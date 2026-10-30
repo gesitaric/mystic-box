@@ -1,0 +1,99 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: >
+  mystic-box-back
+
+  Sample SAM Template for mystic-box-back
+
+Globals:
+  Function:
+    Timeout: 3
+
+    Tracing: Active
+    LoggingConfig:
+      LogFormat: JSON
+  Api:
+    TracingEnabled: true
+Resources:
+  CardsTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+      - AttributeName: cardId
+        AttributeType: S
+      KeySchema:
+      - AttributeName: cardId
+        KeyType: HASH
+
+  GetRandomCardsFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: get_random_cards/
+      Handler: app.lambda_handler
+      Runtime: python3.14
+      Architectures:
+      - x86_64
+      Environment:
+        Variables:
+          CARDS_TABLE: !Ref CardsTable
+      Policies:
+      - DynamoDBReadPolicy:
+          TableName: !Ref CardsTable
+      Events:
+        GetRandomCards:
+          Type: Api
+          Properties:
+            Path: /cards/random
+            Method: get
+
+  GetUserCardsFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: get_user_cards/
+      Handler: app.lambda_handler
+      Runtime: python3.14
+      Architectures:
+      - x86_64
+      Environment:
+        Variables:
+          CARDS_TABLE: !Ref CardsTable
+      Policies:
+      - DynamoDBReadPolicy:
+          TableName: !Ref CardsTable
+      Events:
+        GetUserCards:
+          Type: Api
+          Properties:
+            Path: /users/{userId}/cards
+            Method: get
+
+  ApplicationResourceGroup:
+    Type: AWS::ResourceGroups::Group
+    Properties:
+      Name:
+        Fn::Sub: ApplicationInsights-SAM-${AWS::StackName}
+      ResourceQuery:
+        Type: CLOUDFORMATION_STACK_1_0
+  ApplicationInsightsMonitoring:
+    Type: AWS::ApplicationInsights::Application
+    Properties:
+      ResourceGroupName:
+        Ref: ApplicationResourceGroup
+      AutoConfigurationEnabled: 'true'
+Outputs:
+  GetRandomCardsApi:
+    Description: API Gateway endpoint URL for the random cards function
+    Value: !Sub "https://${ServerlessRestApi}.execute-api.${AWS::Region}.${AWS::URLSuffix}/Prod/cards/random"
+  GetUserCardsApi:
+    Description: API Gateway endpoint URL for the user cards function
+    Value: !Sub "https://${ServerlessRestApi}.execute-api.${AWS::Region}.${AWS::URLSuffix}/Prod/users/{userId}/cards"
+  GetRandomCardsFunction:
+    Description: Get Random Cards Lambda Function ARN
+    Value: !GetAtt GetRandomCardsFunction.Arn
+  GetUserCardsFunction:
+    Description: Get User Cards Lambda Function ARN
+    Value: !GetAtt GetUserCardsFunction.Arn
+  CardsTable:
+    Description: DynamoDB table that stores the cards
+    Value: !Ref CardsTable
