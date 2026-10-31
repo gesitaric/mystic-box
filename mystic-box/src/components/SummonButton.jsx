@@ -1,13 +1,15 @@
 
 function SummonButton({ onClick, disabled }) {
   return (
-    <button
-      id="summon"
-      onClick={onClick}
-      disabled={disabled}
-    >
-      ✦ SUMMON ✦
-    </button>
+    <div className="summon-wrap">
+      <button
+        id="summon"
+        onClick={onClick}
+        disabled={disabled}
+      >
+        <span className="summon-text">✦ SUMMON ✦</span>
+      </button>
+    </div>
   );
 }
 

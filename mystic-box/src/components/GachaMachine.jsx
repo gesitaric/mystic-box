@@ -6,6 +6,7 @@ function GachaMachine({ card }) {
     <div className="machine">
       {card && <GachaCard card={card} />}
 
+      <div className="beam" />
       <div className="box" />
       <div className="lid" />
     </div>

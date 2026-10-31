@@ -67,10 +67,18 @@ function App() {
 
   return (
     <main className={`scene ${opening ? "opening" : ""} ${revealed ? "revealed" : ""}`}>
+      <div className="aurora" />
       <div className="stars" />
+      <div className="motes" />
+      <div className="vignette" />
+      <div className="frame" />
       <div className="glow" />
 
-      <h1>MYSTIC BOX</h1>
+      <header className="title-block">
+        <span className="title-ornament">✦ ✧ ✦</span>
+        <h1>MYSTIC BOX</h1>
+        <p className="tagline">ARCANE SUMMONING</p>
+      </header>
 
       <GachaMachine card={card} />
 
