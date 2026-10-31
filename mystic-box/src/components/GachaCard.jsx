@@ -60,6 +60,14 @@ function GachaCard({ card }) {
         onClick={() => setExpanded(true)}
         onKeyDown={handleCardKeyDown}
       >
+        {rarity >= 5 && (
+          <div className="legendary-aura" aria-hidden="true">
+            <div className="legendary-rays" />
+            <div className="legendary-ring" />
+            <div className="legendary-ring legendary-ring-2" />
+            <div className="legendary-ring legendary-ring-3" />
+          </div>
+        )}
         <CardFace card={card} image={image} rarity={rarity} />
       </div>
 

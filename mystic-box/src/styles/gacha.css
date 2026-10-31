@@ -204,7 +204,7 @@ h1 {
   position: absolute;
   top: 60%;
   left: 50%;
-  z-index: 3;
+  z-index: 15;
   width: 190px;
   height: 160px;
   transform: translate(-50%, -50%);
@@ -550,12 +550,144 @@ h1 {
     0 2px 4px rgba(0, 0, 0, 0.8);
 }
 
+/* ---------- Legendary (rarity 5) ---------- */
+
+.legendary-flash {
+  position: absolute;
+  inset: 0;
+  z-index: 60;
+  pointer-events: none;
+  background: radial-gradient(
+    circle at 50% 55%,
+    rgba(255, 255, 255, 0.95),
+    rgba(255, 214, 120, 0.55) 28%,
+    transparent 62%
+  );
+  mix-blend-mode: screen;
+  animation: legendaryFlash 1.3s ease-out forwards;
+}
+
+.legendary-banner {
+  position: absolute;
+  top: clamp(80px, 17vh, 170px);
+  left: 50%;
+  z-index: 70;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+  text-align: center;
+  animation: legendaryBanner 3.4s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+.legendary-banner-title {
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: clamp(26px, 5vw, 56px);
+  font-weight: 700;
+  letter-spacing: clamp(6px, 1.6vw, 18px);
+  text-indent: clamp(6px, 1.6vw, 18px);
+  background: linear-gradient(180deg, #fffdf2 0%, #ffe08a 38%, #ff9bd4 70%, #ffd98a 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  filter:
+    drop-shadow(0 0 18px rgba(255, 180, 220, 0.75))
+    drop-shadow(0 0 40px rgba(255, 200, 100, 0.6));
+}
+
+.legendary-banner-sub {
+  color: #ffe9c2;
+  font-size: clamp(9px, 1.2vw, 13px);
+  letter-spacing: clamp(4px, 0.9vw, 10px);
+  text-indent: clamp(4px, 0.9vw, 10px);
+  text-transform: uppercase;
+  text-shadow: 0 0 14px rgba(255, 200, 120, 0.9);
+}
+
+.legendary-aura {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+}
+
+.legendary-rays {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 210%;
+  aspect-ratio: 1;
+  transform: translate(-50%, -50%);
+  border-radius: 50%;
+  background: repeating-conic-gradient(
+    from 0deg,
+    rgba(255, 226, 150, 0.55) 0deg 3deg,
+    transparent 3deg 22deg
+  );
+  -webkit-mask-image: radial-gradient(circle, #000 12%, rgba(0, 0, 0, 0.55) 42%, transparent 68%);
+  mask-image: radial-gradient(circle, #000 12%, rgba(0, 0, 0, 0.55) 42%, transparent 68%);
+  opacity: 0;
+  animation: legendaryRays 9s linear infinite;
+  transition: opacity 0.6s ease;
+}
+
+.revealed .legendary-rays {
+  opacity: 0.75;
+}
+
+.legendary-ring {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 100%;
+  aspect-ratio: 1;
+  transform: translate(-50%, -50%) scale(0.3);
+  border: 2px solid rgba(255, 214, 130, 0.85);
+  border-radius: 50%;
+  opacity: 0;
+  box-shadow: 0 0 26px rgba(255, 200, 110, 0.6);
+}
+
+.revealed .legendary-ring {
+  animation: legendaryRing 2.1s ease-out forwards;
+}
+
+.revealed .legendary-ring-2 {
+  border-color: rgba(255, 150, 210, 0.8);
+  animation-delay: 0.3s;
+}
+
+.revealed .legendary-ring-3 {
+  border-color: rgba(180, 150, 255, 0.8);
+  animation-delay: 0.6s;
+}
+
+.legendary.revealed .card {
+  animation: legendaryCard 1.6s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.legendary.revealed {
+  animation: legendaryShake 0.7s ease 0.1s;
+}
+
+.legendary .glow {
+  background: radial-gradient(
+    circle,
+    rgba(255, 210, 120, 0.9),
+    rgba(255, 120, 200, 0.5) 45%,
+    transparent 70%
+  );
+  animation: legendaryGlowPulse 2.4s ease-in-out infinite;
+}
+
 /* ---------- Particles ---------- */
 
 .particles {
   position: absolute;
   inset: 0;
-  z-index: 6;
+  z-index: 18;
   pointer-events: none;
 }
 
@@ -946,6 +1078,141 @@ h1 {
   }
 }
 
+@keyframes legendaryFlash {
+  0% {
+    opacity: 0;
+  }
+
+  10% {
+    opacity: 1;
+  }
+
+  35% {
+    opacity: 0.55;
+  }
+
+  100% {
+    opacity: 0;
+  }
+}
+
+@keyframes legendaryBanner {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0.6);
+    filter: blur(8px);
+  }
+
+  12% {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1.12);
+    filter: blur(0);
+  }
+
+  22% {
+    transform: translate(-50%, -50%) scale(1);
+  }
+
+  75% {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+  }
+
+  100% {
+    opacity: 0;
+    transform: translate(-50%, -58%) scale(0.96);
+  }
+}
+
+@keyframes legendaryRays {
+  to {
+    transform: translate(-50%, -50%) rotate(360deg);
+  }
+}
+
+@keyframes legendaryRing {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0.35);
+  }
+
+  18% {
+    opacity: 0.95;
+  }
+
+  100% {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(2.6);
+  }
+}
+
+@keyframes legendaryCard {
+  0% {
+    transform: translate(-50%, 50%) scale(1);
+    filter: brightness(1);
+  }
+
+  12% {
+    transform: translate(-50%, 50%) scale(1.16);
+    filter: brightness(1.9);
+  }
+
+  26% {
+    transform: translate(-50%, 50%) scale(0.97);
+    filter: brightness(1.25);
+  }
+
+  42% {
+    transform: translate(-50%, 50%) scale(1.08);
+    filter: brightness(1.5);
+  }
+
+  100% {
+    transform: translate(-50%, 50%) scale(1);
+    filter: brightness(1);
+  }
+}
+
+@keyframes legendaryShake {
+  0%,
+  100% {
+    transform: translate(0, 0);
+  }
+
+  15% {
+    transform: translate(-7px, 3px);
+  }
+
+  30% {
+    transform: translate(6px, -4px);
+  }
+
+  45% {
+    transform: translate(-5px, 2px);
+  }
+
+  60% {
+    transform: translate(4px, -2px);
+  }
+
+  75% {
+    transform: translate(-2px, 1px);
+  }
+}
+
+@keyframes legendaryGlowPulse {
+  0%,
+  100% {
+    opacity: 0.35;
+    transform: translate(-50%, -50%) scale(1.2);
+  }
+
+  50% {
+    opacity: 0.65;
+    transform: translate(-50%, -50%) scale(1.6);
+  }
+}
+
 /* ---------- Short viewports (landscape phones) ---------- */
 
 @media (max-height: 520px) {
@@ -981,6 +1248,10 @@ h1 {
     padding: 12px 30px;
     font-size: 12px;
   }
+
+  .legendary-banner {
+    display: none;
+  }
 }
 
 /* ---------- Reduced motion ---------- */
@@ -995,8 +1266,19 @@ h1 {
   .summon-wrap::after,
   .opening .beam,
   .revealed .beam,
+  .legendary-flash,
+  .legendary-banner,
+  .legendary-rays,
+  .legendary .glow,
+  .legendary.revealed,
+  .legendary.revealed .card,
+  .revealed .legendary-ring,
   .scene.opening .glow {
     animation: none;
+  }
+
+  .legendary-flash {
+    display: none;
   }
 
   .opening .card {

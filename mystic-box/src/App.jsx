@@ -65,14 +65,30 @@ function App() {
     }
   }
 
+  const isLegendary = revealed && (card?.rarity ?? 0) >= 5;
+
   return (
-    <main className={`scene ${opening ? "opening" : ""} ${revealed ? "revealed" : ""}`}>
+    <main
+      className={`scene ${opening ? "opening" : ""} ${revealed ? "revealed" : ""} ${
+        isLegendary ? "legendary" : ""
+      }`}
+    >
       <div className="aurora" />
       <div className="stars" />
       <div className="motes" />
       <div className="vignette" />
       <div className="frame" />
       <div className="glow" />
+
+      {isLegendary && (
+        <>
+          <div className="legendary-flash" aria-hidden="true" />
+          <div className="legendary-banner" aria-hidden="true">
+            <span className="legendary-banner-title">LEGENDARY</span>
+            <span className="legendary-banner-sub">A RARE CARD APPEARS</span>
+          </div>
+        </>
+      )}
 
       <header className="title-block">
         <span className="title-ornament">✦ ✧ ✦</span>
