@@ -1,4 +1,7 @@
 
+import { useEffect, useState } from "react";
+import { createPortal } from "react-dom";
+
 const characterImages = import.meta.glob("../assets/characters/*", {
   eager: true,
   import: "default",
@@ -9,22 +12,72 @@ function getCharacterImage(fileName) {
   return characterImages[`../assets/characters/${fileName}`] ?? null;
 }
 
+function CardFace({ card, image, rarity }) {
+  return (
+    <div className={`card-content ${image ? "has-image" : ""}`}>
+      {image ? (
+        <img className="character-image" src={image} alt={card.name} />
+      ) : (
+        <div className="character">🧚</div>
+      )}
+      <div className="rarity">{"✦ ".repeat(rarity).trim()}</div>
+      <div className="name">{(card?.name ?? "???").toUpperCase()}</div>
+    </div>
+  );
+}
+
 function GachaCard({ card }) {
+  const [expanded, setExpanded] = useState(false);
   const image = getCharacterImage(card?.file_name);
   const rarity = card?.rarity ?? 0;
 
+  useEffect(() => {
+    if (!expanded) return;
+
+    function handleKeyDown(event) {
+      if (event.key === "Escape") setExpanded(false);
+    }
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [expanded]);
+
+  function handleCardKeyDown(event) {
+    if (event.key === "Enter" || event.key === " ") {
+      event.preventDefault();
+      setExpanded(true);
+    }
+  }
+
   return (
-    <div className="card">
-      <div className={`card-content ${image ? "has-image" : ""}`}>
-        {image ? (
-          <img className="character-image" src={image} alt={card.name} />
-        ) : (
-          <div className="character">🧚</div>
-        )}
-        <div className="rarity">{"✦ ".repeat(rarity).trim()}</div>
-        <div className="name">{(card?.name ?? "???").toUpperCase()}</div>
+    <>
+      <div
+        className="card"
+        role="button"
+        tabIndex={0}
+        aria-label={`Ampliar carta de ${card?.name ?? "???"}`}
+        onClick={() => setExpanded(true)}
+        onKeyDown={handleCardKeyDown}
+      >
+        <CardFace card={card} image={image} rarity={rarity} />
       </div>
-    </div>
+
+      {expanded &&
+        createPortal(
+          <div
+            className="card-overlay"
+            role="dialog"
+            aria-modal="true"
+            aria-label={`Carta de ${card?.name ?? "???"}`}
+            onClick={() => setExpanded(false)}
+          >
+            <div className="card-overlay-card">
+              <CardFace card={card} image={image} rarity={rarity} />
+            </div>
+          </div>,
+          document.body
+        )}
+    </>
   );
 }
 
