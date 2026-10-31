@@ -68,8 +68,16 @@ def test_open_box_handler(apigw_event):
     data = json.loads(ret["body"])
 
     assert ret["statusCode"] == 200
+    assert ret["headers"]["Access-Control-Allow-Origin"] == "*"
     assert len(data["cards"]) == 1
     assert data["cards"][0] in open_box.CHARACTERS
+
+
+def test_open_box_options(apigw_event):
+    ret = open_box.lambda_handler(dict(apigw_event, httpMethod="OPTIONS"), "")
+
+    assert ret["statusCode"] == 200
+    assert ret["headers"]["Access-Control-Allow-Origin"] == "*"
 
 
 def test_get_user_cards_handler(apigw_event):
@@ -77,4 +85,12 @@ def test_get_user_cards_handler(apigw_event):
     data = json.loads(ret["body"])
 
     assert ret["statusCode"] == 200
+    assert ret["headers"]["Access-Control-Allow-Origin"] == "*"
     assert data == {"cards": []}
+
+
+def test_get_user_cards_options(apigw_event):
+    ret = get_user_cards.lambda_handler(dict(apigw_event, httpMethod="OPTIONS"), "")
+
+    assert ret["statusCode"] == 200
+    assert ret["headers"]["Access-Control-Allow-Origin"] == "*"

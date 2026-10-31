@@ -46,6 +46,11 @@ Resources:
           Properties:
             Path: /box/open
             Method: post
+        OpenBoxOptions:
+          Type: Api
+          Properties:
+            Path: /box/open
+            Method: options
 
   GetUserCardsFunction:
     Type: AWS::Serverless::Function
@@ -67,6 +72,11 @@ Resources:
           Properties:
             Path: /users/{userId}/cards
             Method: get
+        GetUserCardsOptions:
+          Type: Api
+          Properties:
+            Path: /users/{userId}/cards
+            Method: options
 
   ApplicationResourceGroup:
     Type: AWS::ResourceGroups::Group

@@ -1,10 +1,10 @@
 
 import GachaCard from "./GachaCard";
 
-function GachaMachine() {
+function GachaMachine({ card }) {
   return (
     <div className="machine">
-      <GachaCard />
+      {card && <GachaCard card={card} />}
 
       <div className="box" />
       <div className="lid" />

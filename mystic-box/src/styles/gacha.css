@@ -136,8 +136,8 @@ h1 {
   position: absolute;
   left: 50%;
   bottom: 50%;
-  width: 160px;
-  height: 230px;
+  width: clamp(210px, 26vw, 290px);
+  aspect-ratio: 13 / 18;
   transform: translate(-50%, 50%) scale(0.3);
   opacity: 0;
   z-index: 20;
@@ -202,14 +202,42 @@ h1 {
   filter: drop-shadow(0 0 15px #e7c1ff);
 }
 
+.character-image {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.card-content.has-image {
+  justify-content: flex-end;
+  padding-bottom: 16px;
+}
+
+.card-content.has-image::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(to top, rgba(10, 8, 25, 0.9), transparent 60%);
+}
+
+.card-content.has-image .rarity,
+.card-content.has-image .name {
+  position: relative;
+  z-index: 1;
+  text-shadow: 0 1px 6px #000;
+}
+
 .rarity {
   color: #ffdf8e;
   letter-spacing: 4px;
   margin-top: 10px;
+  font-size: 15px;
 }
 
 .name {
-  font-size: 20px;
+  font-size: 23px;
   margin-top: 12px;
   font-weight: bold;
 }
@@ -243,6 +271,64 @@ h1 {
   color: #c9b7e8;
   letter-spacing: 3px;
   font-size: 11px;
+}
+
+.error {
+  position: absolute;
+  inset: 0;
+  margin: auto;
+  width: fit-content;
+  height: fit-content;
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  max-width: 90vw;
+  padding: 12px 22px;
+  border: 1px solid rgba(255, 150, 150, 0.55);
+  border-radius: 999px;
+  background: linear-gradient(135deg, rgba(88, 18, 40, 0.85), rgba(40, 12, 30, 0.85));
+  color: #ffdada;
+  font-size: 13px;
+  letter-spacing: 1px;
+  box-shadow:
+    0 0 24px rgba(255, 90, 120, 0.45),
+    inset 0 0 18px rgba(255, 120, 150, 0.12);
+  backdrop-filter: blur(8px);
+  animation: errorIn 0.45s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.error-icon {
+  color: #ffb3c4;
+  font-size: 15px;
+  animation: errorPulse 1.6s ease-in-out infinite;
+}
+
+@keyframes errorIn {
+  from {
+    opacity: 0;
+    transform: translateY(14px) scale(0.96);
+    filter: blur(4px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+    filter: blur(0);
+  }
+}
+
+@keyframes errorPulse {
+  0%,
+  100% {
+    opacity: 0.6;
+    text-shadow: 0 0 6px rgba(255, 140, 170, 0.4);
+  }
+
+  50% {
+    opacity: 1;
+    text-shadow: 0 0 14px rgba(255, 140, 170, 0.95);
+  }
 }
 
 #summon {

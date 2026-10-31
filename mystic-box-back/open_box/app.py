@@ -1,6 +1,12 @@
 import json
 import random
 
+CORS_HEADERS = {
+    "Access-Control-Allow-Origin": "*",
+    "Access-Control-Allow-Headers": "Content-Type",
+    "Access-Control-Allow-Methods": "GET,POST,OPTIONS",
+}
+
 CHARACTERS = [
     {"name": "Malachar", "rarity": 5, "file_name": "malachar.jfif"},
     {"name": "Boreas", "rarity": 5, "file_name": "boreas.jfif"},
@@ -19,13 +25,21 @@ CHARACTERS = [
 RARITY_WEIGHTS = {5: 1, 4: 6, 3: 40}
 
 
+def response(status_code, body):
+    return {
+        "statusCode": status_code,
+        "headers": CORS_HEADERS,
+        "body": json.dumps(body),
+    }
+
+
 def draw_card():
     weights = [RARITY_WEIGHTS[character["rarity"]] for character in CHARACTERS]
     return random.choices(CHARACTERS, weights=weights, k=1)[0]
 
 
 def lambda_handler(event, context):
-    return {
-        "statusCode": 200,
-        "body": json.dumps({"cards": [draw_card()]}),
-    }
+    if event.get("httpMethod") == "OPTIONS":
+        return response(200, {})
+
+    return response(200, {"cards": [draw_card()]})
