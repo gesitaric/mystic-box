@@ -4,4 +4,13 @@ import { defineConfig } from 'vite'
 // https://vite.dev/config/
 export default defineConfig({
   plugins: [react()],
+  define: {
+    global: 'globalThis',
+  },
+  esbuild: {
+    define: {
+      global: 'globalThis',
+      Buffer: 'Buffer',
+    },
+  },
 })

@@ -40,10 +40,14 @@ class TestApiGateway:
         assert len(cards) == 1
         assert set(cards[0]) == {"name", "rarity", "file_name"}
 
-    def test_get_user_cards(self, stack_outputs):
-        """ Call the user cards endpoint and check the response """
-        url = stack_outputs["GetUserCardsApi"].replace("{userId}", "test-user")
-        response = requests.get(url)
+    def test_get_user_cards_requires_authentication(self, stack_outputs):
+        """ The user cards endpoint must reject anonymous requests """
+        response = requests.get(stack_outputs["GetUserCardsApi"])
 
-        assert response.status_code == 200
-        assert response.json() == {"cards": []}
+        assert response.status_code == 401
+
+    def test_save_user_card_requires_authentication(self, stack_outputs):
+        """ The save card endpoint must reject anonymous requests """
+        response = requests.post(stack_outputs["SaveUserCardApi"], json={})
+
+        assert response.status_code == 401

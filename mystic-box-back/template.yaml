@@ -15,6 +15,15 @@ Globals:
   Api:
     TracingEnabled: true
 Resources:
+  MysticBoxApi:
+    Type: AWS::Serverless::Api
+    Properties:
+      StageName: Prod
+      Auth:
+        Authorizers:
+          CognitoAuthorizer:
+            UserPoolArn: !GetAtt UserPool.Arn
+
   CardsTable:
     Type: AWS::DynamoDB::Table
     Properties:
@@ -25,6 +34,47 @@ Resources:
       KeySchema:
       - AttributeName: cardId
         KeyType: HASH
+
+  UserCardsTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+      - AttributeName: userId
+        AttributeType: S
+      - AttributeName: ownedCardId
+        AttributeType: S
+      KeySchema:
+      - AttributeName: userId
+        KeyType: HASH
+      - AttributeName: ownedCardId
+        KeyType: RANGE
+
+  UserPool:
+    Type: AWS::Cognito::UserPool
+    Properties:
+      UserPoolName: mystic-box-users
+      UsernameAttributes:
+      - email
+      AutoVerifiedAttributes:
+      - email
+      Policies:
+        PasswordPolicy:
+          MinimumLength: 8
+          RequireLowercase: true
+          RequireUppercase: true
+          RequireNumbers: true
+          RequireSymbols: false
+
+  UserPoolClient:
+    Type: AWS::Cognito::UserPoolClient
+    Properties:
+      UserPoolId: !Ref UserPool
+      ClientName: mystic-box-web
+      GenerateSecret: false
+      ExplicitAuthFlows:
+      - ALLOW_USER_SRP_AUTH
+      - ALLOW_REFRESH_TOKEN_AUTH
 
   OpenBoxFunction:
     Type: AWS::Serverless::Function
@@ -44,11 +94,13 @@ Resources:
         OpenBox:
           Type: Api
           Properties:
+            RestApiId: !Ref MysticBoxApi
             Path: /box/open
             Method: post
         OpenBoxOptions:
           Type: Api
           Properties:
+            RestApiId: !Ref MysticBoxApi
             Path: /box/open
             Method: options
 
@@ -62,21 +114,49 @@ Resources:
       - x86_64
       Environment:
         Variables:
-          CARDS_TABLE: !Ref CardsTable
+          USER_CARDS_TABLE: !Ref UserCardsTable
       Policies:
       - DynamoDBReadPolicy:
-          TableName: !Ref CardsTable
+          TableName: !Ref UserCardsTable
       Events:
         GetUserCards:
           Type: Api
           Properties:
-            Path: /users/{userId}/cards
+            RestApiId: !Ref MysticBoxApi
+            Path: /users/me/cards
             Method: get
+            Auth:
+              Authorizer: CognitoAuthorizer
         GetUserCardsOptions:
           Type: Api
           Properties:
-            Path: /users/{userId}/cards
+            RestApiId: !Ref MysticBoxApi
+            Path: /users/me/cards
             Method: options
+
+  SaveUserCardFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: save_user_card/
+      Handler: app.lambda_handler
+      Runtime: python3.14
+      Architectures:
+      - x86_64
+      Environment:
+        Variables:
+          USER_CARDS_TABLE: !Ref UserCardsTable
+      Policies:
+      - DynamoDBWritePolicy:
+          TableName: !Ref UserCardsTable
+      Events:
+        SaveUserCard:
+          Type: Api
+          Properties:
+            RestApiId: !Ref MysticBoxApi
+            Path: /users/me/cards
+            Method: post
+            Auth:
+              Authorizer: CognitoAuthorizer
 
   ApplicationResourceGroup:
     Type: AWS::ResourceGroups::Group
@@ -94,16 +174,31 @@ Resources:
 Outputs:
   OpenBoxApi:
     Description: API Gateway endpoint URL for the open box function
-    Value: !Sub "https://${ServerlessRestApi}.execute-api.${AWS::Region}.${AWS::URLSuffix}/Prod/box/open"
+    Value: !Sub "https://${MysticBoxApi}.execute-api.${AWS::Region}.${AWS::URLSuffix}/Prod/box/open"
   GetUserCardsApi:
     Description: API Gateway endpoint URL for the user cards function
-    Value: !Sub "https://${ServerlessRestApi}.execute-api.${AWS::Region}.${AWS::URLSuffix}/Prod/users/{userId}/cards"
+    Value: !Sub "https://${MysticBoxApi}.execute-api.${AWS::Region}.${AWS::URLSuffix}/Prod/users/me/cards"
+  SaveUserCardApi:
+    Description: API Gateway endpoint URL for the save user card function
+    Value: !Sub "https://${MysticBoxApi}.execute-api.${AWS::Region}.${AWS::URLSuffix}/Prod/users/me/cards"
+  UserPoolId:
+    Description: Cognito User Pool ID used by the web client
+    Value: !Ref UserPool
+  UserPoolClientId:
+    Description: Cognito User Pool Client ID used by the web client
+    Value: !Ref UserPoolClient
   OpenBoxFunction:
     Description: Open Box Lambda Function ARN
     Value: !GetAtt OpenBoxFunction.Arn
   GetUserCardsFunction:
     Description: Get User Cards Lambda Function ARN
     Value: !GetAtt GetUserCardsFunction.Arn
+  SaveUserCardFunction:
+    Description: Save User Card Lambda Function ARN
+    Value: !GetAtt SaveUserCardFunction.Arn
   CardsTable:
     Description: DynamoDB table that stores the cards
     Value: !Ref CardsTable
+  UserCardsTable:
+    Description: DynamoDB table that stores the cards owned by each user
+    Value: !Ref UserCardsTable
