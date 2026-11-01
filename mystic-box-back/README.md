@@ -2,11 +2,24 @@
 
 This project contains source code and supporting files for a serverless application that you can deploy with the SAM CLI. It includes the following files and folders.
 
-- open_box - Code for the Lambda function that opens a box and returns cards from DynamoDB.
-- get_user_cards - Code for the Lambda function that returns the cards a user owns.
+- open_box - Code for the Lambda function that opens a box and returns a random card. This endpoint is public.
+- get_user_cards - Code for the Lambda function that returns the cards owned by the authenticated user.
+- save_user_card - Code for the Lambda function that stores a drawn card for the authenticated user.
 - events - Invocation events that you can use to invoke the function.
 - tests - Unit tests for the application code. 
 - template.yaml - A template that defines the application's AWS resources.
+
+## Authentication
+
+User accounts are managed by an AWS Cognito User Pool created by this stack. The `/users/me/cards` endpoints require a Cognito ID token in the `Authorization` header, and the user is identified by the token `sub` claim.
+
+Deployment outputs used by the web client:
+
+- `OpenBoxApi` - public endpoint used to draw a card.
+- `GetUserCardsApi` / `SaveUserCardApi` - authenticated endpoints for the user's collection.
+- `UserPoolId` / `UserPoolClientId` - Cognito configuration for the web client.
+
+The `get_user_cards` function queries the `UserCardsTable` (partition key `userId`, sort key `ownedCardId`), while `save_user_card` inserts one item per drawn card.
 
 The application uses several AWS resources, including Lambda functions and an API Gateway API. These resources are defined in the `template.yaml` file in this project. You can update the template to add AWS resources through the same deployment process that updates your application code.
 
