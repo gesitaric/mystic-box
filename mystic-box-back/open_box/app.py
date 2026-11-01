@@ -13,13 +13,23 @@ CHARACTERS = [
     {"name": "Astra", "rarity": 5, "file_name": "astra.jfif"},
     {"name": "Seraphiel", "rarity": 5, "file_name": "seraphiel.jfif"},
     {"name": "Ignis", "rarity": 5, "file_name": "ignis.jfif"},
+    {"name": "Leoric", "rarity": 5, "file_name": "leoric.jfif"},
+    {"name": "Lunara", "rarity": 5, "file_name": "lunara.jfif"},
+    {"name": "Mortis", "rarity": 5, "file_name": "mortis.jfif"},
     {"name": "Kaito", "rarity": 4, "file_name": "kaito.jfif"},
     {"name": "Solara", "rarity": 4, "file_name": "solara.jfif"},
     {"name": "Aurelius", "rarity": 4, "file_name": "aurelius.jfif"},
     {"name": "Scarlett", "rarity": 4, "file_name": "scarlett.jfif"},
     {"name": "Sylva", "rarity": 4, "file_name": "sylva.jfif"},
     {"name": "Rosalind", "rarity": 4, "file_name": "rosalind.jfif"},
+    {"name": "Thalion", "rarity": 4, "file_name": "thalion.jfif"},
+    {"name": "Vesper", "rarity": 4, "file_name": "vesper.jfif"},
+    {"name": "Pyralis", "rarity": 4, "file_name": "pyralis.jfif"},
+    {"name": "Glacius", "rarity": 4, "file_name": "glacius.jfif"},
+    {"name": "Isolde", "rarity": 4, "file_name": "isolde.jfif"},
+    {"name": "Elowen", "rarity": 4, "file_name": "elowen.jfif"},
     {"name": "Rowan", "rarity": 3, "file_name": "rowan.jfif"},
+    {"name": "Corvus", "rarity": 3, "file_name": "corvus.jfif"},
 ]
 
 RARITY_WEIGHTS = {5: 1, 4: 6, 3: 40}
