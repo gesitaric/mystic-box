@@ -61,7 +61,7 @@ def lambda_handler(event, context):
         {
             "ownedCardId": item.get("ownedCardId"),
             "name": item.get("name"),
-            "rarity": item.get("rarity"),
+            "rarity": int(item["rarity"]) if item.get("rarity") is not None else None,
             "file_name": item.get("file_name"),
             "obtainedAt": item.get("obtainedAt"),
         }
