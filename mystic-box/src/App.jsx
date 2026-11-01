@@ -13,7 +13,7 @@ function App() {
   const [error, setError] = useState("");
 
   async function fetchCard() {
-    const response = await fetch("http://127.0.0.1:3000/box/open", {
+    const response = await fetch("https://d64y0i3dpf.execute-api.us-east-1.amazonaws.com/Prod/box/open", {
       method: "POST",
     });
 
