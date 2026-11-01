@@ -37,15 +37,30 @@ body {
   width: 100%;
   height: 100vh;
   height: 100dvh;
-  display: flex;
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr) auto;
   align-items: center;
-  justify-content: center;
+  justify-items: center;
+  gap: clamp(8px, 2vh, 24px);
+  padding: clamp(16px, 4vh, 44px) clamp(16px, 4vw, 48px);
+  box-sizing: border-box;
   overflow: hidden;
   isolation: isolate;
   background:
     radial-gradient(ellipse at 50% 118%, rgba(126, 70, 214, 0.4), transparent 58%),
     radial-gradient(circle at 50% 38%, rgba(70, 36, 120, 0.55), transparent 62%),
     radial-gradient(circle at center, #1a1030 0%, #0a0618 55%, #04020a 100%);
+}
+
+.stage {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  container-type: size;
 }
 
 .aurora {
@@ -131,7 +146,7 @@ body {
 
 .glow {
   position: absolute;
-  top: 58%;
+  top: 50%;
   left: 50%;
   z-index: 1;
   width: 260px;
@@ -151,12 +166,10 @@ body {
 /* ---------- Title ---------- */
 
 .title-block {
-  position: absolute;
-  top: clamp(20px, 6vh, 64px);
-  left: 50%;
+  position: relative;
   z-index: 10;
   width: 100%;
-  transform: translateX(-50%);
+  max-width: 100%;
   text-align: center;
   pointer-events: none;
 }
@@ -201,13 +214,11 @@ h1 {
 /* ---------- Machine ---------- */
 
 .machine {
-  position: absolute;
-  top: 60%;
-  left: 50%;
+  position: relative;
   z-index: 15;
+  flex: 0 0 auto;
   width: 190px;
   height: 160px;
-  transform: translate(-50%, -50%);
   animation: machineFloat 4.5s ease-in-out infinite;
 }
 
@@ -365,11 +376,17 @@ h1 {
   bottom: 50%;
   left: 50%;
   z-index: 20;
-  width: clamp(190px, min(26vw, 26vh), 290px);
+  width: clamp(120px, min(70vw, 40vh), 290px);
   aspect-ratio: 13 / 18;
   transform: translate(-50%, 50%) scale(0.3);
   opacity: 0;
   pointer-events: none;
+}
+
+@supports (width: 1cqw) {
+  .card {
+    width: clamp(120px, min(72cqw, 62cqh), 290px);
+  }
 }
 
 .card::before,
@@ -436,7 +453,7 @@ h1 {
 
 .card-overlay-card {
   position: relative;
-  width: min(520px, 88vw);
+  width: min(520px, 88vw, 62vh);
   max-height: 88vh;
   aspect-ratio: 13 / 18;
   animation: cardZoomIn 0.35s cubic-bezier(0.22, 1, 0.36, 1);
@@ -569,7 +586,7 @@ h1 {
 
 .legendary-banner {
   position: absolute;
-  top: clamp(80px, 17vh, 170px);
+  top: clamp(24px, 12%, 88px);
   left: 50%;
   z-index: 70;
   display: flex;
@@ -693,7 +710,7 @@ h1 {
 
 .particle {
   position: absolute;
-  top: 55%;
+  top: 50%;
   left: 50%;
   color: #ffe3a1;
   font-size: 22px;
@@ -713,9 +730,18 @@ h1 {
 
 /* ---------- Subtitle ---------- */
 
+.action-bar {
+  position: relative;
+  z-index: 100;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: clamp(10px, 2.5vh, 26px);
+  width: 100%;
+}
+
 .subtitle {
-  position: absolute;
-  bottom: 20%;
+  position: relative;
   z-index: 10;
   color: #cbb6ee;
   font-size: 11px;
@@ -776,11 +802,8 @@ h1 {
 /* ---------- Summon button ---------- */
 
 .summon-wrap {
-  position: absolute;
-  bottom: clamp(26px, 7vh, 64px);
-  left: 50%;
+  position: relative;
   z-index: 100;
-  transform: translateX(-50%);
 }
 
 .summon-wrap::after {
@@ -909,11 +932,11 @@ h1 {
 @keyframes machineFloat {
   0%,
   100% {
-    transform: translate(-50%, -50%);
+    transform: translateY(0);
   }
 
   50% {
-    transform: translate(-50%, calc(-50% - 7px));
+    transform: translateY(-7px);
   }
 }
 
@@ -1216,32 +1239,21 @@ h1 {
 /* ---------- Short viewports (landscape phones) ---------- */
 
 @media (max-height: 520px) {
+  .scene {
+    gap: 6px;
+    padding: clamp(8px, 2.4vh, 18px) clamp(12px, 3vw, 28px);
+  }
+
   .title-ornament,
   .tagline,
   .subtitle {
     display: none;
   }
 
-  .title-block {
-    top: 10px;
-  }
-
   h1 {
     font-size: 22px;
     letter-spacing: 6px;
     text-indent: 6px;
-  }
-
-  .machine {
-    top: 64%;
-  }
-
-  .card {
-    width: clamp(130px, 30vh, 190px);
-  }
-
-  .summon-wrap {
-    bottom: 10px;
   }
 
   #summon {
@@ -1251,6 +1263,39 @@ h1 {
 
   .legendary-banner {
     display: none;
+  }
+}
+
+@media (max-width: 420px) {
+  .scene {
+    padding: clamp(14px, 3.5vh, 32px) 12px;
+  }
+
+  .machine {
+    scale: 0.88;
+  }
+
+  h1 {
+    font-size: clamp(22px, 7.5vw, 34px);
+    letter-spacing: clamp(4px, 1.6vw, 8px);
+    text-indent: clamp(4px, 1.6vw, 8px);
+  }
+
+  #summon {
+    padding: 15px 36px;
+    font-size: 13px;
+    letter-spacing: 3px;
+  }
+}
+
+@media (max-height: 360px) {
+  .machine {
+    scale: 0.78;
+  }
+
+  #summon {
+    padding: 10px 26px;
+    font-size: 11px;
   }
 }
 

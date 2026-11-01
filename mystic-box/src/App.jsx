@@ -78,17 +78,8 @@ function App() {
       <div className="motes" />
       <div className="vignette" />
       <div className="frame" />
-      <div className="glow" />
 
-      {isLegendary && (
-        <>
-          <div className="legendary-flash" aria-hidden="true" />
-          <div className="legendary-banner" aria-hidden="true">
-            <span className="legendary-banner-title">LEGENDARY</span>
-            <span className="legendary-banner-sub">A RARE CARD APPEARS</span>
-          </div>
-        </>
-      )}
+      {isLegendary && <div className="legendary-flash" aria-hidden="true" />}
 
       <header className="title-block">
         <span className="title-ornament">✦ ✧ ✦</span>
@@ -96,12 +87,30 @@ function App() {
         <p className="tagline">ARCANE SUMMONING</p>
       </header>
 
-      <GachaMachine card={card} />
+      <div className="stage">
+        <div className="glow" />
 
-      <Particles particles={particles} />
+        {isLegendary && (
+          <div className="legendary-banner" aria-hidden="true">
+            <span className="legendary-banner-title">LEGENDARY</span>
+            <span className="legendary-banner-sub">A RARE CARD APPEARS</span>
+          </div>
+        )}
 
-      <div className="subtitle">
-        A MYSTERIOUS GIFT AWAITS...
+        <GachaMachine card={card} />
+
+        <Particles particles={particles} />
+      </div>
+
+      <div className="action-bar">
+        <div className="subtitle">
+          A MYSTERIOUS GIFT AWAITS...
+        </div>
+
+        <SummonButton
+          onClick={summon}
+          disabled={opening || revealed}
+        />
       </div>
 
       {error && (
@@ -110,11 +119,6 @@ function App() {
           <span>{error}</span>
         </div>
       )}
-
-      <SummonButton
-        onClick={summon}
-        disabled={opening || revealed}
-      />
     </main>
   );
 }
