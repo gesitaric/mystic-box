@@ -1864,7 +1864,139 @@ h1 {
 }
 
 .collection-card-art {
+  position: relative;
   aspect-ratio: 13 / 18;
+}
+
+/* Quantas cópias da carta o jogador tem. */
+.collection-card-quantity {
+  position: absolute;
+  top: -6px;
+  right: -6px;
+  z-index: 3;
+  min-width: 28px;
+  padding: 3px 8px;
+  border: 1px solid rgba(42, 22, 0, 0.4);
+  border-radius: 999px;
+  background: linear-gradient(180deg, #ffe7a6 0%, #eda53c 100%);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.55);
+  color: #2a1600;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  text-align: center;
+  pointer-events: none;
+}
+
+.collection-sell-each {
+  opacity: 0.75;
+}
+
+.collection-sell-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 8px;
+  border: 1px solid rgba(255, 220, 142, 0.35);
+  border-radius: 10px;
+  background: rgba(20, 10, 40, 0.85);
+}
+
+.collection-sell-stepper {
+  display: flex;
+  align-items: stretch;
+  gap: 4px;
+}
+
+.collection-sell-step,
+.collection-sell-input,
+.collection-sell-chip {
+  border: 1px solid rgba(255, 220, 142, 0.35);
+  border-radius: 6px;
+  background: rgba(20, 10, 40, 0.7);
+  color: #ffdc8e;
+  font: inherit;
+}
+
+.collection-sell-step {
+  width: 28px;
+  flex: none;
+  font-size: 16px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.collection-sell-input {
+  flex: 1;
+  min-width: 0;
+  padding: 4px 2px;
+  font-size: 14px;
+  font-weight: 700;
+  text-align: center;
+  -moz-appearance: textfield;
+  appearance: textfield;
+}
+
+.collection-sell-input::-webkit-outer-spin-button,
+.collection-sell-input::-webkit-inner-spin-button {
+  margin: 0;
+  -webkit-appearance: none;
+}
+
+.collection-sell-shortcuts {
+  display: flex;
+  gap: 4px;
+}
+
+.collection-sell-chip {
+  flex: 1;
+  min-width: 0;
+  padding: 3px 4px;
+  color: #cbb6ee;
+  font-size: 10px;
+  letter-spacing: 0.5px;
+  cursor: pointer;
+}
+
+.collection-sell-chip.is-active {
+  border-color: #ffdc8e;
+  color: #ffdc8e;
+}
+
+.collection-sell-step:hover:not(:disabled),
+.collection-sell-chip:hover:not(:disabled) {
+  border-color: rgba(255, 220, 142, 0.7);
+}
+
+.collection-sell-step:focus-visible,
+.collection-sell-input:focus-visible,
+.collection-sell-chip:focus-visible {
+  outline: 2px solid #ffdc8e;
+  outline-offset: 2px;
+}
+
+.collection-sell-step:disabled,
+.collection-sell-chip:disabled,
+.collection-sell-input:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.collection-sell-summary {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin: 0;
+  color: #ffdc8e;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+}
+
+.collection-sell-keeps {
+  color: #cbb6ee;
+  font-size: 10px;
+  font-weight: 400;
 }
 
 .collection-sell-confirm {

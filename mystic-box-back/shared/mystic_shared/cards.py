@@ -36,6 +36,10 @@ _BY_FILE_NAME = {character["file_name"]: character for character in CHARACTERS}
 
 SUMMON_SIZE = 3
 
+# Máximo de cópias vendidas de uma vez. Uma transação do DynamoDB aceita até
+# 100 itens: um para a carteira e o resto para as cartas removidas.
+MAX_SELL_QUANTITY = 99
+
 RARITY_WEIGHTS = {5: 1, 4: 6, 3: 40}
 
 # A última carta da invocação tem chances um pouco maiores de ser rara.
@@ -50,6 +54,18 @@ def get_character(file_name):
 def sell_price(character):
     """Quanto o jogador recebe ao vender a carta na loja."""
     return character["price"]
+
+
+def sell_total(character, quantity):
+    """Quanto o jogador recebe ao vender `quantity` cópias da carta de uma vez."""
+    return sell_price(character) * quantity
+
+
+def max_sell_quantity(character, owned_quantity):
+    """Quantas cópias o jogador pode vender de uma vez (0 = não pode vender)."""
+    if character is None:
+        return 0
+    return min(owned_quantity, MAX_SELL_QUANTITY)
 
 
 def buy_price(character):
