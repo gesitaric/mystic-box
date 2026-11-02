@@ -3,7 +3,7 @@ import os
 
 import boto3
 from botocore.exceptions import ClientError
-from mystic_shared.cards import get_character
+from mystic_shared.cards import get_character, sell_price
 
 CORS_HEADERS = {
     "Access-Control-Allow-Origin": "*",
@@ -103,7 +103,7 @@ def lambda_handler(event, context):
     if not character:
         return response(409, {"message": "Esta carta não pode ser vendida."})
 
-    price = character["price"]
+    price = sell_price(character)
 
     try:
         # Remover a carta e creditar o valor é atômico. A condição no Delete

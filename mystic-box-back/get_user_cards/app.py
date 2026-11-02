@@ -5,7 +5,7 @@ import unicodedata
 import boto3
 from boto3.dynamodb.conditions import Key
 from botocore.exceptions import ClientError
-from mystic_shared.cards import get_character
+from mystic_shared.cards import get_character, sell_price
 
 CORS_HEADERS = {
     "Access-Control-Allow-Origin": "*",
@@ -85,7 +85,7 @@ def sort_cards(cards, sort, order):
 
 def get_sell_price(file_name):
     character = get_character(file_name)
-    return character["price"] if character else None
+    return sell_price(character) if character else None
 
 
 def get_user_id(event):

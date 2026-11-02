@@ -4,12 +4,14 @@ This project contains source code and supporting files for a serverless applicat
 
 > **Todas as regras do jogo ficam no backend. O frontend não define NADA** (preços, raridades, sorteio, saldo, tempo de espera...). Nunca confie em dados de jogo enviados pelo cliente. Veja o `CLAUDE.md` na raiz do repositório.
 
-- shared - Lambda Layer (`SharedLayer`) with the `mystic_shared` package: card definitions with sell prices and draw rules (`cards.py`, the single source of truth) and the signed summon token (`summon_token.py`).
+- shared - Lambda Layer (`SharedLayer`) with the `mystic_shared` package: card definitions with prices, shop rules (`buy_price`, `sell_price`, `shop_catalog`) and draw rules (`cards.py`, the single source of truth) and the signed summon token (`summon_token.py`).
 - open_box - Code for the Lambda function that draws the cards on the server and returns them with a signed `summonToken`. This endpoint is public.
 - get_user_cards - Code for the Lambda function that returns the cards owned by the authenticated user, including each card's `sellPrice`.
 - save_user_card - Code for the Lambda function that stores a drawn summon for the authenticated user. It only accepts the `summonToken` (single use, expires in 30 minutes) and reads the cards from the server-side definitions.
 - sell_user_card - Code for the Lambda function that sells one of the user's cards (`POST /users/me/cards/{ownedCardId}/sell`): removes it and credits its server-defined price to the wallet in a single transaction.
 - get_wallet - Code for the Lambda function that returns the authenticated user's balance of Fragmentos Arcanos (the game currency), stored in `UserWalletTable`. Users without a record start at 0.
+- get_shop_cards - Code for the Lambda function that returns the shop catalog (`GET /shop/cards`): every card with its server-defined `buyPrice` and whether the authenticated user `canAfford` it, plus the current `balance`.
+- buy_card - Code for the Lambda function that buys a card from the shop (`POST /shop/cards/{fileName}/buy`): debits its server-defined price from the wallet (only if the balance covers it) and adds the card to the user's collection in a single transaction.
 - events - Invocation events that you can use to invoke the function.
 - tests - Unit tests for the application code. 
 - template.yaml - A template that defines the application's AWS resources.

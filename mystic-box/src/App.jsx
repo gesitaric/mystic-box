@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import AuthModal from "./components/AuthModal";
 import GachaMachine from "./components/GachaMachine";
 import Particles from "./components/Particles";
+import ShopModal from "./components/ShopModal";
 import SummonButton from "./components/SummonButton";
 import SummonSpread from "./components/SummonSpread";
 import UserCardsList from "./components/UserCardsList";
@@ -103,6 +104,7 @@ function App() {
   const [session, setSession] = useState(null);
   const [authOpen, setAuthOpen] = useState(false);
   const [collectionOpen, setCollectionOpen] = useState(false);
+  const [shopOpen, setShopOpen] = useState(false);
   // Sorteio ainda não guardado: { cards, summonToken }.
   const [pendingSummon, setPendingSummon] = useState(null);
   const [saving, setSaving] = useState(false);
@@ -372,11 +374,13 @@ function App() {
     signOut();
     setSession(null);
     setCollectionOpen(false);
+    setShopOpen(false);
     setCooldownUntil(null);
     setBalance(null);
   }
 
   const closeCollection = useCallback(() => setCollectionOpen(false), []);
+  const closeShop = useCallback(() => setShopOpen(false), []);
 
   // Saldo devolvido pelo servidor após uma venda; sem ele, consulta de novo.
   const handleBalanceChange = useCallback(
@@ -394,6 +398,7 @@ function App() {
     signOut();
     setSession(null);
     setCollectionOpen(false);
+    setShopOpen(false);
     setAuthOpen(true);
   }, []);
 
@@ -460,6 +465,13 @@ function App() {
               onClick={() => setCollectionOpen(true)}
             >
               Coleção
+            </button>
+            <button
+              type="button"
+              className="session-button"
+              onClick={() => setShopOpen(true)}
+            >
+              Loja
             </button>
             <button
               type="button"
@@ -614,6 +626,17 @@ function App() {
           apiUrl={API_URL}
           session={session}
           onClose={closeCollection}
+          onSessionExpired={handleCollectionSessionExpired}
+          onBalanceChange={handleBalanceChange}
+        />
+      )}
+
+      {shopOpen && session && (
+        <ShopModal
+          apiUrl={API_URL}
+          session={session}
+          balance={balance}
+          onClose={closeShop}
           onSessionExpired={handleCollectionSessionExpired}
           onBalanceChange={handleBalanceChange}
         />

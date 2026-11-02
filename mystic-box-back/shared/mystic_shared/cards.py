@@ -1,6 +1,6 @@
-"""Definições das cartas e regras do sorteio.
+"""Definições das cartas e regras do sorteio e da loja.
 
-Fonte única da verdade: nome, raridade, imagem e preço de venda de cada carta
+Fonte única da verdade: nome, raridade, imagem e preço (de compra e de venda na loja) de cada carta
 vivem SÓ aqui. Nenhuma Lambda deve confiar nesses dados vindos do frontend;
 quando precisar deles, procure a carta pelo `file_name` com `get_character`.
 """
@@ -45,6 +45,21 @@ LAST_CARD_RARITY_WEIGHTS = {5: 2, 4: 8, 3: 40}
 def get_character(file_name):
     """Definição da carta com esse `file_name`, ou None se não existir."""
     return _BY_FILE_NAME.get(file_name)
+
+
+def sell_price(character):
+    """Quanto o jogador recebe ao vender a carta na loja."""
+    return character["price"]
+
+
+def buy_price(character):
+    """Quanto o jogador paga para comprar a carta na loja."""
+    return character["price"]
+
+
+def shop_catalog():
+    """Cartas à venda na loja: todas as cartas do jogo."""
+    return list(CHARACTERS)
 
 
 def public_card(character):
