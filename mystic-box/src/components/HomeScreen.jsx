@@ -10,7 +10,7 @@ function HomeScreen({
   onSignOut,
 }) {
   return (
-    <section className="home" aria-label="Início">
+    <section className="home" aria-label="Home">
       <div className="home-profile">
         {email && (
           <span className="home-email" title={email}>
@@ -20,9 +20,9 @@ function HomeScreen({
 
         <div
           className="home-wallet"
-          aria-label={`${balance ?? 0} Fragmentos Arcanos`}
+          aria-label={`${balance ?? 0} Arcane Shards`}
         >
-          <span className="home-wallet-label">Fragmentos Arcanos</span>
+          <span className="home-wallet-label">Arcane Shards</span>
           <span className="home-wallet-amount">
             <span className="wallet-icon" aria-hidden="true">✧</span>
             {balance ?? "—"}
@@ -30,27 +30,27 @@ function HomeScreen({
         </div>
       </div>
 
-      <nav className="home-menu" aria-label="Menu principal">
+      <nav className="home-menu" aria-label="Main menu">
         <button type="button" className="home-button home-button-primary" onClick={onSummon}>
-          <span className="home-button-title">✦ Invocar cartas ✦</span>
+          <span className="home-button-title">✦ Summon cards ✦</span>
           {cooldownLabel && (
             <span className="home-button-hint">
-              Próxima invocação em{" "}
+              Next summon in{" "}
               <span className="cooldown-time">{cooldownLabel}</span>
             </span>
           )}
         </button>
 
         <button type="button" className="home-button" onClick={onCollection}>
-          <span className="home-button-title">Coleção</span>
+          <span className="home-button-title">Collection</span>
         </button>
 
         <button type="button" className="home-button" onClick={onShop}>
-          <span className="home-button-title">Loja</span>
+          <span className="home-button-title">Shop</span>
         </button>
 
         <button type="button" className="home-button home-button-quiet" onClick={onSignOut}>
-          <span className="home-button-title">Sair</span>
+          <span className="home-button-title">Sign out</span>
         </button>
       </nav>
     </section>

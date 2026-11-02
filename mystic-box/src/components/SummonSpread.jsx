@@ -4,7 +4,7 @@ function SummonSpread({ cards, flippedCount, charging, onFlip }) {
   const center = (cards.length - 1) / 2;
 
   return (
-    <div className="summon-spread" aria-label="Cartas invocadas">
+    <div className="summon-spread" aria-label="Summoned cards">
       {cards.map((card, index) => {
         const flipped = index < flippedCount;
         const isNext = index === flippedCount;
@@ -38,7 +38,7 @@ function SummonSpread({ cards, flippedCount, charging, onFlip }) {
                 onClick={onFlip}
                 disabled={!isNext || charging}
                 tabIndex={flipped ? -1 : 0}
-                aria-label={`Virar carta ${index + 1}`}
+                aria-label={`Flip card ${index + 1}`}
               >
                 <span className="spread-sigil" aria-hidden="true">
                   ✦

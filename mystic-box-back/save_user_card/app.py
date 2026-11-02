@@ -61,20 +61,20 @@ def parse_summon(body):
         try:
             body = json.loads(body)
         except json.JSONDecodeError as error:
-            raise summon_token.InvalidSummonToken("Corpo da requisição inválido.") from error
+            raise summon_token.InvalidSummonToken("Invalid request body.") from error
 
     if not isinstance(body, dict):
-        raise summon_token.InvalidSummonToken("Corpo da requisição inválido.")
+        raise summon_token.InvalidSummonToken("Invalid request body.")
 
     payload = summon_token.verify(body.get("summonToken"))
     file_names = payload["cards"]
 
     if not 1 <= len(file_names) <= SUMMON_SIZE or len(set(file_names)) != len(file_names):
-        raise summon_token.InvalidSummonToken("Sorteio inválido.")
+        raise summon_token.InvalidSummonToken("Invalid summon.")
 
     characters = [get_character(file_name) for file_name in file_names]
     if any(character is None for character in characters):
-        raise summon_token.InvalidSummonToken("Sorteio inválido.")
+        raise summon_token.InvalidSummonToken("Invalid summon.")
 
     return payload, characters
 
@@ -113,7 +113,7 @@ def lambda_handler(event, context):
 
     user_id = get_user_id(event)
     if not user_id:
-        return response(401, {"message": "Usuário não autenticado."})
+        return response(401, {"message": "User is not authenticated."})
 
     try:
         token, characters = parse_summon(event.get("body"))
@@ -122,7 +122,7 @@ def lambda_handler(event, context):
     except summon_token.InvalidSummonToken as error:
         return response(400, {"message": str(error)})
     except ClientError:
-        return response(500, {"message": "Não foi possível guardar as cartas."})
+        return response(500, {"message": "Could not keep the cards."})
 
     now = int(time.time())
     obtained_at = datetime.fromtimestamp(now, timezone.utc).isoformat()
@@ -190,10 +190,10 @@ def lambda_handler(event, context):
         failed = get_failed_conditions(error)
 
         if TOKEN_ITEM in failed:
-            return response(409, {"message": "Estas cartas já foram guardadas."})
+            return response(409, {"message": "These cards have already been kept."})
 
         if COOLDOWN_ITEM not in failed:
-            return response(500, {"message": "Não foi possível guardar as cartas."})
+            return response(500, {"message": "Could not keep the cards."})
 
         try:
             retry_after = max(1, get_retry_after_seconds(user_id, now))
@@ -203,7 +203,7 @@ def lambda_handler(event, context):
         return response(
             429,
             {
-                "message": "Você ainda está no tempo de espera para invocar.",
+                "message": "You are still on cooldown for summoning.",
                 "retryAfterSeconds": retry_after,
             },
             headers={"Retry-After": str(retry_after)},

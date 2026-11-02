@@ -27,7 +27,7 @@ function Modal({ label, className = "", onClose, children }) {
         <button
           type="button"
           className="auth-close"
-          aria-label="Fechar"
+          aria-label="Close"
           onClick={onClose}
         >
           ×

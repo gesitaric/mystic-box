@@ -29,7 +29,7 @@ def lambda_handler(event, context):
         # Só este token (e não as cartas) é aceito depois por POST /users/me/cards.
         token = summon_token.issue(character["file_name"] for character in drawn)
     except ClientError:
-        return response(500, {"message": "Não foi possível abrir a caixa."})
+        return response(500, {"message": "Could not open the box."})
 
     return response(
         200,

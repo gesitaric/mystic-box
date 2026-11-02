@@ -48,7 +48,7 @@ def lambda_handler(event, context):
 
     user_id = get_user_id(event)
     if not user_id:
-        return response(401, {"message": "Usuário não autenticado."})
+        return response(401, {"message": "User is not authenticated."})
 
     try:
         result = get_client().get_item(
@@ -57,7 +57,7 @@ def lambda_handler(event, context):
             ConsistentRead=True,
         )
     except ClientError:
-        return response(500, {"message": "Não foi possível consultar o tempo de espera."})
+        return response(500, {"message": "Could not fetch the cooldown."})
 
     last_summon_at = int(result.get("Item", {}).get("lastSummonAt", {}).get("N", "0"))
     retry_after = max(0, last_summon_at + SUMMON_COOLDOWN_SECONDS - int(time.time()))

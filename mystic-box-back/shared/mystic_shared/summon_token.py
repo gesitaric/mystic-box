@@ -75,7 +75,7 @@ def issue(file_names, now=None):
 def verify(token, now=None):
     """Confere o token e devolve o conteúdo (`id`, `cards`, `exp`)."""
     if not isinstance(token, str) or token.count(".") != 1 or len(token) > 2048:
-        raise InvalidSummonToken("Sorteio inválido.")
+        raise InvalidSummonToken("Invalid summon.")
 
     encoded, signature = token.split(".")
 
@@ -83,7 +83,7 @@ def verify(token, now=None):
         valid = hmac.compare_digest(_b64decode(signature), _sign(encoded))
         payload = json.loads(_b64decode(encoded)) if valid else None
     except (ValueError, TypeError) as error:
-        raise InvalidSummonToken("Sorteio inválido.") from error
+        raise InvalidSummonToken("Invalid summon.") from error
 
     if (
         not isinstance(payload, dict)
@@ -92,10 +92,10 @@ def verify(token, now=None):
         or not isinstance(payload.get("cards"), list)
         or not isinstance(payload.get("exp"), int)
     ):
-        raise InvalidSummonToken("Sorteio inválido.")
+        raise InvalidSummonToken("Invalid summon.")
 
     now = int(time.time()) if now is None else now
     if now >= payload["exp"]:
-        raise ExpiredSummonToken("Este sorteio expirou.")
+        raise ExpiredSummonToken("This summon has expired.")
 
     return payload

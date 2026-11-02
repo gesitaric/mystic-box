@@ -12,7 +12,7 @@ let userPool = null;
 function getUserPool() {
   if (!USER_POOL_ID || !CLIENT_ID) {
     throw new Error(
-      "Login não configurado. Defina VITE_COGNITO_USER_POOL_ID e VITE_COGNITO_CLIENT_ID."
+      "Sign-in is not configured. Set VITE_COGNITO_USER_POOL_ID and VITE_COGNITO_CLIENT_ID."
     );
   }
 
@@ -77,7 +77,7 @@ export function signIn(email, password) {
         reject(error);
       },
       newPasswordRequired: () => {
-        reject(new Error("É necessário definir uma nova senha para este usuário."));
+        reject(new Error("A new password must be set for this user."));
       },
     });
   });
@@ -121,22 +121,22 @@ export function describeAuthError(error) {
   switch (code) {
     case "NotAuthorizedException":
     case "UserNotFoundException":
-      return "E-mail ou senha incorretos.";
+      return "Incorrect email or password.";
     case "UsernameExistsException":
-      return "Já existe uma conta com este e-mail.";
+      return "An account with this email already exists.";
     case "UserNotConfirmedException":
-      return "Confirme seu e-mail antes de entrar.";
+      return "Confirm your email before signing in.";
     case "CodeMismatchException":
-      return "Código de confirmação inválido.";
+      return "Invalid confirmation code.";
     case "ExpiredCodeException":
-      return "Código expirado. Solicite um novo código.";
+      return "Code expired. Request a new code.";
     case "InvalidPasswordException":
-      return error?.message ?? "A senha não atende aos requisitos.";
+      return error?.message ?? "The password does not meet the requirements.";
     case "LimitExceededException":
-      return "Muitas tentativas. Aguarde um pouco e tente novamente.";
+      return "Too many attempts. Wait a moment and try again.";
     case "InvalidParameterException":
-      return error?.message ?? "Dados inválidos.";
+      return error?.message ?? "Invalid data.";
     default:
-      return error?.message ?? "Não foi possível concluir. Tente novamente.";
+      return error?.message ?? "Something went wrong. Please try again.";
   }
 }
