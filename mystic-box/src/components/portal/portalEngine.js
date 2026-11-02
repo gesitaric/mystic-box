@@ -201,7 +201,10 @@ function boltPath(x1, y1, x2, y2, roughness) {
 }
 
 export class PortalEngine {
-  constructor(canvas, { audio, onPhase, onFrame, onSettled, reducedMotion = false }) {
+  constructor(canvas, { audio, onPhase, onFrame, onSettled, reducedMotion = false, layout }) {
+    // Posição do centro (fração da altura) e raio (fração da largura/altura).
+    this.layout = { centerY: 0.47, radiusW: 0.21, radiusH: 0.29, ...layout };
+    this.enabled = true;
     this.canvas = canvas;
     this.ctx = canvas.getContext("2d");
     this.audio = audio;
@@ -274,8 +277,11 @@ export class PortalEngine {
     this.canvas.height = Math.round(this.height * this.dpr);
 
     this.cx = this.width / 2;
-    this.cy = this.height * 0.47;
-    this.R = Math.max(90, Math.min(this.width * 0.21, this.height * 0.29));
+    this.cy = this.height * this.layout.centerY;
+    this.R = Math.max(
+      80,
+      Math.min(this.width * this.layout.radiusW, this.height * this.layout.radiusH)
+    );
 
     this.background = makeBackground(this.width, this.height, this.cx, this.cy, this.R);
     this.vignette = makeVignette(this.width, this.height);
@@ -301,8 +307,15 @@ export class PortalEngine {
     this.onPhase?.(phase);
   }
 
+  // Desligado (ex.: tempo de espera): o portal não aceita ser carregado nem fechado.
+  setEnabled(value) {
+    this.enabled = value;
+    if (!value) this.cancel();
+  }
+
   // Botão pressionado sobre o portal.
   press() {
+    if (!this.enabled) return false;
     if (this.phase === PHASE.IDLE) {
       // Retoma de onde a carga estava se ainda estiver esvaziando.
       this.setPhase(PHASE.CHARGING);

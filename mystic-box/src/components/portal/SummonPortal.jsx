@@ -28,9 +28,20 @@ const INSTRUCTIONS = {
   [PHASE.READY]: "RELEASE TO OPEN THE PORTAL",
 };
 
+// Layout dentro da tela do jogo: portal mais baixo e menor, abaixo do título.
+const EMBEDDED_LAYOUT = { centerY: 0.56, radiusW: 0.19, radiusH: 0.245 };
+
 // Portal de invocação: segurar sobre o portal carrega, soltar em 100% ativa.
-// `onActivated` é chamado quando o portal abre (ponto de integração com a invocação real).
-function SummonPortal({ onActivated }) {
+// `onActivated` é chamado quando o portal abre (quem usa decide o que acontece).
+// `disabled` impede carregar (ex.: tempo de espera), mostrando `disabledLabel`.
+// `activatedLabel` substitui a dica de fechar o portal depois da ativação.
+function SummonPortal({
+  onActivated,
+  disabled = false,
+  disabledLabel = "",
+  activatedLabel,
+  embedded = false,
+}) {
   const stageRef = useRef(null);
   const canvasRef = useRef(null);
   const hudRef = useRef(null);
@@ -39,6 +50,7 @@ function SummonPortal({ onActivated }) {
   const audioRef = useRef(null);
   const pointerRef = useRef(null);
   const onActivatedRef = useRef(onActivated);
+  const layoutRef = useRef(embedded ? EMBEDDED_LAYOUT : undefined);
 
   const [phase, setPhase] = useState(PHASE.IDLE);
   const [settled, setSettled] = useState(false);
@@ -59,6 +71,7 @@ function SummonPortal({ onActivated }) {
     const engine = new PortalEngine(canvas, {
       audio,
       reducedMotion,
+      layout: layoutRef.current,
       onPhase: (next) => {
         setPhase(next);
         setSettled(false);
@@ -108,6 +121,14 @@ function SummonPortal({ onActivated }) {
       audioRef.current = null;
     };
   }, []);
+
+  useEffect(() => {
+    if (disabled && typeof pointerRef.current === "number") {
+      stageRef.current?.releasePointerCapture?.(pointerRef.current);
+    }
+    if (disabled) pointerRef.current = null;
+    engineRef.current?.setEnabled(!disabled);
+  }, [disabled]);
 
   useEffect(() => {
     audioRef.current?.setEnabled(soundOn);
@@ -182,7 +203,9 @@ function SummonPortal({ onActivated }) {
   const channeling = phase === PHASE.CHARGING || phase === PHASE.READY;
   const activated = phase === PHASE.ACTIVATED;
   let instruction = INSTRUCTIONS[phase] ?? "";
-  if (activated) instruction = settled ? "CLICK THE PORTAL TO SEAL IT" : "";
+  if (activated) instruction = activatedLabel ?? (settled ? "CLICK THE PORTAL TO SEAL IT" : "");
+  else if (disabled && phase === PHASE.IDLE) instruction = disabledLabel;
+  const interactive = !disabled && (phase === PHASE.IDLE || channeling || (activated && settled));
 
   return (
     <div
@@ -190,7 +213,9 @@ function SummonPortal({ onActivated }) {
       className={[
         "portal-stage",
         `portal-${phase.toLowerCase()}`,
-        hovering && (phase === PHASE.IDLE || (activated && settled) || channeling) && "portal-hover",
+        embedded && "portal-embedded",
+        disabled && "portal-disabled",
+        hovering && interactive && "portal-hover",
       ]
         .filter(Boolean)
         .join(" ")}
@@ -220,7 +245,7 @@ function SummonPortal({ onActivated }) {
         )}
       </div>
 
-      <p key={instruction} className={`portal-instruction ${phase === PHASE.READY ? "urgent" : ""}`} aria-live="polite">
+      <p key={`${phase}-${disabled}`} className={`portal-instruction ${phase === PHASE.READY ? "urgent" : ""}`} aria-live="polite">
         {instruction}
       </p>
 

@@ -265,3 +265,23 @@
     animation-iteration-count: 1;
   }
 }
+
+/* Portal dentro da tela de invocação do jogo (App). */
+.portal-stage.portal-embedded {
+  z-index: 5;
+  font-family: "Cinzel", Georgia, "Times New Roman", serif;
+  color: #e9e4ff;
+  --portal-gold: #ffd98a;
+  --portal-gold-deep: #e2a64a;
+}
+
+.portal-embedded .portal-sound {
+  top: auto;
+  bottom: 22px;
+}
+
+.portal-disabled .portal-instruction {
+  color: rgba(203, 182, 238, 0.8);
+  letter-spacing: 0.35em;
+  animation: portal-instruction-in 0.6s ease both;
+}
