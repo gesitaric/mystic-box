@@ -1,10 +1,12 @@
 import json
 import os
 import re
+import time
 import uuid
 from datetime import datetime, timezone
 
 import boto3
+from boto3.dynamodb.types import TypeSerializer
 from botocore.exceptions import ClientError
 
 CORS_HEADERS = {
@@ -14,16 +16,28 @@ CORS_HEADERS = {
 }
 
 USER_CARDS_TABLE = os.environ.get("USER_CARDS_TABLE")
+USER_SUMMON_STATE_TABLE = os.environ.get("USER_SUMMON_STATE_TABLE")
+SUMMON_COOLDOWN_SECONDS = int(os.environ.get("SUMMON_COOLDOWN_SECONDS", "3600"))
 
-# Criado uma vez por container e reaproveitado entre invocações.
-table = boto3.resource("dynamodb").Table(USER_CARDS_TABLE)
 FILE_NAME_PATTERN = re.compile(r"^[a-z0-9_\-]+\.(jfif|jpg|jpeg|png|webp)$")
 
+_serializer = TypeSerializer()
 
-def response(status_code, body):
+# Criado uma vez por container e reaproveitado entre invocações.
+_client = None
+
+
+def get_client():
+    global _client
+    if _client is None:
+        _client = boto3.client("dynamodb")
+    return _client
+
+
+def response(status_code, body, headers=None):
     return {
         "statusCode": status_code,
-        "headers": CORS_HEADERS,
+        "headers": {**CORS_HEADERS, **(headers or {})},
         "body": json.dumps(body),
     }
 
@@ -72,6 +86,24 @@ def parse_card(body):
     }
 
 
+def get_retry_after_seconds(user_id, now):
+    result = get_client().get_item(
+        TableName=USER_SUMMON_STATE_TABLE,
+        Key={"userId": {"S": user_id}},
+        ConsistentRead=True,
+    )
+    last_summon_at = int(result.get("Item", {}).get("lastSummonAt", {}).get("N", "0"))
+    return max(0, last_summon_at + SUMMON_COOLDOWN_SECONDS - now)
+
+
+def is_cooldown_conflict(error):
+    if error.response.get("Error", {}).get("Code") != "TransactionCanceledException":
+        return False
+
+    reasons = error.response.get("CancellationReasons") or []
+    return bool(reasons) and reasons[0].get("Code") == "ConditionalCheckFailed"
+
+
 def lambda_handler(event, context):
     if event.get("httpMethod") == "OPTIONS":
         return response(200, {})
@@ -85,16 +117,64 @@ def lambda_handler(event, context):
     except ValueError as error:
         return response(400, {"message": str(error)})
 
+    now = int(time.time())
     item = {
         "userId": user_id,
         "ownedCardId": str(uuid.uuid4()),
-        "obtainedAt": datetime.now(timezone.utc).isoformat(),
+        "obtainedAt": datetime.fromtimestamp(now, timezone.utc).isoformat(),
         **card,
     }
 
     try:
-        table.put_item(Item=item)
-    except ClientError:
-        return response(500, {"message": "Não foi possível guardar a carta."})
+        # Registrar a invocação e guardar a carta são atômicos: se o usuário
+        # ainda estiver no tempo de espera, nenhuma das duas escritas acontece.
+        get_client().transact_write_items(
+            TransactItems=[
+                {
+                    "Update": {
+                        "TableName": USER_SUMMON_STATE_TABLE,
+                        "Key": {"userId": {"S": user_id}},
+                        "UpdateExpression": "SET lastSummonAt = :now",
+                        "ConditionExpression": (
+                            "attribute_not_exists(lastSummonAt) "
+                            "OR lastSummonAt <= :threshold"
+                        ),
+                        "ExpressionAttributeValues": {
+                            ":now": {"N": str(now)},
+                            ":threshold": {"N": str(now - SUMMON_COOLDOWN_SECONDS)},
+                        },
+                    }
+                },
+                {
+                    "Put": {
+                        "TableName": USER_CARDS_TABLE,
+                        "Item": {
+                            key: _serializer.serialize(value)
+                            for key, value in item.items()
+                        },
+                    }
+                },
+            ]
+        )
+    except ClientError as error:
+        if not is_cooldown_conflict(error):
+            return response(500, {"message": "Não foi possível guardar a carta."})
 
-    return response(201, {"card": item})
+        try:
+            retry_after = max(1, get_retry_after_seconds(user_id, now))
+        except ClientError:
+            retry_after = SUMMON_COOLDOWN_SECONDS
+
+        return response(
+            429,
+            {
+                "message": "Você ainda está no tempo de espera para invocar.",
+                "retryAfterSeconds": retry_after,
+            },
+            headers={"Retry-After": str(retry_after)},
+        )
+
+    return response(
+        201,
+        {"card": item, "retryAfterSeconds": SUMMON_COOLDOWN_SECONDS},
+    )

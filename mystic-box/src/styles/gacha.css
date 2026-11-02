@@ -1405,6 +1405,30 @@ h1 {
   text-shadow: 0 0 14px rgba(255, 200, 90, 0.65);
 }
 
+.keep-lost {
+  color: #ff9db8;
+  text-shadow: 0 0 12px rgba(255, 110, 150, 0.45);
+}
+
+.cooldown-message {
+  margin: 0;
+  color: #cbb6ee;
+  font-size: 11px;
+  letter-spacing: 2px;
+  text-align: center;
+  text-transform: uppercase;
+}
+
+.cooldown-time {
+  display: inline-block;
+  min-width: 5ch;
+  color: #ffe3a1;
+  font-size: 15px;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 1px;
+  text-shadow: 0 0 12px rgba(255, 200, 90, 0.55);
+}
+
 .keep-prompt {
   display: flex;
   flex-direction: column;

@@ -4,6 +4,7 @@ from unittest.mock import MagicMock
 import pytest
 from botocore.exceptions import ClientError
 
+from get_summon_status import app as get_summon_status
 from get_user_cards import app as get_user_cards
 from open_box import app as open_box
 from save_user_card import app as save_user_card
@@ -79,10 +80,17 @@ def authenticated_event(apigw_event):
     return build
 
 
-def fake_dynamodb(table):
-    resource = MagicMock()
-    resource.Table.return_value = table
-    return resource
+CARD_BODY = json.dumps({"card": {"name": "Astra", "rarity": 5, "file_name": "astra.jfif"}})
+
+
+def cooldown_conflict():
+    return ClientError(
+        {
+            "Error": {"Code": "TransactionCanceledException"},
+            "CancellationReasons": [{"Code": "ConditionalCheckFailed"}, {"Code": "None"}],
+        },
+        "TransactWriteItems",
+    )
 
 
 def test_open_box_handler(apigw_event):
@@ -129,8 +137,7 @@ def test_get_user_cards_returns_cards(authenticated_event, monkeypatch):
             }
         ]
     }
-    monkeypatch.setattr(get_user_cards, "USER_CARDS_TABLE", "user-cards")
-    monkeypatch.setattr(get_user_cards.boto3, "resource", lambda _: fake_dynamodb(table))
+    monkeypatch.setattr(get_user_cards, "_table", table)
 
     ret = get_user_cards.lambda_handler(authenticated_event(), "")
     data = json.loads(ret["body"])
@@ -144,8 +151,7 @@ def test_get_user_cards_returns_cards(authenticated_event, monkeypatch):
 def test_get_user_cards_handles_dynamodb_error(authenticated_event, monkeypatch):
     table = MagicMock()
     table.query.side_effect = ClientError({"Error": {"Code": "500"}}, "Query")
-    monkeypatch.setattr(get_user_cards, "USER_CARDS_TABLE", "user-cards")
-    monkeypatch.setattr(get_user_cards.boto3, "resource", lambda _: fake_dynamodb(table))
+    monkeypatch.setattr(get_user_cards, "_table", table)
 
     ret = get_user_cards.lambda_handler(authenticated_event(), "")
 
@@ -176,19 +182,20 @@ def test_save_user_card_rejects_invalid_body(authenticated_event, monkeypatch):
     assert ret["statusCode"] == 400
 
 
-def test_save_user_card_stores_card(authenticated_event, monkeypatch):
-    table = MagicMock()
+@pytest.fixture()
+def save_client(monkeypatch):
+    client = MagicMock()
+    monkeypatch.setattr(save_user_card, "_client", client)
     monkeypatch.setattr(save_user_card, "USER_CARDS_TABLE", "user-cards")
-    monkeypatch.setattr(save_user_card.boto3, "resource", lambda _: fake_dynamodb(table))
+    monkeypatch.setattr(save_user_card, "USER_SUMMON_STATE_TABLE", "summon-state")
+    monkeypatch.setattr(save_user_card, "SUMMON_COOLDOWN_SECONDS", 3600)
+    monkeypatch.setattr(save_user_card.time, "time", lambda: 10_000)
+    return client
 
+
+def test_save_user_card_stores_card_and_starts_cooldown(authenticated_event, save_client):
     ret = save_user_card.lambda_handler(
-        authenticated_event(
-            httpMethod="POST",
-            body=json.dumps(
-                {"card": {"name": "Astra", "rarity": 5, "file_name": "astra.jfif"}}
-            ),
-        ),
-        "",
+        authenticated_event(httpMethod="POST", body=CARD_BODY), ""
     )
     data = json.loads(ret["body"])
 
@@ -197,27 +204,100 @@ def test_save_user_card_stores_card(authenticated_event, monkeypatch):
     assert data["card"]["name"] == "Astra"
     assert data["card"]["ownedCardId"]
     assert data["card"]["obtainedAt"]
+    assert data["retryAfterSeconds"] == 3600
 
-    saved_item = table.put_item.call_args.kwargs["Item"]
-    assert saved_item["userId"] == "user-123"
-    assert saved_item["name"] == "Astra"
-    assert saved_item["file_name"] == "astra.jfif"
+    update, put = save_client.transact_write_items.call_args.kwargs["TransactItems"]
+    assert update["Update"]["TableName"] == "summon-state"
+    assert update["Update"]["Key"] == {"userId": {"S": "user-123"}}
+    assert update["Update"]["ExpressionAttributeValues"] == {
+        ":now": {"N": "10000"},
+        ":threshold": {"N": "6400"},
+    }
+    assert put["Put"]["TableName"] == "user-cards"
+    assert put["Put"]["Item"]["userId"] == {"S": "user-123"}
+    assert put["Put"]["Item"]["name"] == {"S": "Astra"}
+    assert put["Put"]["Item"]["rarity"] == {"N": "5"}
+    assert put["Put"]["Item"]["file_name"] == {"S": "astra.jfif"}
 
 
-def test_save_user_card_handles_dynamodb_error(authenticated_event, monkeypatch):
-    table = MagicMock()
-    table.put_item.side_effect = ClientError({"Error": {"Code": "500"}}, "PutItem")
-    monkeypatch.setattr(save_user_card, "USER_CARDS_TABLE", "user-cards")
-    monkeypatch.setattr(save_user_card.boto3, "resource", lambda _: fake_dynamodb(table))
+def test_save_user_card_rejects_during_cooldown(authenticated_event, save_client):
+    save_client.transact_write_items.side_effect = cooldown_conflict()
+    save_client.get_item.return_value = {"Item": {"lastSummonAt": {"N": "9000"}}}
 
     ret = save_user_card.lambda_handler(
-        authenticated_event(
-            httpMethod="POST",
-            body=json.dumps(
-                {"card": {"name": "Astra", "rarity": 5, "file_name": "astra.jfif"}}
-            ),
-        ),
-        "",
+        authenticated_event(httpMethod="POST", body=CARD_BODY), ""
     )
+    data = json.loads(ret["body"])
+
+    assert ret["statusCode"] == 429
+    assert ret["headers"]["Retry-After"] == "2600"
+    assert ret["headers"]["Access-Control-Allow-Origin"] == "*"
+    assert data["retryAfterSeconds"] == 2600
+
+
+def test_save_user_card_handles_dynamodb_error(authenticated_event, save_client):
+    save_client.transact_write_items.side_effect = ClientError(
+        {"Error": {"Code": "500"}}, "TransactWriteItems"
+    )
+
+    ret = save_user_card.lambda_handler(
+        authenticated_event(httpMethod="POST", body=CARD_BODY), ""
+    )
+
+    assert ret["statusCode"] == 500
+
+
+@pytest.fixture()
+def status_client(monkeypatch):
+    client = MagicMock()
+    monkeypatch.setattr(get_summon_status, "_client", client)
+    monkeypatch.setattr(get_summon_status, "USER_SUMMON_STATE_TABLE", "summon-state")
+    monkeypatch.setattr(get_summon_status, "SUMMON_COOLDOWN_SECONDS", 3600)
+    monkeypatch.setattr(get_summon_status.time, "time", lambda: 10_000)
+    return client
+
+
+def test_get_summon_status_options(apigw_event):
+    ret = get_summon_status.lambda_handler(dict(apigw_event, httpMethod="OPTIONS"), "")
+
+    assert ret["statusCode"] == 200
+    assert ret["headers"]["Access-Control-Allow-Origin"] == "*"
+
+
+def test_get_summon_status_requires_authentication(apigw_event):
+    ret = get_summon_status.lambda_handler(apigw_event, "")
+
+    assert ret["statusCode"] == 401
+
+
+def test_get_summon_status_without_previous_summon(authenticated_event, status_client):
+    status_client.get_item.return_value = {}
+
+    ret = get_summon_status.lambda_handler(authenticated_event(), "")
+
+    assert ret["statusCode"] == 200
+    assert json.loads(ret["body"]) == {"retryAfterSeconds": 0, "cooldownSeconds": 3600}
+
+
+def test_get_summon_status_during_cooldown(authenticated_event, status_client):
+    status_client.get_item.return_value = {"Item": {"lastSummonAt": {"N": "9000"}}}
+
+    ret = get_summon_status.lambda_handler(authenticated_event(), "")
+
+    assert json.loads(ret["body"])["retryAfterSeconds"] == 2600
+
+
+def test_get_summon_status_after_cooldown(authenticated_event, status_client):
+    status_client.get_item.return_value = {"Item": {"lastSummonAt": {"N": "1000"}}}
+
+    ret = get_summon_status.lambda_handler(authenticated_event(), "")
+
+    assert json.loads(ret["body"])["retryAfterSeconds"] == 0
+
+
+def test_get_summon_status_handles_dynamodb_error(authenticated_event, status_client):
+    status_client.get_item.side_effect = ClientError({"Error": {"Code": "500"}}, "GetItem")
+
+    ret = get_summon_status.lambda_handler(authenticated_event(), "")
 
     assert ret["statusCode"] == 500

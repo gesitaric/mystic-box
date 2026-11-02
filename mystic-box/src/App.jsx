@@ -14,6 +14,13 @@ const API_URL = (
 
 const PENDING_CARD_KEY = "mystic-box:pending-card";
 
+function formatCountdown(ms) {
+  const totalSeconds = Math.ceil(ms / 1000);
+  const minutes = Math.floor(totalSeconds / 60);
+  const seconds = totalSeconds % 60;
+  return `${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`;
+}
+
 async function fetchCard() {
   const response = await fetch(`${API_URL}/box/open`, {
     method: "POST",
@@ -47,8 +54,52 @@ function App() {
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const [saveError, setSaveError] = useState("");
+  const [cardLost, setCardLost] = useState(false);
+
+  // Momento (ms) em que o usuário logado poderá invocar de novo.
+  const [cooldownUntil, setCooldownUntil] = useState(null);
+  const [now, setNow] = useState(() => Date.now());
 
   const autoSaveAttempted = useRef(false);
+
+  const startCooldown = useCallback((seconds) => {
+    const current = Date.now();
+    setNow(current);
+    setCooldownUntil(seconds > 0 ? current + seconds * 1000 : null);
+  }, []);
+
+  useEffect(() => {
+    if (!cooldownUntil) return;
+
+    const timer = setInterval(() => {
+      const current = Date.now();
+      setNow(current);
+      if (current >= cooldownUntil) setCooldownUntil(null);
+    }, 1000);
+
+    return () => clearInterval(timer);
+  }, [cooldownUntil]);
+
+  const fetchSummonStatus = useCallback(
+    async (activeSession) => {
+      try {
+        const token = activeSession.session.getIdToken().getJwtToken();
+        const response = await fetch(`${API_URL}/users/me/summon-status`, {
+          headers: { Authorization: token },
+        });
+
+        if (!response.ok) {
+          throw new Error(`Falha ao consultar o tempo de espera (${response.status}).`);
+        }
+
+        const data = await response.json();
+        startCooldown(data.retryAfterSeconds ?? 0);
+      } catch (statusError) {
+        console.error(statusError);
+      }
+    },
+    [startCooldown]
+  );
 
   const saveCard = useCallback(async (cardToSave, activeSession) => {
     if (!cardToSave || !activeSession) return;
@@ -76,8 +127,21 @@ function App() {
           );
         }
 
+        if (response.status === 429) {
+          // Ainda no tempo de espera: a carta puxada é perdida.
+          const data = await response.json().catch(() => ({}));
+          startCooldown(data.retryAfterSeconds ?? 0);
+          setCardLost(true);
+          setPendingCard(null);
+          localStorage.removeItem(PENDING_CARD_KEY);
+          return;
+        }
+
         throw new Error(`Falha ao guardar a carta (${response.status}).`);
       }
+
+      const data = await response.json().catch(() => ({}));
+      startCooldown(data.retryAfterSeconds ?? 0);
 
       setSaved(true);
       setPendingCard(null);
@@ -90,7 +154,7 @@ function App() {
     } finally {
       setSaving(false);
     }
-  }, []);
+  }, [startCooldown]);
 
   useEffect(() => {
     async function restore() {
@@ -117,19 +181,29 @@ function App() {
         if (storedCard && !autoSaveAttempted.current) {
           autoSaveAttempted.current = true;
           void saveCard(storedCard, currentSession);
+        } else {
+          void fetchSummonStatus(currentSession);
         }
       }
     }
 
     void restore();
-  }, [saveCard]);
+  }, [saveCard, fetchSummonStatus]);
+
+  // Sem login não há tempo de espera.
+  const cooldownRemaining =
+    session && cooldownUntil ? Math.max(0, cooldownUntil - now) : 0;
+  const onCooldown = cooldownRemaining > 0;
 
   async function summon() {
-    if (opening || revealed) return;
+    if (opening || onCooldown) return;
 
     setError("");
     setSaveError("");
     setSaved(false);
+    setCardLost(false);
+    setRevealed(false);
+    setCard(null);
     setOpening(true);
 
     setParticles(
@@ -170,9 +244,11 @@ function App() {
     setSession(auth);
     setAuthOpen(false);
 
-    const cardToSave = card ?? pendingCard;
-    if (cardToSave) {
-      void saveCard(cardToSave, auth);
+    // Só a carta ainda não guardada; uma já guardada não conta de novo.
+    if (pendingCard) {
+      void saveCard(pendingCard, auth);
+    } else {
+      void fetchSummonStatus(auth);
     }
   }
 
@@ -180,6 +256,7 @@ function App() {
     signOut();
     setSession(null);
     setCollectionOpen(false);
+    setCooldownUntil(null);
   }
 
   const closeCollection = useCallback(() => setCollectionOpen(false), []);
@@ -192,7 +269,7 @@ function App() {
   }, []);
 
   const isLegendary = revealed && (card?.rarity ?? 0) >= 5;
-  const hasUnsavedCard = revealed && Boolean(card) && !saved;
+  const hasUnsavedCard = revealed && Boolean(card) && !saved && !cardLost;
 
   return (
     <main
@@ -268,8 +345,21 @@ function App() {
 
         <SummonButton
           onClick={summon}
-          disabled={opening || revealed}
+          disabled={opening || onCooldown}
         />
+
+        {onCooldown && (
+          <p className="cooldown-message" role="timer" aria-live="off">
+            Próxima invocação em{" "}
+            <span className="cooldown-time">{formatCountdown(cooldownRemaining)}</span>
+          </p>
+        )}
+
+        {!saving && cardLost && (
+          <p className="keep-message keep-lost" role="status">
+            Você ainda estava no tempo de espera. Esta carta não pôde ser guardada.
+          </p>
+        )}
 
         {saving && (
           <p className="keep-message" role="status">
