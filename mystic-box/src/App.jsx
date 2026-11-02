@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import AuthModal from "./components/AuthModal";
 import GachaMachine from "./components/GachaMachine";
+import HomeScreen from "./components/HomeScreen";
 import Particles from "./components/Particles";
 import ShopModal from "./components/ShopModal";
 import SummonButton from "./components/SummonButton";
@@ -105,6 +106,9 @@ function App() {
   const [authOpen, setAuthOpen] = useState(false);
   const [collectionOpen, setCollectionOpen] = useState(false);
   const [shopOpen, setShopOpen] = useState(false);
+  // Tela do usuário logado: "home" (início) ou "summon" (invocação).
+  // Sem login a tela de invocação é sempre a exibida.
+  const [screen, setScreen] = useState("home");
   // Sorteio ainda não guardado: { cards, summonToken }.
   const [pendingSummon, setPendingSummon] = useState(null);
   const [saving, setSaving] = useState(false);
@@ -268,6 +272,8 @@ function App() {
 
       if (currentSession) {
         setSession(currentSession);
+        // Com um sorteio pendente, mostra a invocação para acompanhar o salvamento.
+        setScreen(storedSummon ? "summon" : "home");
         void fetchWallet(currentSession);
 
         if (storedSummon && !autoSaveAttempted.current) {
@@ -286,6 +292,7 @@ function App() {
   const cooldownRemaining =
     session && cooldownUntil ? Math.max(0, cooldownUntil - now) : 0;
   const onCooldown = cooldownRemaining > 0;
+  const onHome = Boolean(session) && screen === "home";
 
   const totalCards = cards?.length ?? 0;
   const showingSpread = revealed && totalCards > 0;
@@ -360,6 +367,8 @@ function App() {
   function handleAuthenticated(auth) {
     setSession(auth);
     setAuthOpen(false);
+    // Quem entrou para guardar um sorteio continua vendo as cartas.
+    setScreen(pendingSummon || showingSpread ? "summon" : "home");
     void fetchWallet(auth);
 
     // Só cartas ainda não guardadas; as já guardadas não contam de novo.
@@ -377,6 +386,15 @@ function App() {
     setShopOpen(false);
     setCooldownUntil(null);
     setBalance(null);
+    setScreen("home");
+  }
+
+  // Não sai no meio da animação de abertura nem do suspense da última carta.
+  const canLeaveSummon = !opening && !charging;
+
+  function goHome() {
+    if (!canLeaveSummon) return;
+    setScreen("home");
   }
 
   const closeCollection = useCallback(() => setCollectionOpen(false), []);
@@ -422,10 +440,11 @@ function App() {
     <main
       className={[
         "scene",
-        opening && "opening",
-        revealed && "revealed",
-        charging && "charging",
-        isLegendary && "legendary",
+        onHome && "home-view",
+        !onHome && opening && "opening",
+        !onHome && revealed && "revealed",
+        !onHome && charging && "charging",
+        !onHome && isLegendary && "legendary",
       ]
         .filter(Boolean)
         .join(" ")}
@@ -436,7 +455,7 @@ function App() {
       <div className="vignette" />
       <div className="frame" />
 
-      {isLegendary && (
+      {!onHome && isLegendary && (
         <div
           key={flippedCount}
           className="legendary-flash"
@@ -445,52 +464,28 @@ function App() {
         />
       )}
 
-      <div className="session-bar">
-        {session ? (
-          <>
-            <span
-              className="wallet"
-              title="Fragmentos Arcanos"
-              aria-label={`${balance ?? 0} Fragmentos Arcanos`}
-            >
-              <span className="wallet-icon" aria-hidden="true">✧</span>
-              <span className="wallet-amount">{balance ?? 0}</span>
-            </span>
-            <span className="session-email" title={session.email}>
-              {session.email}
-            </span>
+      {!onHome && (
+        <div className={session ? "session-bar session-bar-start" : "session-bar"}>
+          {session ? (
             <button
               type="button"
               className="session-button"
-              onClick={() => setCollectionOpen(true)}
+              onClick={goHome}
+              disabled={!canLeaveSummon}
             >
-              Coleção
+              ← Início
             </button>
+          ) : (
             <button
               type="button"
               className="session-button"
-              onClick={() => setShopOpen(true)}
+              onClick={() => setAuthOpen(true)}
             >
-              Loja
+              Entrar
             </button>
-            <button
-              type="button"
-              className="session-button"
-              onClick={handleSignOut}
-            >
-              Sair
-            </button>
-          </>
-        ) : (
-          <button
-            type="button"
-            className="session-button"
-            onClick={() => setAuthOpen(true)}
-          >
-            Entrar
-          </button>
-        )}
-      </div>
+          )}
+        </div>
+      )}
 
       <header className="title-block">
         <span className="title-ornament">✦ ✧ ✦</span>
@@ -498,127 +493,141 @@ function App() {
         <p className="tagline">ARCANE SUMMONING</p>
       </header>
 
-      <div className="stage">
-        <div className="glow" />
+      {onHome ? (
+        <HomeScreen
+          email={session.email}
+          balance={balance}
+          cooldownLabel={onCooldown ? formatCountdown(cooldownRemaining) : ""}
+          onSummon={() => setScreen("summon")}
+          onCollection={() => setCollectionOpen(true)}
+          onShop={() => setShopOpen(true)}
+          onSignOut={handleSignOut}
+        />
+      ) : (
+        <>
+          <div className="stage">
+            <div className="glow" />
 
-        {isLegendary && (
-          <div
-            key={flippedCount}
-            className="legendary-banner"
-            style={legendaryTiming}
-            aria-hidden="true"
-          >
-            <span className="legendary-banner-title">LEGENDARY</span>
-            <span className="legendary-banner-sub">A RARE CARD APPEARS</span>
+            {isLegendary && (
+              <div
+                key={flippedCount}
+                className="legendary-banner"
+                style={legendaryTiming}
+                aria-hidden="true"
+              >
+                <span className="legendary-banner-title">LEGENDARY</span>
+                <span className="legendary-banner-sub">A RARE CARD APPEARS</span>
+              </div>
+            )}
+
+            {showingSpread ? (
+              <SummonSpread
+                cards={cards}
+                flippedCount={flippedCount}
+                charging={charging}
+                onFlip={flipNext}
+              />
+            ) : (
+              <GachaMachine />
+            )}
+
+            <Particles particles={particles} />
           </div>
-        )}
 
-        {showingSpread ? (
-          <SummonSpread
-            cards={cards}
-            flippedCount={flippedCount}
-            charging={charging}
-            onFlip={flipNext}
-          />
-        ) : (
-          <GachaMachine />
-        )}
+          <div className="action-bar">
+            {revealing || charging ? (
+              <>
+                <div className="subtitle reveal-progress" aria-live="polite">
+                  {revealStatus}
+                </div>
 
-        <Particles particles={particles} />
-      </div>
-
-      <div className="action-bar">
-        {revealing || charging ? (
-          <>
-            <div className="subtitle reveal-progress" aria-live="polite">
-              {revealStatus}
-            </div>
-
-            <button
-              type="button"
-              className="keep-button reveal-next"
-              onClick={flipNext}
-              disabled={charging}
-            >
-              {nextLabel}
-            </button>
-          </>
-        ) : (
-          <>
-            <div className="subtitle">
-              A MYSTERIOUS GIFT AWAITS...
-            </div>
-
-            <SummonButton
-              onClick={summon}
-              disabled={opening || onCooldown}
-            />
-          </>
-        )}
-
-        {onCooldown && !revealing && !charging && (
-          <p className="cooldown-message" role="timer" aria-live="off">
-            Próxima invocação em{" "}
-            <span className="cooldown-time">{formatCountdown(cooldownRemaining)}</span>
-          </p>
-        )}
-
-        {showingResults && (
-          <>
-            {!saving && lostMessage && (
-              <p className="keep-message keep-lost" role="status">
-                {lostMessage}
-              </p>
-            )}
-
-            {saving && (
-              <p className="keep-message" role="status">
-                Guardando suas cartas...
-              </p>
-            )}
-
-            {!saving && saved && (
-              <p className="keep-message keep-success" role="status">
-                ✦ Cartas guardadas na sua coleção
-              </p>
-            )}
-
-            {!saving && hasUnsavedCards && !session && (
-              <div className="keep-prompt">
-                <p>
-                  Você não está logado. Entre para manter estas cartas na sua coleção.
-                </p>
                 <button
                   type="button"
-                  className="keep-button"
-                  onClick={() => setAuthOpen(true)}
+                  className="keep-button reveal-next"
+                  onClick={flipNext}
+                  disabled={charging}
                 >
-                  Entrar e manter cartas
+                  {nextLabel}
                 </button>
-              </div>
+              </>
+            ) : (
+              <>
+                <div className="subtitle">
+                  A MYSTERIOUS GIFT AWAITS...
+                </div>
+
+                <SummonButton
+                  onClick={summon}
+                  disabled={opening || onCooldown}
+                />
+              </>
             )}
 
-            {!saving && hasUnsavedCards && session && saveError && pendingSummon && (
-              <div className="keep-prompt">
-                <p className="keep-error">{saveError}</p>
-                <button
-                  type="button"
-                  className="keep-button"
-                  onClick={() => saveCards(pendingSummon, session)}
-                >
-                  Tentar novamente
-                </button>
-              </div>
+            {onCooldown && !revealing && !charging && (
+              <p className="cooldown-message" role="timer" aria-live="off">
+                Próxima invocação em{" "}
+                <span className="cooldown-time">{formatCountdown(cooldownRemaining)}</span>
+              </p>
             )}
-          </>
-        )}
-      </div>
 
-      {error && (
-        <div className="error" role="alert">
-          <span className="error-icon">✦</span>
-          <span>{error}</span>
-        </div>
+            {showingResults && (
+              <>
+                {!saving && lostMessage && (
+                  <p className="keep-message keep-lost" role="status">
+                    {lostMessage}
+                  </p>
+                )}
+
+                {saving && (
+                  <p className="keep-message" role="status">
+                    Guardando suas cartas...
+                  </p>
+                )}
+
+                {!saving && saved && (
+                  <p className="keep-message keep-success" role="status">
+                    ✦ Cartas guardadas na sua coleção
+                  </p>
+                )}
+
+                {!saving && hasUnsavedCards && !session && (
+                  <div className="keep-prompt">
+                    <p>
+                      Você não está logado. Entre para manter estas cartas na sua coleção.
+                    </p>
+                    <button
+                      type="button"
+                      className="keep-button"
+                      onClick={() => setAuthOpen(true)}
+                    >
+                      Entrar e manter cartas
+                    </button>
+                  </div>
+                )}
+
+                {!saving && hasUnsavedCards && session && saveError && pendingSummon && (
+                  <div className="keep-prompt">
+                    <p className="keep-error">{saveError}</p>
+                    <button
+                      type="button"
+                      className="keep-button"
+                      onClick={() => saveCards(pendingSummon, session)}
+                    >
+                      Tentar novamente
+                    </button>
+                  </div>
+                )}
+              </>
+            )}
+          </div>
+
+          {error && (
+            <div className="error" role="alert">
+              <span className="error-icon">✦</span>
+              <span>{error}</span>
+            </div>
+          )}
+        </>
       )}
 
       {collectionOpen && session && (
