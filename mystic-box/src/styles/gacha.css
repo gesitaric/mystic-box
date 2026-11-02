@@ -341,7 +341,9 @@ h1 {
 /* ---------- Card ---------- */
 
 .card,
-.card-overlay-card {
+.card-overlay-card,
+.spread-card,
+.spread-front {
   --card-rarity: #ffdc8e;
   --card-rarity-glow: rgba(255, 220, 142, 0.55);
 }
@@ -1405,6 +1407,30 @@ h1 {
   text-shadow: 0 0 14px rgba(255, 200, 90, 0.65);
 }
 
+.keep-lost {
+  color: #ff9db8;
+  text-shadow: 0 0 12px rgba(255, 110, 150, 0.45);
+}
+
+.cooldown-message {
+  margin: 0;
+  color: #cbb6ee;
+  font-size: 11px;
+  letter-spacing: 2px;
+  text-align: center;
+  text-transform: uppercase;
+}
+
+.cooldown-time {
+  display: inline-block;
+  min-width: 5ch;
+  color: #ffe3a1;
+  font-size: 15px;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 1px;
+  text-shadow: 0 0 12px rgba(255, 200, 90, 0.55);
+}
+
 .keep-prompt {
   display: flex;
   flex-direction: column;
@@ -1801,5 +1827,338 @@ h1 {
   .collection-grid {
     grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
     gap: 10px;
+  }
+}
+
+/* ---------- Summon spread (3 cartas viradas) ---------- */
+
+.summon-spread {
+  position: relative;
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: clamp(10px, 3cqw, 28px);
+  width: 100%;
+  padding: 0 8px;
+}
+
+.spread-card {
+  position: relative;
+  flex: 0 1 auto;
+  width: clamp(84px, min(28cqw, 56cqh), 210px);
+  aspect-ratio: 13 / 18;
+  perspective: 1000px;
+  animation: spreadIn 0.75s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.spread-card-inner {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  transform-style: preserve-3d;
+  transition: transform 0.75s cubic-bezier(0.3, 1.3, 0.5, 1);
+}
+
+.spread-card.flipped .spread-card-inner {
+  transform: rotateY(180deg);
+}
+
+.spread-card.final.flipped .spread-card-inner {
+  transition-duration: 1.25s;
+  transform: rotateY(540deg);
+}
+
+.spread-face {
+  position: absolute;
+  inset: 0;
+  -webkit-backface-visibility: hidden;
+  backface-visibility: hidden;
+}
+
+.spread-front {
+  transform: rotateY(180deg);
+  cursor: zoom-in;
+}
+
+.spread-front:focus-visible {
+  outline: 2px solid var(--card-rarity);
+  outline-offset: 5px;
+  border-radius: 14px;
+}
+
+.spread-front .card-content {
+  border-radius: 12px;
+}
+
+.spread-front .card-content::before {
+  border-radius: 8px;
+}
+
+.spread-front .rarity {
+  margin-top: 6px;
+  font-size: clamp(9px, 1.6cqw, 13px);
+  letter-spacing: 2px;
+}
+
+.spread-front .name {
+  margin-top: 6px;
+  font-size: clamp(11px, 2.2cqw, 17px);
+  letter-spacing: 1px;
+}
+
+.spread-front .card-content.has-image {
+  padding-bottom: 10px;
+}
+
+.spread-card.final.flipped .spread-front {
+  animation: finalFlash 1.6s ease-out 0.5s both;
+}
+
+.spread-card.flipped[data-rarity="5"] .spread-front .card-content {
+  animation: spreadLegendaryGlow 2.4s ease-in-out 1s infinite;
+}
+
+/* Verso da carta */
+
+.spread-back {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border: 2px solid rgba(255, 217, 138, 0.7);
+  border-radius: 12px;
+  background:
+    radial-gradient(circle at 50% 50%, rgba(255, 210, 120, 0.28), transparent 42%),
+    repeating-linear-gradient(45deg, rgba(255, 220, 150, 0.07) 0 2px, transparent 2px 12px),
+    repeating-linear-gradient(-45deg, rgba(255, 220, 150, 0.07) 0 2px, transparent 2px 12px),
+    linear-gradient(160deg, #3d2569 0%, #1c1038 60%, #120a26 100%);
+  box-shadow:
+    inset 0 0 0 5px rgba(18, 10, 36, 0.9),
+    inset 0 0 0 6px rgba(255, 220, 150, 0.35),
+    0 10px 24px rgba(0, 0, 0, 0.5);
+  color: #ffd98a;
+  font-family: inherit;
+  cursor: default;
+  transition:
+    transform 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+.spread-back:disabled {
+  color: #ffd98a;
+}
+
+.spread-sigil {
+  font-size: clamp(24px, 6cqw, 48px);
+  text-shadow:
+    0 0 14px rgba(255, 200, 100, 0.85),
+    0 0 30px rgba(190, 130, 255, 0.6);
+}
+
+.spread-card.next .spread-back {
+  cursor: pointer;
+  animation: nextCardHint 1.6s ease-in-out infinite;
+}
+
+.spread-card.next .spread-back:hover {
+  transform: translateY(-6px) scale(1.03);
+}
+
+.spread-back:focus-visible {
+  outline: 2px solid #fff3cf;
+  outline-offset: 4px;
+}
+
+/* Suspense da última carta */
+
+/* O tremor fica no verso: trocar a animação de .spread-card
+   reiniciaria a entrada (spreadIn) quando o suspense acabasse. */
+.spread-card.charging .spread-back {
+  animation:
+    chargeCard 0.5s ease-in-out infinite alternate,
+    chargeShake 0.12s linear infinite;
+}
+
+.spread-card.charging .spread-sigil {
+  animation: chargeSigil 0.5s ease-in-out infinite alternate;
+}
+
+.charging .glow {
+  animation: chargeGlow 0.55s ease-in-out infinite alternate;
+}
+
+/* Barra de ação durante a revelação */
+
+.reveal-progress {
+  color: #ffe3a1;
+}
+
+.charging .reveal-progress {
+  animation: subtitleGlow 0.8s ease-in-out infinite alternate;
+}
+
+.reveal-next {
+  min-width: 220px;
+  padding: 13px 30px;
+  font-size: 12px;
+  animation: revealNextPulse 1.8s ease-in-out infinite;
+}
+
+.reveal-next:disabled {
+  cursor: default;
+  filter: grayscale(0.4) brightness(0.75);
+  animation: none;
+  transform: none;
+}
+
+@keyframes spreadIn {
+  0% {
+    opacity: 0;
+    transform: translate(var(--from-x, 0), 45%) scale(0.25) rotate(-8deg);
+  }
+
+  60% {
+    opacity: 1;
+  }
+
+  100% {
+    opacity: 1;
+    transform: translate(0, 0) scale(1) rotate(0deg);
+  }
+}
+
+@keyframes nextCardHint {
+  0%,
+  100% {
+    box-shadow:
+      inset 0 0 0 5px rgba(18, 10, 36, 0.9),
+      inset 0 0 0 6px rgba(255, 220, 150, 0.35),
+      0 10px 24px rgba(0, 0, 0, 0.5),
+      0 0 10px rgba(255, 200, 100, 0.25);
+  }
+
+  50% {
+    box-shadow:
+      inset 0 0 0 5px rgba(18, 10, 36, 0.9),
+      inset 0 0 0 6px rgba(255, 220, 150, 0.6),
+      0 10px 24px rgba(0, 0, 0, 0.5),
+      0 0 30px rgba(255, 200, 100, 0.7);
+  }
+}
+
+@keyframes chargeCard {
+  from {
+    border-color: rgba(255, 217, 138, 0.7);
+    box-shadow:
+      inset 0 0 0 5px rgba(18, 10, 36, 0.9),
+      inset 0 0 0 6px rgba(255, 220, 150, 0.5),
+      0 0 24px rgba(255, 200, 100, 0.5);
+  }
+
+  to {
+    border-color: #fff6dc;
+    box-shadow:
+      inset 0 0 0 5px rgba(18, 10, 36, 0.9),
+      inset 0 0 0 6px rgba(255, 240, 200, 0.9),
+      0 0 60px rgba(255, 210, 120, 0.95),
+      0 0 110px rgba(255, 140, 210, 0.6);
+  }
+}
+
+@keyframes chargeSigil {
+  from {
+    transform: scale(1) rotate(0deg);
+  }
+
+  to {
+    transform: scale(1.35) rotate(45deg);
+  }
+}
+
+@keyframes chargeShake {
+  0%,
+  100% {
+    transform: translate(0, 0) rotate(0deg);
+  }
+
+  25% {
+    transform: translate(-2px, 1px) rotate(-1.2deg);
+  }
+
+  75% {
+    transform: translate(2px, -1px) rotate(1.2deg);
+  }
+}
+
+@keyframes chargeGlow {
+  from {
+    opacity: 0.45;
+    transform: translate(-50%, -50%) scale(1.2);
+  }
+
+  to {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(2.2);
+  }
+}
+
+@keyframes finalFlash {
+  0% {
+    filter: brightness(2.6);
+  }
+
+  100% {
+    filter: brightness(1);
+  }
+}
+
+@keyframes spreadLegendaryGlow {
+  0%,
+  100% {
+    box-shadow:
+      0 0 0 1px rgba(255, 255, 255, 0.08) inset,
+      0 0 16px var(--card-rarity-glow);
+  }
+
+  50% {
+    box-shadow:
+      0 0 0 1px rgba(255, 255, 255, 0.08) inset,
+      0 0 40px var(--card-rarity-glow);
+  }
+}
+
+@keyframes revealNextPulse {
+  0%,
+  100% {
+    box-shadow:
+      0 0 0 1px rgba(255, 240, 200, 0.6),
+      0 8px 20px rgba(0, 0, 0, 0.45),
+      0 0 18px rgba(255, 190, 90, 0.3);
+  }
+
+  50% {
+    box-shadow:
+      0 0 0 1px rgba(255, 240, 200, 0.8),
+      0 8px 20px rgba(0, 0, 0, 0.45),
+      0 0 38px rgba(255, 190, 90, 0.75);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .spread-card,
+  .spread-card.charging .spread-back,
+  .spread-card.charging .spread-sigil,
+  .spread-card.next .spread-back,
+  .spread-card.final.flipped .spread-front,
+  .spread-card.flipped[data-rarity="5"] .spread-front .card-content,
+  .charging .glow,
+  .reveal-next {
+    animation: none;
+  }
+
+  .spread-card-inner,
+  .spread-card.final.flipped .spread-card-inner {
+    transition-duration: 0.01s;
   }
 }

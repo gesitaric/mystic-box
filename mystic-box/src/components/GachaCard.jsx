@@ -17,7 +17,13 @@ export function CardFace({ card, image, rarity }) {
   );
 }
 
-function GachaCard({ card }) {
+function GachaCard({
+  card,
+  className = "card",
+  showAura = true,
+  interactive = true,
+  style,
+}) {
   const [expanded, setExpanded] = useState(false);
   const image = getCharacterImage(card?.file_name);
   const rarity = card?.rarity ?? 0;
@@ -43,15 +49,20 @@ function GachaCard({ card }) {
   return (
     <>
       <div
-        className="card"
-        role="button"
-        tabIndex={0}
+        className={className}
+        style={style}
         data-rarity={rarity}
-        aria-label={`Ampliar carta de ${card?.name ?? "???"}`}
-        onClick={() => setExpanded(true)}
-        onKeyDown={handleCardKeyDown}
+        {...(interactive
+          ? {
+              role: "button",
+              tabIndex: 0,
+              "aria-label": `Ampliar carta de ${card?.name ?? "???"}`,
+              onClick: () => setExpanded(true),
+              onKeyDown: handleCardKeyDown,
+            }
+          : { "aria-hidden": true })}
       >
-        {rarity >= 5 && (
+        {showAura && rarity >= 5 && (
           <div className="legendary-aura" aria-hidden="true">
             <div className="legendary-rays" />
             <div className="legendary-ring" />

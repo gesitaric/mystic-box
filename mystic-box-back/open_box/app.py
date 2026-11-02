@@ -32,7 +32,12 @@ CHARACTERS = [
     {"name": "Corvus", "rarity": 3, "file_name": "corvus.jfif"},
 ]
 
+SUMMON_SIZE = 3
+
 RARITY_WEIGHTS = {5: 1, 4: 6, 3: 40}
+
+# A última carta da invocação tem chances um pouco maiores de ser rara.
+LAST_CARD_RARITY_WEIGHTS = {5: 2, 4: 8, 3: 40}
 
 
 def response(status_code, body):
@@ -43,13 +48,25 @@ def response(status_code, body):
     }
 
 
-def draw_card():
-    weights = [RARITY_WEIGHTS[character["rarity"]] for character in CHARACTERS]
-    return random.choices(CHARACTERS, weights=weights, k=1)[0]
+def draw_cards(count=SUMMON_SIZE):
+    """Sorteia `count` personagens distintos; o último usa pesos mais generosos."""
+    available = list(CHARACTERS)
+    drawn = []
+
+    for position in range(count):
+        rarity_weights = (
+            LAST_CARD_RARITY_WEIGHTS if position == count - 1 else RARITY_WEIGHTS
+        )
+        weights = [rarity_weights[character["rarity"]] for character in available]
+        character = random.choices(available, weights=weights, k=1)[0]
+        available.remove(character)
+        drawn.append(character)
+
+    return drawn
 
 
 def lambda_handler(event, context):
     if event.get("httpMethod") == "OPTIONS":
         return response(200, {})
 
-    return response(200, {"cards": [draw_card()]})
+    return response(200, {"cards": draw_cards()})

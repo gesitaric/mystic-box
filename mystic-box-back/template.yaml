@@ -9,6 +9,9 @@ Globals:
   Function:
     Timeout: 10
     MemorySize: 512
+    Environment:
+      Variables:
+        SUMMON_COOLDOWN_SECONDS: "3600"
 
     Tracing: Active
     LoggingConfig:
@@ -50,6 +53,17 @@ Resources:
         KeyType: HASH
       - AttributeName: ownedCardId
         KeyType: RANGE
+
+  UserSummonStateTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+      - AttributeName: userId
+        AttributeType: S
+      KeySchema:
+      - AttributeName: userId
+        KeyType: HASH
 
   UserPool:
     Type: AWS::Cognito::UserPool
@@ -146,9 +160,12 @@ Resources:
       Environment:
         Variables:
           USER_CARDS_TABLE: !Ref UserCardsTable
+          USER_SUMMON_STATE_TABLE: !Ref UserSummonStateTable
       Policies:
       - DynamoDBWritePolicy:
           TableName: !Ref UserCardsTable
+      - DynamoDBCrudPolicy:
+          TableName: !Ref UserSummonStateTable
       Events:
         SaveUserCard:
           Type: Api
@@ -158,6 +175,36 @@ Resources:
             Method: post
             Auth:
               Authorizer: CognitoAuthorizer
+
+  GetSummonStatusFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: get_summon_status/
+      Handler: app.lambda_handler
+      Runtime: python3.14
+      Architectures:
+      - x86_64
+      Environment:
+        Variables:
+          USER_SUMMON_STATE_TABLE: !Ref UserSummonStateTable
+      Policies:
+      - DynamoDBReadPolicy:
+          TableName: !Ref UserSummonStateTable
+      Events:
+        GetSummonStatus:
+          Type: Api
+          Properties:
+            RestApiId: !Ref MysticBoxApi
+            Path: /users/me/summon-status
+            Method: get
+            Auth:
+              Authorizer: CognitoAuthorizer
+        GetSummonStatusOptions:
+          Type: Api
+          Properties:
+            RestApiId: !Ref MysticBoxApi
+            Path: /users/me/summon-status
+            Method: options
 
   ApplicationResourceGroup:
     Type: AWS::ResourceGroups::Group
@@ -200,6 +247,9 @@ Outputs:
   CardsTable:
     Description: DynamoDB table that stores the cards
     Value: !Ref CardsTable
+  GetSummonStatusApi:
+    Description: API Gateway endpoint URL for the summon cooldown status function
+    Value: !Sub "https://${MysticBoxApi}.execute-api.${AWS::Region}.${AWS::URLSuffix}/Prod/users/me/summon-status"
   UserCardsTable:
     Description: DynamoDB table that stores the cards owned by each user
     Value: !Ref UserCardsTable

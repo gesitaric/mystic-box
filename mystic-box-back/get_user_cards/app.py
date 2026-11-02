@@ -14,7 +14,14 @@ CORS_HEADERS = {
 USER_CARDS_TABLE = os.environ.get("USER_CARDS_TABLE")
 
 # Criado uma vez por container e reaproveitado entre invocações.
-table = boto3.resource("dynamodb").Table(USER_CARDS_TABLE)
+_table = None
+
+
+def get_table():
+    global _table
+    if _table is None:
+        _table = boto3.resource("dynamodb").Table(USER_CARDS_TABLE)
+    return _table
 
 
 def response(status_code, body):
@@ -49,7 +56,7 @@ def lambda_handler(event, context):
         }
 
         while True:
-            result = table.query(**query_kwargs)
+            result = get_table().query(**query_kwargs)
             items.extend(result.get("Items", []))
 
             last_key = result.get("LastEvaluatedKey")
