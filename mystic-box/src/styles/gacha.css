@@ -1809,9 +1809,20 @@ h1 {
   outline-offset: 2px;
 }
 
-.collection-sort-direction:hover,
-.collection-sort-select:hover {
+.collection-sort-direction:hover:not(:disabled),
+.collection-sort-select:hover:not(:disabled) {
   border-color: rgba(255, 220, 142, 0.7);
+}
+
+.collection-sort-select:disabled,
+.collection-sort-direction:disabled {
+  opacity: 0.6;
+  cursor: wait;
+}
+
+.collection-grid.is-loading {
+  opacity: 0.5;
+  transition: opacity 0.2s ease;
 }
 
 .collection-grid {

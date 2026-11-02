@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import { getCharacterImage } from "../characterImages";
 import { CardFace } from "./GachaCard";
@@ -8,26 +8,6 @@ const SORT_FIELDS = [
   { value: "name", label: "Nome" },
 ];
 
-const nameCollator = new Intl.Collator("pt-BR", { sensitivity: "base" });
-
-function compareRarity(a, b) {
-  return (Number(a.rarity) || 0) - (Number(b.rarity) || 0);
-}
-
-function compareName(a, b) {
-  return nameCollator.compare(a.name ?? "", b.name ?? "");
-}
-
-function sortCards(cards, field, direction) {
-  const sign = direction === "asc" ? 1 : -1;
-  const [primary, secondary] =
-    field === "name" ? [compareName, compareRarity] : [compareRarity, compareName];
-
-  return [...cards].sort(
-    (a, b) => sign * primary(a, b) || secondary(a, b)
-  );
-}
-
 function UserCardsList({ apiUrl, session, onClose, onSessionExpired }) {
   const [cards, setCards] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -35,11 +15,6 @@ function UserCardsList({ apiUrl, session, onClose, onSessionExpired }) {
   const [reloadKey, setReloadKey] = useState(0);
   const [sortField, setSortField] = useState("rarity");
   const [sortDirection, setSortDirection] = useState("desc");
-
-  const sortedCards = useMemo(
-    () => sortCards(cards, sortField, sortDirection),
-    [cards, sortField, sortDirection]
-  );
 
   useEffect(() => {
     function handleKeyDown(event) {
@@ -59,7 +34,11 @@ function UserCardsList({ apiUrl, session, onClose, onSessionExpired }) {
 
       try {
         const token = session.session.getIdToken().getJwtToken();
-        const response = await fetch(`${apiUrl}/users/me/cards`, {
+        const query = new URLSearchParams({
+          sort: sortField,
+          order: sortDirection,
+        });
+        const response = await fetch(`${apiUrl}/users/me/cards?${query}`, {
           headers: { Authorization: token },
         });
 
@@ -86,7 +65,7 @@ function UserCardsList({ apiUrl, session, onClose, onSessionExpired }) {
     return () => {
       cancelled = true;
     };
-  }, [apiUrl, session, onSessionExpired, reloadKey]);
+  }, [apiUrl, session, onSessionExpired, reloadKey, sortField, sortDirection]);
 
   return createPortal(
     <div
@@ -119,7 +98,7 @@ function UserCardsList({ apiUrl, session, onClose, onSessionExpired }) {
           )}
         </header>
 
-        {loading && (
+        {loading && cards.length === 0 && (
           <p className="collection-status" role="status">
             Carregando...
           </p>
@@ -144,7 +123,7 @@ function UserCardsList({ apiUrl, session, onClose, onSessionExpired }) {
           </p>
         )}
 
-        {!loading && !error && cards.length > 1 && (
+        {!error && cards.length > 1 && (
           <div className="collection-sort">
             <label className="collection-sort-label" htmlFor="collection-sort-field">
               Ordenar por
@@ -153,6 +132,7 @@ function UserCardsList({ apiUrl, session, onClose, onSessionExpired }) {
               id="collection-sort-field"
               className="collection-sort-select"
               value={sortField}
+              disabled={loading}
               onChange={(event) => setSortField(event.target.value)}
             >
               {SORT_FIELDS.map((option) => (
@@ -164,6 +144,7 @@ function UserCardsList({ apiUrl, session, onClose, onSessionExpired }) {
             <button
               type="button"
               className="collection-sort-direction"
+              disabled={loading}
               onClick={() =>
                 setSortDirection((direction) =>
                   direction === "asc" ? "desc" : "asc"
@@ -180,9 +161,12 @@ function UserCardsList({ apiUrl, session, onClose, onSessionExpired }) {
           </div>
         )}
 
-        {!loading && !error && cards.length > 0 && (
-          <ul className="collection-grid">
-            {sortedCards.map((card) => {
+        {!error && cards.length > 0 && (
+          <ul
+            className={`collection-grid${loading ? " is-loading" : ""}`}
+            aria-busy={loading}
+          >
+            {cards.map((card) => {
               const rarity = Number(card.rarity) || 0;
               return (
                 <li

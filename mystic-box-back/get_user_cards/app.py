@@ -1,5 +1,6 @@
 import json
 import os
+import unicodedata
 
 import boto3
 from boto3.dynamodb.conditions import Key
@@ -32,6 +33,55 @@ def response(status_code, body):
     }
 
 
+SORT_FIELDS = ("obtainedAt", "rarity", "name")
+SORT_ORDERS = ("asc", "desc")
+DEFAULT_SORT = "obtainedAt"
+DEFAULT_ORDER = "desc"
+
+
+def name_key(card):
+    # Ignora maiúsculas/minúsculas e acentos: "Ágata" == "agata".
+    normalized = unicodedata.normalize("NFKD", card.get("name") or "")
+    return "".join(c for c in normalized if not unicodedata.combining(c)).casefold()
+
+
+def rarity_key(card):
+    return card.get("rarity") or 0
+
+
+def obtained_at_key(card):
+    return card.get("obtainedAt") or ""
+
+
+# Campo -> (critério principal, critério de desempate sempre crescente).
+SORT_KEYS = {
+    "obtainedAt": (obtained_at_key, name_key),
+    "rarity": (rarity_key, name_key),
+    "name": (name_key, rarity_key),
+}
+
+
+def get_sort_params(event):
+    params = event.get("queryStringParameters") or {}
+    sort = params.get("sort") or DEFAULT_SORT
+    order = params.get("order") or DEFAULT_ORDER
+
+    if sort not in SORT_FIELDS:
+        raise ValueError(f"Parâmetro 'sort' inválido. Use: {', '.join(SORT_FIELDS)}.")
+    if order not in SORT_ORDERS:
+        raise ValueError(f"Parâmetro 'order' inválido. Use: {', '.join(SORT_ORDERS)}.")
+
+    return sort, order
+
+
+def sort_cards(cards, sort, order):
+    primary, secondary = SORT_KEYS[sort]
+    # sort() é estável: ordena pelo desempate primeiro e depois pelo critério principal.
+    ordered = sorted(cards, key=secondary)
+    ordered.sort(key=primary, reverse=order == "desc")
+    return ordered
+
+
 def get_user_id(event):
     claims = (
         event.get("requestContext", {})
@@ -48,6 +98,11 @@ def lambda_handler(event, context):
     user_id = get_user_id(event)
     if not user_id:
         return response(401, {"message": "Usuário não autenticado."})
+
+    try:
+        sort, order = get_sort_params(event)
+    except ValueError as error:
+        return response(400, {"message": str(error)})
 
     try:
         items = []
@@ -76,6 +131,6 @@ def lambda_handler(event, context):
         }
         for item in items
     ]
-    cards.sort(key=lambda card: card.get("obtainedAt") or "", reverse=True)
+    cards = sort_cards(cards, sort, order)
 
     return response(200, {"cards": cards})
