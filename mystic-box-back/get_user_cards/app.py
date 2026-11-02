@@ -13,6 +13,9 @@ CORS_HEADERS = {
 
 USER_CARDS_TABLE = os.environ.get("USER_CARDS_TABLE")
 
+# Criado uma vez por container e reaproveitado entre invocações.
+table = boto3.resource("dynamodb").Table(USER_CARDS_TABLE)
+
 
 def response(status_code, body):
     return {
@@ -40,7 +43,6 @@ def lambda_handler(event, context):
         return response(401, {"message": "Usuário não autenticado."})
 
     try:
-        table = boto3.resource("dynamodb").Table(USER_CARDS_TABLE)
         items = []
         query_kwargs = {
             "KeyConditionExpression": Key("userId").eq(user_id),
