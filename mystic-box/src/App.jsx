@@ -19,8 +19,8 @@ const PENDING_SUMMON_KEY = "mystic-box:pending-summon";
 // Chaves de versões anteriores, que guardavam só as cartas (sem token).
 const LEGACY_PENDING_KEYS = ["mystic-box:pending-cards", "mystic-box:pending-card"];
 
-// Depois de o portal abrir, tempo mínimo da explosão antes de mostrar as cartas.
-const PORTAL_REVEAL_DELAY_MS = 2400;
+// Depois de o portal abrir, tempo mínimo da explosão antes de as cartas saírem dele.
+const PORTAL_REVEAL_DELAY_MS = 1700;
 
 // Pausa de suspense antes de revelar a última carta.
 const FINAL_CARD_SUSPENSE_MS = 1600;
@@ -128,6 +128,9 @@ function App() {
 
   const autoSaveAttempted = useRef(false);
   const suspenseTimer = useRef(null);
+  const portalRef = useRef(null);
+  const getPortalCenter = useCallback(() => portalRef.current?.getCenter() ?? null, []);
+  const handleCardEmerge = useCallback(() => portalRef.current?.burst(), []);
 
   useEffect(() => () => clearTimeout(suspenseTimer.current), []);
 
@@ -352,6 +355,8 @@ function App() {
     setRevealed(false);
     setCards(null);
     setFlippedCount(0);
+    // Portal novo, adormecido.
+    setPortalKey((key) => key + 1);
   }
 
   function flipNext() {
@@ -512,7 +517,6 @@ function App() {
       ) : (
         <>
           <div className="stage">
-            <div className="glow" />
 
             {isLegendary && (
               <div
@@ -532,22 +536,25 @@ function App() {
                 flippedCount={flippedCount}
                 charging={charging}
                 onFlip={flipNext}
+                getOrigin={getPortalCenter}
+                onEmerge={handleCardEmerge}
               />
             )}
           </div>
 
-          {!showingSpread && (
-            <SummonPortal
+          {/* Fica montado durante a revelação: as cartas saem dele e ele vira cenário. */}
+          <SummonPortal
+              ref={portalRef}
               key={portalKey}
               embedded
+              backdrop={showingSpread}
               onActivated={summon}
-              disabled={opening || onCooldown}
+              disabled={opening || onCooldown || showingSpread}
               disabledLabel={
                 onCooldown ? `PORTAL RECHARGING · ${formatCountdown(cooldownRemaining)}` : ""
               }
               activatedLabel={opening ? "THE CARDS ARE ARRIVING..." : undefined}
-            />
-          )}
+          />
 
           <div className="action-bar">
             {revealing || charging ? (

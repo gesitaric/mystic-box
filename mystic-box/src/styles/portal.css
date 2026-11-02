@@ -285,3 +285,28 @@
   letter-spacing: 0.35em;
   animation: portal-instruction-in 0.6s ease both;
 }
+
+/* Portal como cenário atrás das cartas reveladas. */
+.portal-backdrop .portal-canvas {
+  opacity: 0.62;
+  transition: opacity 1.6s ease 2s;
+}
+
+.portal-backdrop .portal-banner {
+  opacity: 0;
+  transition: opacity 0.5s ease;
+}
+
+.portal-backdrop .portal-instruction {
+  display: none;
+}
+
+/* As cartas (no .stage) ficam acima do portal; o resto do palco deixa o clique passar. */
+.scene > .stage {
+  z-index: 6;
+  pointer-events: none;
+}
+
+.scene > .stage .summon-spread {
+  pointer-events: auto;
+}

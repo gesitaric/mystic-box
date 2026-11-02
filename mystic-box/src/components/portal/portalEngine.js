@@ -399,6 +399,32 @@ export class PortalEngine {
     this.setPhase(PHASE.ACTIVATED);
   }
 
+  // Uma carta saindo do portal: anel curto, faíscas e raios para fora.
+  burst() {
+    const { cx, cy, R } = this;
+    this.audio?.emerge();
+    this.rings.push({ t: 0, duration: 0.9, color: GOLD, width: 7, reach: R * 2.2 });
+    this.rings.push({ t: -0.06, duration: 1.1, color: PURPLE, width: 4, reach: R * 2.8 });
+    for (let i = 0; i < 110; i += 1) {
+      const angle = Math.random() * TAU;
+      const speed = rand(180, 900);
+      const life = rand(0.6, 1.6);
+      this.sparks.push({
+        x: cx + Math.cos(angle) * R * 0.15,
+        y: cy + Math.sin(angle) * R * 0.15,
+        vx: Math.cos(angle) * speed,
+        vy: Math.sin(angle) * speed,
+        life,
+        max: life,
+        size: rand(3, 11),
+        color: Math.random() < 0.25 ? WHITE : pick([GOLD, GOLD, PURPLE, BLUE]),
+        drag: rand(2, 3),
+      });
+    }
+    for (let i = 0; i < 4; i += 1) this.spawnBolt(1);
+    this.cardFlash = 1;
+  }
+
   spawnMote(anywhere) {
     const { width, height } = this;
     let x;
@@ -489,6 +515,7 @@ export class PortalEngine {
     this.updateSparks(dt);
     this.updateBolts(dt, c, a);
     this.updateWaves(dt, c);
+    this.cardFlash = Math.max(0, (this.cardFlash ?? 0) - dt * 2.5);
     this.rings.forEach((r) => (r.t += dt));
     this.rings = this.rings.filter((r) => r.t < r.duration);
 
@@ -1129,6 +1156,7 @@ export class PortalEngine {
     } else {
       strength = Math.max(strength, a);
     }
+    strength += (this.cardFlash ?? 0) * 0.8;
 
     const radius = R * (0.16 + c * c * 0.34 + a * 0.32 + pulse * 0.06 + breathe);
     ctx.globalCompositeOperation = "lighter";
@@ -1159,7 +1187,7 @@ export class PortalEngine {
     for (const ring of this.rings) {
       if (ring.t < 0) continue;
       const t = clamp(ring.t / ring.duration);
-      const r = R * 0.4 + easeOutExpo(t) * reach;
+      const r = R * 0.4 + easeOutExpo(t) * (ring.reach ?? reach);
       const fade = Math.pow(1 - t, 1.6);
 
       // Onda de choque: faixa larga com gradiente.

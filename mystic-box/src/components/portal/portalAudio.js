@@ -269,6 +269,14 @@ export function createPortalAudio() {
     tone({ type: "sine", from: 600, to: 2400, gain: 0.04, attack: 0.4, duration: 2.5, delay: 0.25, dry: false });
   }
 
+  // Uma carta saindo do portal.
+  function emerge() {
+    if (!ready()) return;
+    tone({ type: "sine", from: 260, to: 980, gain: 0.12, attack: 0.02, duration: 0.5 });
+    tone({ type: "triangle", from: 1318.5, gain: 0.06, attack: 0.01, duration: 1.4, delay: 0.12 });
+    noiseHit({ duration: 0.45, filterType: "bandpass", from: 900, to: 4200, gain: 0.14 });
+  }
+
   // Fechar o portal ativado.
   function seal() {
     if (!ready()) return;
@@ -283,5 +291,5 @@ export function createPortalAudio() {
     nodes = null;
   }
 
-  return { unlock, setEnabled, update, crackle, charged, explode, seal, destroy };
+  return { unlock, setEnabled, update, crackle, charged, explode, emerge, seal, destroy };
 }

@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useImperativeHandle, useRef, useState } from "react";
 import { createPortalAudio } from "./portalAudio";
 import { PHASE, PortalEngine } from "./portalEngine";
 import "../../styles/portal.css";
@@ -35,7 +35,11 @@ const EMBEDDED_LAYOUT = { centerY: 0.56, radiusW: 0.19, radiusH: 0.245 };
 // `onActivated` é chamado quando o portal abre (quem usa decide o que acontece).
 // `disabled` impede carregar (ex.: tempo de espera), mostrando `disabledLabel`.
 // `activatedLabel` substitui a dica de fechar o portal depois da ativação.
+// `backdrop`: o portal vira cenário (sem textos, mais escuro), ex.: atrás das cartas.
+// `ref` expõe getCenter() (centro na janela) e burst() (efeito de carta saindo).
 function SummonPortal({
+  ref,
+  backdrop = false,
   onActivated,
   disabled = false,
   disabledLabel = "",
@@ -61,6 +65,23 @@ function SummonPortal({
   useEffect(() => {
     onActivatedRef.current = onActivated;
   }, [onActivated]);
+
+  useImperativeHandle(
+    ref,
+    () => ({
+      getCenter() {
+        const engine = engineRef.current;
+        const stage = stageRef.current;
+        if (!engine || !stage) return null;
+        const rect = stage.getBoundingClientRect();
+        return { x: rect.left + engine.cx, y: rect.top + engine.cy };
+      },
+      burst() {
+        engineRef.current?.burst();
+      },
+    }),
+    []
+  );
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -215,6 +236,7 @@ function SummonPortal({
         `portal-${phase.toLowerCase()}`,
         embedded && "portal-embedded",
         disabled && "portal-disabled",
+        backdrop && "portal-backdrop",
         hovering && interactive && "portal-hover",
       ]
         .filter(Boolean)

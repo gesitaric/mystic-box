@@ -2245,6 +2245,35 @@ h1 {
   }
 }
 
+/* Cartas saindo do centro do portal (--emerge-x/y medidos no SummonSpread). */
+.summon-spread.from-portal .spread-card {
+  animation: portalEmerge 1.15s cubic-bezier(0.2, 0.9, 0.25, 1) both;
+}
+
+@keyframes portalEmerge {
+  0% {
+    opacity: 0;
+    transform: translate(var(--emerge-x, 0), var(--emerge-y, 0)) scale(0.04) rotate(-24deg);
+    filter: brightness(4) blur(6px) drop-shadow(0 0 30px rgba(255, 214, 140, 1));
+  }
+
+  18% {
+    opacity: 1;
+  }
+
+  55% {
+    transform: translate(calc(var(--emerge-x, 0) * 0.3), calc(var(--emerge-y, 0) * 0.3 - 6%))
+      scale(1.08) rotate(4deg);
+    filter: brightness(1.8) blur(0) drop-shadow(0 0 26px rgba(255, 214, 140, 0.9));
+  }
+
+  100% {
+    opacity: 1;
+    transform: translate(0, 0) scale(1) rotate(0deg);
+    filter: brightness(1) blur(0) drop-shadow(0 0 0 rgba(255, 214, 140, 0));
+  }
+}
+
 @keyframes nextCardHint {
   0%,
   100% {
