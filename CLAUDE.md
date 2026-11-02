@@ -31,6 +31,16 @@ Isso significa:
 - **Vender**: `POST /users/me/cards/sell` com `{"fileName", "quantity"}`. O servidor escolhe quais cópias saem (as mais recentes), remove todas e credita `sell_total` (`cards.py`) na carteira, na mesma transação. O limite por venda é `MAX_SELL_QUANTITY`.
 - **Loja**: `GET /shop/cards` devolve o catálogo (`shop_catalog`) com `buyPrice` e `canAfford` calculados no servidor, além do `balance`. Comprar é `POST /shop/cards/{fileName}/buy`, que debita o preço de `buy_price` (só se o saldo cobrir, condição na transação) e adiciona a carta à coleção, na mesma transação. A aba "Vender" da loja usa o fluxo de venda acima.
 
+## Rodar localmente
+
+Passo a passo em `mystic-box-back/local/README.md`. Resumo:
+
+1. Banco (Ubuntu/WSL, a partir de `mystic-box-back/`): `docker compose -f local/docker-compose.yml up -d` (DynamoDB Local em `localhost:8000`).
+2. API (PowerShell, em `mystic-box-back/`): `.\.venv\Scripts\python.exe local\dev_server.py` (porta 3000). Lê rotas, variáveis e tabelas do `template.yaml`; uma Lambda nova no template aparece sozinha. `SUMMON_COOLDOWN_SECONDS` pode ser sobrescrito pelo ambiente.
+3. Frontend (em `mystic-box/`): `npm run dev:local` (usa `.env.localapi`, copiado de `.env.localapi.example`).
+
+O disco C está sem espaço: Docker, WSL (`D:\WSL\Ubuntu`), `.venv` e dados ficam no D. Não instale nada que grave no C.
+
 ## Testes
 
 Backend (a partir de `mystic-box-back/`): `python -m pytest tests/unit`. O `tests/unit/conftest.py` coloca `shared/` no `sys.path` e usa uma chave de teste para o token.

@@ -35,8 +35,22 @@ python -m venv .venv
    ```
 2. API (PowerShell, em `mystic-box-back/`): `.\.venv\Scripts\python.exe local\dev_server.py`
    - Tempo de espera menor para testar: `$env:SUMMON_COOLDOWN_SECONDS="10"` antes de rodar.
-3. Frontend (em `mystic-box/`): `npm run dev:local` (usa `.env.localapi`, não versionado:
-   `VITE_API_URL=http://localhost:3000` + IDs do Cognito).
+3. Frontend (em `mystic-box/`):
+   ```powershell
+   Copy-Item .env.localapi.example .env.localapi   # só na primeira vez
+   npm run dev:local
+   ```
+   Abra http://localhost:5173 e entre com uma conta do Cognito.
+
+## Verificar se está tudo no ar
+
+```powershell
+wsl -d Ubuntu -- docker ps                                   # mystic-box-dynamodb Up
+Invoke-WebRequest -Method Post http://localhost:3000/box/open  # 200
+```
+
+O banco volta sozinho quando o WSL inicia (`restart: unless-stopped`); a API e o
+frontend precisam ser iniciados em cada sessão.
 
 Para parar o banco: `docker compose -f local/docker-compose.yml down`
 (com `-v` apaga também os dados locais).
