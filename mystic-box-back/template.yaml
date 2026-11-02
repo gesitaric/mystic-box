@@ -76,6 +76,44 @@ Resources:
       - AttributeName: userId
         KeyType: HASH
 
+  # Tokens de sorteio já usados para guardar cartas (uso único). Os itens
+  # somem sozinhos pelo TTL depois que o token expira.
+  SummonTokensTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+      - AttributeName: tokenId
+        AttributeType: S
+      KeySchema:
+      - AttributeName: tokenId
+        KeyType: HASH
+      TimeToLiveSpecification:
+        AttributeName: expiresAt
+        Enabled: true
+
+  # Chave HMAC que assina os sorteios do open_box (ver shared/mystic_shared/summon_token.py).
+  SummonTokenSecret:
+    Type: AWS::SecretsManager::Secret
+    Properties:
+      Description: Chave que assina os sorteios do Mystic Box
+      GenerateSecretString:
+        PasswordLength: 64
+        ExcludePunctuation: true
+
+  # Código compartilhado entre as Lambdas: definições das cartas (com preço),
+  # regras do sorteio e token de sorteio. Fonte única das regras do jogo.
+  SharedLayer:
+    Type: AWS::Serverless::LayerVersion
+    Properties:
+      LayerName: mystic-box-shared
+      Description: Regras e definicoes compartilhadas do Mystic Box
+      ContentUri: shared/
+      CompatibleRuntimes:
+      - python3.14
+    Metadata:
+      BuildMethod: python3.14
+
   UserPool:
     Type: AWS::Cognito::UserPool
     Properties:
@@ -110,12 +148,14 @@ Resources:
       Runtime: python3.14
       Architectures:
       - x86_64
+      Layers:
+      - !Ref SharedLayer
       Environment:
         Variables:
-          CARDS_TABLE: !Ref CardsTable
+          SUMMON_TOKEN_SECRET_ARN: !Ref SummonTokenSecret
       Policies:
-      - DynamoDBReadPolicy:
-          TableName: !Ref CardsTable
+      - AWSSecretsManagerGetSecretValuePolicy:
+          SecretArn: !Ref SummonTokenSecret
       Events:
         OpenBox:
           Type: Api
@@ -138,6 +178,8 @@ Resources:
       Runtime: python3.14
       Architectures:
       - x86_64
+      Layers:
+      - !Ref SharedLayer
       Environment:
         Variables:
           USER_CARDS_TABLE: !Ref UserCardsTable
@@ -168,15 +210,23 @@ Resources:
       Runtime: python3.14
       Architectures:
       - x86_64
+      Layers:
+      - !Ref SharedLayer
       Environment:
         Variables:
           USER_CARDS_TABLE: !Ref UserCardsTable
           USER_SUMMON_STATE_TABLE: !Ref UserSummonStateTable
+          SUMMON_TOKENS_TABLE: !Ref SummonTokensTable
+          SUMMON_TOKEN_SECRET_ARN: !Ref SummonTokenSecret
       Policies:
       - DynamoDBWritePolicy:
           TableName: !Ref UserCardsTable
       - DynamoDBCrudPolicy:
           TableName: !Ref UserSummonStateTable
+      - DynamoDBWritePolicy:
+          TableName: !Ref SummonTokensTable
+      - AWSSecretsManagerGetSecretValuePolicy:
+          SecretArn: !Ref SummonTokenSecret
       Events:
         SaveUserCard:
           Type: Api
@@ -247,6 +297,41 @@ Resources:
             Path: /users/me/wallet
             Method: options
 
+  SellUserCardFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: sell_user_card/
+      Handler: app.lambda_handler
+      Runtime: python3.14
+      Architectures:
+      - x86_64
+      Layers:
+      - !Ref SharedLayer
+      Environment:
+        Variables:
+          USER_CARDS_TABLE: !Ref UserCardsTable
+          USER_WALLET_TABLE: !Ref UserWalletTable
+      Policies:
+      - DynamoDBCrudPolicy:
+          TableName: !Ref UserCardsTable
+      - DynamoDBCrudPolicy:
+          TableName: !Ref UserWalletTable
+      Events:
+        SellUserCard:
+          Type: Api
+          Properties:
+            RestApiId: !Ref MysticBoxApi
+            Path: /users/me/cards/{ownedCardId}/sell
+            Method: post
+            Auth:
+              Authorizer: CognitoAuthorizer
+        SellUserCardOptions:
+          Type: Api
+          Properties:
+            RestApiId: !Ref MysticBoxApi
+            Path: /users/me/cards/{ownedCardId}/sell
+            Method: options
+
   ApplicationResourceGroup:
     Type: AWS::ResourceGroups::Group
     Properties:
@@ -300,3 +385,9 @@ Outputs:
   UserWalletTable:
     Description: DynamoDB table that stores each user's Fragmentos Arcanos balance
     Value: !Ref UserWalletTable
+  SellUserCardApi:
+    Description: API Gateway endpoint URL to sell one of the user's cards
+    Value: !Sub "https://${MysticBoxApi}.execute-api.${AWS::Region}.${AWS::URLSuffix}/Prod/users/me/cards/{ownedCardId}/sell"
+  SellUserCardFunction:
+    Description: Sell User Card Lambda Function ARN
+    Value: !GetAtt SellUserCardFunction.Arn

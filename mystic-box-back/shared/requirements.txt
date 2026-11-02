@@ -1,0 +1,1 @@
+# Dependências da Lambda Layer `SharedLayer`. boto3 já vem no runtime da Lambda.

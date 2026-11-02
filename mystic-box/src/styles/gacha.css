@@ -1858,7 +1858,59 @@ h1 {
 .collection-card {
   --card-rarity: #ffdc8e;
   --card-rarity-glow: rgba(255, 220, 142, 0.55);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.collection-card-art {
   aspect-ratio: 13 / 18;
+}
+
+.collection-sell-confirm {
+  display: flex;
+  gap: 6px;
+}
+
+.collection-sell-button {
+  flex: 1;
+  min-width: 0;
+  padding: 6px 8px;
+  border: 1px solid rgba(255, 220, 142, 0.35);
+  border-radius: 8px;
+  background: rgba(20, 10, 40, 0.7);
+  color: #ffdc8e;
+  font: inherit;
+  font-size: 11px;
+  letter-spacing: 1px;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.collection-sell-button:hover:not(:disabled) {
+  border-color: rgba(255, 220, 142, 0.7);
+}
+
+.collection-sell-button:focus-visible {
+  outline: 2px solid #ffdc8e;
+  outline-offset: 2px;
+}
+
+.collection-sell-button:disabled {
+  opacity: 0.6;
+  cursor: wait;
+}
+
+.collection-sell-button.is-confirm {
+  border-color: transparent;
+  background: linear-gradient(180deg, #ffe7a6 0%, #eda53c 100%);
+  color: #2a1600;
+  font-weight: 700;
+}
+
+.collection-sell-button.is-cancel {
+  color: #cbb6ee;
+  border-color: rgba(203, 182, 238, 0.35);
 }
 
 .collection-card .card-content {

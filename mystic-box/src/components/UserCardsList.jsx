@@ -8,13 +8,77 @@ const SORT_FIELDS = [
   { value: "name", label: "Nome" },
 ];
 
-function UserCardsList({ apiUrl, session, onClose, onSessionExpired }) {
+function UserCardsList({
+  apiUrl,
+  session,
+  onClose,
+  onSessionExpired,
+  onBalanceChange,
+}) {
   const [cards, setCards] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [reloadKey, setReloadKey] = useState(0);
   const [sortField, setSortField] = useState("rarity");
   const [sortDirection, setSortDirection] = useState("desc");
+  // Venda: carta aguardando confirmação, carta sendo vendida e resultado.
+  const [confirmingId, setConfirmingId] = useState(null);
+  const [sellingId, setSellingId] = useState(null);
+  const [sellFeedback, setSellFeedback] = useState(null);
+
+  // O preço e o crédito são decididos pelo servidor; aqui só pedimos a venda.
+  async function sellCard(card) {
+    setSellingId(card.ownedCardId);
+    setSellFeedback(null);
+
+    try {
+      const token = session.session.getIdToken().getJwtToken();
+      const response = await fetch(
+        `${apiUrl}/users/me/cards/${encodeURIComponent(card.ownedCardId)}/sell`,
+        { method: "POST", headers: { Authorization: token } }
+      );
+
+      if (response.status === 401) {
+        onSessionExpired();
+        return;
+      }
+
+      const data = await response.json().catch(() => ({}));
+      const removeCard = () =>
+        setCards((current) =>
+          current.filter((item) => item.ownedCardId !== card.ownedCardId)
+        );
+
+      if (response.status === 404) {
+        removeCard();
+        setSellFeedback({
+          type: "error",
+          text: "Esta carta já não estava na sua coleção.",
+        });
+        return;
+      }
+
+      if (!response.ok) {
+        throw new Error(data.message ?? `Falha ao vender (${response.status}).`);
+      }
+
+      removeCard();
+      onBalanceChange?.(data.balance);
+      setSellFeedback({
+        type: "success",
+        text: `${card.name} vendida por ✧ ${data.price}.`,
+      });
+    } catch (sellError) {
+      console.error(sellError);
+      setSellFeedback({
+        type: "error",
+        text: sellError.message ?? "Não foi possível vender a carta.",
+      });
+    } finally {
+      setSellingId(null);
+      setConfirmingId(null);
+    }
+  }
 
   useEffect(() => {
     function handleKeyDown(event) {
@@ -161,6 +225,15 @@ function UserCardsList({ apiUrl, session, onClose, onSessionExpired }) {
           </div>
         )}
 
+        {sellFeedback && (
+          <p
+            className={sellFeedback.type === "error" ? "auth-error" : "auth-info"}
+            role="status"
+          >
+            {sellFeedback.text}
+          </p>
+        )}
+
         {!error && cards.length > 0 && (
           <ul
             className={`collection-grid${loading ? " is-loading" : ""}`}
@@ -168,17 +241,58 @@ function UserCardsList({ apiUrl, session, onClose, onSessionExpired }) {
           >
             {cards.map((card) => {
               const rarity = Number(card.rarity) || 0;
+              const canSell = typeof card.sellPrice === "number";
+              const confirming = confirmingId === card.ownedCardId;
+              const selling = sellingId === card.ownedCardId;
               return (
                 <li
                   key={card.ownedCardId}
                   className="collection-card"
                   data-rarity={rarity}
                 >
-                  <CardFace
-                    card={card}
-                    image={getCharacterImage(card.file_name)}
-                    rarity={rarity}
-                  />
+                  <div className="collection-card-art">
+                    <CardFace
+                      card={card}
+                      image={getCharacterImage(card.file_name)}
+                      rarity={rarity}
+                    />
+                  </div>
+
+                  {canSell && !confirming && (
+                    <button
+                      type="button"
+                      className="collection-sell-button"
+                      disabled={Boolean(sellingId)}
+                      onClick={() => {
+                        setSellFeedback(null);
+                        setConfirmingId(card.ownedCardId);
+                      }}
+                      aria-label={`Vender ${card.name} por ${card.sellPrice} Fragmentos Arcanos`}
+                    >
+                      Vender ✧ {card.sellPrice}
+                    </button>
+                  )}
+
+                  {canSell && confirming && (
+                    <div className="collection-sell-confirm">
+                      <button
+                        type="button"
+                        className="collection-sell-button is-confirm"
+                        disabled={selling}
+                        onClick={() => sellCard(card)}
+                      >
+                        {selling ? "Vendendo..." : "Confirmar"}
+                      </button>
+                      <button
+                        type="button"
+                        className="collection-sell-button is-cancel"
+                        disabled={selling}
+                        onClick={() => setConfirmingId(null)}
+                      >
+                        Cancelar
+                      </button>
+                    </div>
+                  )}
                 </li>
               );
             })}

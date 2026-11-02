@@ -13,9 +13,11 @@ const API_URL = (
   "https://vzol9m72hi.execute-api.us-east-1.amazonaws.com/Prod"
 ).replace(/\/$/, "");
 
-const PENDING_CARDS_KEY = "mystic-box:pending-cards";
-// Chave da versão anterior, que guardava uma única carta.
-const LEGACY_PENDING_CARD_KEY = "mystic-box:pending-card";
+// Guarda o sorteio ainda não salvo: as cartas (só para exibir) e o token
+// assinado pelo servidor, que é a única coisa enviada para guardá-las.
+const PENDING_SUMMON_KEY = "mystic-box:pending-summon";
+// Chaves de versões anteriores, que guardavam só as cartas (sem token).
+const LEGACY_PENDING_KEYS = ["mystic-box:pending-cards", "mystic-box:pending-card"];
 
 // Pausa de suspense antes de revelar a última carta.
 const FINAL_CARD_SUSPENSE_MS = 1600;
@@ -27,35 +29,50 @@ function formatCountdown(ms) {
   return `${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`;
 }
 
-function readPendingCards() {
-  try {
-    const raw = localStorage.getItem(PENDING_CARDS_KEY);
-    if (raw) {
-      const cards = JSON.parse(raw);
-      if (Array.isArray(cards) && cards.length > 0) return cards;
-    }
+function isValidSummon(summon) {
+  return (
+    Array.isArray(summon?.cards) &&
+    summon.cards.length > 0 &&
+    typeof summon.summonToken === "string" &&
+    summon.summonToken.length > 0
+  );
+}
 
-    const legacy = localStorage.getItem(LEGACY_PENDING_CARD_KEY);
-    if (legacy) return [JSON.parse(legacy)];
+function readPendingSummon() {
+  try {
+    const raw = localStorage.getItem(PENDING_SUMMON_KEY);
+    if (raw) {
+      const summon = JSON.parse(raw);
+      if (isValidSummon(summon)) return summon;
+    }
   } catch {
     // Conteúdo inválido: descarta abaixo.
   }
 
-  clearPendingCards();
+  // Sorteios antigos não têm token e não podem mais ser guardados.
+  clearPendingSummon();
   return null;
 }
 
-function storePendingCards(cards) {
-  localStorage.setItem(PENDING_CARDS_KEY, JSON.stringify(cards));
-  localStorage.removeItem(LEGACY_PENDING_CARD_KEY);
+function storePendingSummon(summon) {
+  try {
+    localStorage.setItem(PENDING_SUMMON_KEY, JSON.stringify(summon));
+  } catch {
+    // Sem armazenamento local: o sorteio só vale nesta aba.
+  }
 }
 
-function clearPendingCards() {
-  localStorage.removeItem(PENDING_CARDS_KEY);
-  localStorage.removeItem(LEGACY_PENDING_CARD_KEY);
+function clearPendingSummon() {
+  try {
+    localStorage.removeItem(PENDING_SUMMON_KEY);
+    LEGACY_PENDING_KEYS.forEach((key) => localStorage.removeItem(key));
+  } catch {
+    // Nada a limpar.
+  }
 }
 
-async function fetchCards() {
+// O sorteio é feito no servidor, que devolve as cartas e um token assinado.
+async function fetchSummon() {
   const response = await fetch(`${API_URL}/box/open`, {
     method: "POST",
   });
@@ -66,11 +83,11 @@ async function fetchCards() {
 
   const data = await response.json();
 
-  if (!Array.isArray(data.cards) || data.cards.length === 0) {
+  if (!isValidSummon(data)) {
     throw new Error("Nenhuma carta retornada.");
   }
 
-  return data.cards;
+  return { cards: data.cards, summonToken: data.summonToken };
 }
 
 function App() {
@@ -86,11 +103,13 @@ function App() {
   const [session, setSession] = useState(null);
   const [authOpen, setAuthOpen] = useState(false);
   const [collectionOpen, setCollectionOpen] = useState(false);
-  const [pendingCards, setPendingCards] = useState(null);
+  // Sorteio ainda não guardado: { cards, summonToken }.
+  const [pendingSummon, setPendingSummon] = useState(null);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const [saveError, setSaveError] = useState("");
-  const [cardsLost, setCardsLost] = useState(false);
+  // Motivo pelo qual as cartas sorteadas não puderam ser guardadas.
+  const [lostMessage, setLostMessage] = useState("");
 
   // Momento (ms) em que o usuário logado poderá invocar de novo.
   const [cooldownUntil, setCooldownUntil] = useState(null);
@@ -162,8 +181,8 @@ function App() {
   }, []);
 
   const saveCards = useCallback(
-    async (cardsToSave, activeSession) => {
-      if (!cardsToSave?.length || !activeSession) return;
+    async (summon, activeSession) => {
+      if (!summon?.summonToken || !activeSession) return;
 
       setSaving(true);
       setSaveError("");
@@ -176,7 +195,8 @@ function App() {
             "Content-Type": "application/json",
             Authorization: token,
           },
-          body: JSON.stringify({ cards: cardsToSave }),
+          // Só o token: o servidor lê dele quais cartas foram sorteadas.
+          body: JSON.stringify({ summonToken: summon.summonToken }),
         });
 
         if (!response.ok) {
@@ -192,9 +212,22 @@ function App() {
             // Ainda no tempo de espera: as cartas puxadas são perdidas.
             const data = await response.json().catch(() => ({}));
             startCooldown(data.retryAfterSeconds ?? 0);
-            setCardsLost(true);
-            setPendingCards(null);
-            clearPendingCards();
+            setLostMessage(
+              "Você ainda estava no tempo de espera. Estas cartas não puderam ser guardadas."
+            );
+            setPendingSummon(null);
+            clearPendingSummon();
+            return;
+          }
+
+          if ([400, 409, 410].includes(response.status)) {
+            // Sorteio expirado, inválido ou já usado: não adianta tentar de novo.
+            const data = await response.json().catch(() => ({}));
+            setLostMessage(
+              `${data.message ?? "Este sorteio não é mais válido."} Estas cartas não puderam ser guardadas.`
+            );
+            setPendingSummon(null);
+            clearPendingSummon();
             return;
           }
 
@@ -205,8 +238,8 @@ function App() {
         startCooldown(data.retryAfterSeconds ?? 0);
 
         setSaved(true);
-        setPendingCards(null);
-        clearPendingCards();
+        setPendingSummon(null);
+        clearPendingSummon();
       } catch (saveFailure) {
         console.error(saveFailure);
         setSaveError(
@@ -221,13 +254,13 @@ function App() {
 
   useEffect(() => {
     async function restore() {
-      const storedCards = readPendingCards();
+      const storedSummon = readPendingSummon();
       const currentSession = await getCurrentSession();
 
-      if (storedCards) {
-        setCards(storedCards);
-        setPendingCards(storedCards);
-        setFlippedCount(storedCards.length);
+      if (storedSummon) {
+        setCards(storedSummon.cards);
+        setPendingSummon(storedSummon);
+        setFlippedCount(storedSummon.cards.length);
         setRevealed(true);
       }
 
@@ -235,9 +268,9 @@ function App() {
         setSession(currentSession);
         void fetchWallet(currentSession);
 
-        if (storedCards && !autoSaveAttempted.current) {
+        if (storedSummon && !autoSaveAttempted.current) {
           autoSaveAttempted.current = true;
-          void saveCards(storedCards, currentSession);
+          void saveCards(storedSummon, currentSession);
         } else {
           void fetchSummonStatus(currentSession);
         }
@@ -265,7 +298,7 @@ function App() {
     setError("");
     setSaveError("");
     setSaved(false);
-    setCardsLost(false);
+    setLostMessage("");
     setRevealed(false);
     setCharging(false);
     setCards(null);
@@ -282,17 +315,17 @@ function App() {
     );
 
     try {
-      const [drawnCards] = await Promise.all([
-        fetchCards(),
+      const [summonResult] = await Promise.all([
+        fetchSummon(),
         new Promise((resolve) => setTimeout(resolve, 700)),
       ]);
 
-      setCards(drawnCards);
-      setPendingCards(drawnCards);
-      storePendingCards(drawnCards);
+      setCards(summonResult.cards);
+      setPendingSummon(summonResult);
+      storePendingSummon(summonResult);
 
       if (session) {
-        void saveCards(drawnCards, session);
+        void saveCards(summonResult, session);
       }
 
       await new Promise((resolve) => setTimeout(resolve, 1900));
@@ -328,8 +361,8 @@ function App() {
     void fetchWallet(auth);
 
     // Só cartas ainda não guardadas; as já guardadas não contam de novo.
-    if (pendingCards) {
-      void saveCards(pendingCards, auth);
+    if (pendingSummon) {
+      void saveCards(pendingSummon, auth);
     } else {
       void fetchSummonStatus(auth);
     }
@@ -345,6 +378,18 @@ function App() {
 
   const closeCollection = useCallback(() => setCollectionOpen(false), []);
 
+  // Saldo devolvido pelo servidor após uma venda; sem ele, consulta de novo.
+  const handleBalanceChange = useCallback(
+    (newBalance) => {
+      if (typeof newBalance === "number") {
+        setBalance(newBalance);
+      } else if (session) {
+        void fetchWallet(session);
+      }
+    },
+    [session, fetchWallet]
+  );
+
   const handleCollectionSessionExpired = useCallback(() => {
     signOut();
     setSession(null);
@@ -359,7 +404,7 @@ function App() {
     animationDelay: flippedCount === totalCards ? "0.6s" : "0.35s",
     animationFillMode: "both",
   };
-  const hasUnsavedCards = showingResults && !saved && !cardsLost;
+  const hasUnsavedCards = showingResults && !saved && !lostMessage;
 
   const nextLabel =
     flippedCount === totalCards - 1 ? "Revelar última carta" : "Virar carta";
@@ -508,9 +553,9 @@ function App() {
 
         {showingResults && (
           <>
-            {!saving && cardsLost && (
+            {!saving && lostMessage && (
               <p className="keep-message keep-lost" role="status">
-                Você ainda estava no tempo de espera. Estas cartas não puderam ser guardadas.
+                {lostMessage}
               </p>
             )}
 
@@ -541,13 +586,13 @@ function App() {
               </div>
             )}
 
-            {!saving && hasUnsavedCards && session && saveError && (
+            {!saving && hasUnsavedCards && session && saveError && pendingSummon && (
               <div className="keep-prompt">
                 <p className="keep-error">{saveError}</p>
                 <button
                   type="button"
                   className="keep-button"
-                  onClick={() => saveCards(pendingCards ?? cards, session)}
+                  onClick={() => saveCards(pendingSummon, session)}
                 >
                   Tentar novamente
                 </button>
@@ -570,6 +615,7 @@ function App() {
           session={session}
           onClose={closeCollection}
           onSessionExpired={handleCollectionSessionExpired}
+          onBalanceChange={handleBalanceChange}
         />
       )}
 

@@ -5,6 +5,7 @@ import unicodedata
 import boto3
 from boto3.dynamodb.conditions import Key
 from botocore.exceptions import ClientError
+from mystic_shared.cards import get_character
 
 CORS_HEADERS = {
     "Access-Control-Allow-Origin": "*",
@@ -82,6 +83,11 @@ def sort_cards(cards, sort, order):
     return ordered
 
 
+def get_sell_price(file_name):
+    character = get_character(file_name)
+    return character["price"] if character else None
+
+
 def get_user_id(event):
     claims = (
         event.get("requestContext", {})
@@ -128,6 +134,8 @@ def lambda_handler(event, context):
             "rarity": int(item["rarity"]) if item.get("rarity") is not None else None,
             "file_name": item.get("file_name"),
             "obtainedAt": item.get("obtainedAt"),
+            # Preço definido no servidor; None = carta que não pode ser vendida.
+            "sellPrice": get_sell_price(item.get("file_name")),
         }
         for item in items
     ]
