@@ -5,6 +5,7 @@ This project contains source code and supporting files for a serverless applicat
 - open_box - Code for the Lambda function that opens a box and returns a random card. This endpoint is public.
 - get_user_cards - Code for the Lambda function that returns the cards owned by the authenticated user.
 - save_user_card - Code for the Lambda function that stores a drawn card for the authenticated user.
+- get_wallet - Code for the Lambda function that returns the authenticated user's balance of Fragmentos Arcanos (the game currency), stored in `UserWalletTable`. Users without a record start at 0.
 - events - Invocation events that you can use to invoke the function.
 - tests - Unit tests for the application code. 
 - template.yaml - A template that defines the application's AWS resources.
