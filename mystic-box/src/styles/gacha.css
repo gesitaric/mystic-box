@@ -1895,6 +1895,7 @@ h1 {
 }
 
 .collection-card-art {
+  position: relative;
   aspect-ratio: 13 / 18;
 }
 

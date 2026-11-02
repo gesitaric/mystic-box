@@ -27,7 +27,8 @@ Isso significa:
 ## Fluxos atuais
 
 - **Invocar**: `POST /box/open` (público) sorteia no servidor e devolve as cartas + `summonToken`. Para guardá-las, o frontend envia **só** o `summonToken` para `POST /users/me/cards`. O token é de uso único, expira em 30 minutos e consome o tempo de espera do usuário.
-- **Vender**: `POST /users/me/cards/{ownedCardId}/sell` remove a carta e credita o preço de `sell_price` (`cards.py`) na carteira, na mesma transação.
+- **Coleção**: `GET /users/me/cards` devolve as cartas **agrupadas por carta** (`file_name`), com `quantity`, `sellPrice` (por cópia) e `maxSellQuantity` calculados no servidor, além de `totalCards`.
+- **Vender**: `POST /users/me/cards/sell` com `{"fileName", "quantity"}`. O servidor escolhe quais cópias saem (as mais recentes), remove todas e credita `sell_total` (`cards.py`) na carteira, na mesma transação. O limite por venda é `MAX_SELL_QUANTITY`.
 - **Loja**: `GET /shop/cards` devolve o catálogo (`shop_catalog`) com `buyPrice` e `canAfford` calculados no servidor, além do `balance`. Comprar é `POST /shop/cards/{fileName}/buy`, que debita o preço de `buy_price` (só se o saldo cobrir, condição na transação) e adiciona a carta à coleção, na mesma transação. A aba "Vender" da loja usa o fluxo de venda acima.
 
 ## Testes
