@@ -58,9 +58,9 @@ def parse_request(event):
     try:
         body = json.loads(event.get("body") or "")
     except (TypeError, ValueError):
-        raise ValueError("Corpo da requisição inválido.")
+        raise ValueError("Invalid request body.")
     if not isinstance(body, dict):
-        raise ValueError("Corpo da requisição inválido.")
+        raise ValueError("Invalid request body.")
 
     file_name = body.get("fileName")
     if (
@@ -68,7 +68,7 @@ def parse_request(event):
         or not file_name
         or len(file_name) > MAX_FILE_NAME_LENGTH
     ):
-        raise ValueError("Carta inválida.")
+        raise ValueError("Invalid card.")
 
     quantity = body.get("quantity")
     if (
@@ -77,7 +77,7 @@ def parse_request(event):
         or not 1 <= quantity <= MAX_SELL_QUANTITY
     ):
         raise ValueError(
-            f"Quantidade inválida. Escolha de 1 a {MAX_SELL_QUANTITY} cópias."
+            f"Invalid quantity. Choose from 1 to {MAX_SELL_QUANTITY} copies."
         )
 
     return file_name, quantity
@@ -140,7 +140,7 @@ def lambda_handler(event, context):
 
     user_id = get_user_id(event)
     if not user_id:
-        return response(401, {"message": "Usuário não autenticado."})
+        return response(401, {"message": "User is not authenticated."})
 
     try:
         file_name, quantity = parse_request(event)
@@ -150,21 +150,21 @@ def lambda_handler(event, context):
     try:
         copies = get_owned_copies(user_id, file_name)
     except ClientError:
-        return response(500, {"message": "Não foi possível vender a carta."})
+        return response(500, {"message": "Could not sell the card."})
 
     if not copies:
-        return response(404, {"message": "Carta não encontrada na sua coleção."})
+        return response(404, {"message": "Card not found in your collection."})
 
     # O preço vem SEMPRE das definições do servidor.
     character = get_character(file_name)
     if not character:
-        return response(409, {"message": "Esta carta não pode ser vendida."})
+        return response(409, {"message": "This card cannot be sold."})
 
     if quantity > len(copies):
         return response(
             409,
             {
-                "message": f"Você só tem {len(copies)} cópia(s) desta carta.",
+                "message": f"You only have {len(copies)} copy(ies) of this card.",
                 "available": len(copies),
             },
         )
@@ -212,12 +212,12 @@ def lambda_handler(event, context):
                 409,
                 {
                     "message": (
-                        "Sua coleção mudou durante a venda. Nada foi vendido; "
-                        "tente novamente."
+                        "Your collection changed during the sale. Nothing was sold; "
+                        "please try again."
                     )
                 },
             )
-        return response(500, {"message": "Não foi possível vender a carta."})
+        return response(500, {"message": "Could not sell the card."})
 
     try:
         balance = get_balance(user_id)

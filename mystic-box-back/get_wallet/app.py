@@ -49,7 +49,7 @@ def lambda_handler(event, context):
 
     user_id = get_user_id(event)
     if not user_id:
-        return response(401, {"message": "Usuário não autenticado."})
+        return response(401, {"message": "User is not authenticated."})
 
     try:
         result = get_client().get_item(
@@ -58,7 +58,7 @@ def lambda_handler(event, context):
             ConsistentRead=True,
         )
     except ClientError:
-        return response(500, {"message": "Não foi possível consultar o saldo."})
+        return response(500, {"message": "Could not fetch the balance."})
 
     # Usuário sem registro na carteira ainda tem o saldo inicial.
     balance = int(

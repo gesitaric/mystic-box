@@ -56,7 +56,7 @@ function GachaCard({
           ? {
               role: "button",
               tabIndex: 0,
-              "aria-label": `Ampliar carta de ${card?.name ?? "???"}`,
+              "aria-label": `Enlarge ${card?.name ?? "???"} card`,
               onClick: () => setExpanded(true),
               onKeyDown: handleCardKeyDown,
             }
@@ -79,7 +79,7 @@ function GachaCard({
             className="card-overlay"
             role="dialog"
             aria-modal="true"
-            aria-label={`Carta de ${card?.name ?? "???"}`}
+            aria-label={`${card?.name ?? "???"} card`}
             onClick={() => setExpanded(false)}
           >
             <div className="card-overlay-card" data-rarity={rarity}>

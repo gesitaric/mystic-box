@@ -3,9 +3,9 @@ import { getCharacterImage } from "../characterImages";
 import { CardFace } from "./GachaCard";
 
 const SORT_FIELDS = [
-  { value: "rarity", label: "Raridade" },
-  { value: "name", label: "Nome" },
-  { value: "quantity", label: "Repetidas" },
+  { value: "rarity", label: "Rarity" },
+  { value: "name", label: "Name" },
+  { value: "quantity", label: "Duplicates" },
 ];
 
 function cardKey(card) {
@@ -13,7 +13,7 @@ function cardKey(card) {
 }
 
 function copiesLabel(count) {
-  return `${count} ${count === 1 ? "cópia" : "cópias"}`;
+  return `${count} ${count === 1 ? "copy" : "copies"}`;
 }
 
 // Escolha de quantas cópias vender. O limite (`maxSellQuantity`) e o preço
@@ -30,17 +30,17 @@ function SellQuantityPicker({ card, selling, onConfirm, onCancel }) {
   const keepsCount = card.quantity - quantity;
   const shortcuts = [];
   if (card.quantity > 1 && card.quantity - 1 <= max) {
-    shortcuts.push({ label: "Repetidas", value: card.quantity - 1 });
+    shortcuts.push({ label: "Duplicates", value: card.quantity - 1 });
   }
   if (max > 1) {
-    shortcuts.push({ label: max === card.quantity ? "Todas" : "Máx.", value: max });
+    shortcuts.push({ label: max === card.quantity ? "All" : "Max", value: max });
   }
 
   return (
     <div
       className="collection-sell-panel"
       role="group"
-      aria-label={`Vender ${card.name}`}
+      aria-label={`Sell ${card.name}`}
     >
       {max > 1 && (
         <>
@@ -50,7 +50,7 @@ function SellQuantityPicker({ card, selling, onConfirm, onCancel }) {
               className="collection-sell-step"
               disabled={selling || quantity <= 1}
               onClick={() => setQuantity((value) => clamp(value - 1))}
-              aria-label="Vender uma cópia a menos"
+              aria-label="Sell one fewer copy"
             >
               −
             </button>
@@ -66,14 +66,14 @@ function SellQuantityPicker({ card, selling, onConfirm, onCancel }) {
                 setQuantity(Number.isNaN(value) ? 1 : clamp(value));
               }}
               onFocus={(event) => event.target.select()}
-              aria-label={`Quantidade a vender, de 1 a ${max}`}
+              aria-label={`Quantity to sell, from 1 to ${max}`}
             />
             <button
               type="button"
               className="collection-sell-step"
               disabled={selling || quantity >= max}
               onClick={() => setQuantity((value) => clamp(value + 1))}
-              aria-label="Vender uma cópia a mais"
+              aria-label="Sell one more copy"
             >
               +
             </button>
@@ -103,7 +103,7 @@ function SellQuantityPicker({ card, selling, onConfirm, onCancel }) {
       <p className="collection-sell-summary" aria-live="polite">
         {quantity}× ✧ {card.sellPrice}
         <span className="collection-sell-keeps">
-          {keepsCount > 0 ? `Fica com ${keepsCount}` : "Sai da coleção"}
+          {keepsCount > 0 ? `You keep ${keepsCount}` : "Leaves your collection"}
         </span>
       </p>
 
@@ -114,7 +114,7 @@ function SellQuantityPicker({ card, selling, onConfirm, onCancel }) {
           disabled={selling}
           onClick={() => onConfirm(quantity)}
         >
-          {selling ? "Vendendo..." : "Confirmar"}
+          {selling ? "Selling..." : "Confirm"}
         </button>
         <button
           type="button"
@@ -122,7 +122,7 @@ function SellQuantityPicker({ card, selling, onConfirm, onCancel }) {
           disabled={selling}
           onClick={onCancel}
         >
-          Cancelar
+          Cancel
         </button>
       </div>
     </div>
@@ -168,7 +168,7 @@ function OwnedCards({ apiUrl, session, onSessionExpired, onBalanceChange }) {
       if (response.status === 404 || response.status === 409) {
         setSellFeedback({
           type: "error",
-          text: data.message ?? "Sua coleção mudou. Confira e tente novamente.",
+          text: data.message ?? "Your collection has changed. Check it and try again.",
         });
         // Atualiza a coleção com o que o servidor sabe agora.
         setReloadKey((key) => key + 1);
@@ -176,22 +176,20 @@ function OwnedCards({ apiUrl, session, onSessionExpired, onBalanceChange }) {
       }
 
       if (!response.ok) {
-        throw new Error(data.message ?? `Falha ao vender (${response.status}).`);
+        throw new Error(data.message ?? `Failed to sell (${response.status}).`);
       }
 
       onBalanceChange?.(data.balance);
       setSellFeedback({
         type: "success",
-        text: `${copiesLabel(data.soldQuantity)} de ${data.name ?? card.name} ${
-          data.soldQuantity === 1 ? "vendida" : "vendidas"
-        } por ✧ ${data.price}.`,
+        text: `Sold ${copiesLabel(data.soldQuantity)} of ${data.name ?? card.name} for ✧ ${data.price}.`,
       });
       setReloadKey((key) => key + 1);
     } catch (sellError) {
       console.error(sellError);
       setSellFeedback({
         type: "error",
-        text: sellError.message ?? "Não foi possível vender a carta.",
+        text: sellError.message ?? "Could not sell the card.",
       });
     } finally {
       setSellingKey(null);
@@ -222,7 +220,7 @@ function OwnedCards({ apiUrl, session, onSessionExpired, onBalanceChange }) {
         }
 
         if (!response.ok) {
-          throw new Error(`Falha ao buscar cartas (${response.status}).`);
+          throw new Error(`Failed to load cards (${response.status}).`);
         }
 
         const data = await response.json();
@@ -231,7 +229,7 @@ function OwnedCards({ apiUrl, session, onSessionExpired, onBalanceChange }) {
         setTotalCards(data.totalCards ?? 0);
       } catch (loadError) {
         console.error(loadError);
-        if (!cancelled) setError("Não foi possível carregar sua coleção.");
+        if (!cancelled) setError("Could not load your collection.");
       } finally {
         if (!cancelled) setLoading(false);
       }
@@ -247,11 +245,11 @@ function OwnedCards({ apiUrl, session, onSessionExpired, onBalanceChange }) {
     <>
       {!loading && !error && (
         <p className="collection-count">
-          {totalCards} {totalCards === 1 ? "carta" : "cartas"}
+          {totalCards} {totalCards === 1 ? "card" : "cards"}
           {cards.length > 0 && cards.length !== totalCards && (
             <>
               {" "}
-              · {cards.length} {cards.length === 1 ? "diferente" : "diferentes"}
+              · {cards.length} {"unique"}
             </>
           )}
         </p>
@@ -259,7 +257,7 @@ function OwnedCards({ apiUrl, session, onSessionExpired, onBalanceChange }) {
 
       {loading && cards.length === 0 && (
         <p className="collection-status" role="status">
-          Carregando...
+          Loading...
         </p>
       )}
 
@@ -271,21 +269,21 @@ function OwnedCards({ apiUrl, session, onSessionExpired, onBalanceChange }) {
             className="keep-button"
             onClick={() => setReloadKey((key) => key + 1)}
           >
-            Tentar novamente
+            Try again
           </button>
         </div>
       )}
 
       {!loading && !error && cards.length === 0 && (
         <p className="collection-status">
-          Nenhuma carta ainda. Invoque sua primeira!
+          No cards yet. Summon your first one!
         </p>
       )}
 
       {!error && cards.length > 1 && (
         <div className="collection-sort">
           <label className="collection-sort-label" htmlFor="collection-sort-field">
-            Ordenar por
+            Sort by
           </label>
           <select
             id="collection-sort-field"
@@ -311,11 +309,11 @@ function OwnedCards({ apiUrl, session, onSessionExpired, onBalanceChange }) {
             }
             aria-label={
               sortDirection === "asc"
-                ? "Ordem crescente. Alterar para decrescente"
-                : "Ordem decrescente. Alterar para crescente"
+                ? "Ascending order. Switch to descending"
+                : "Descending order. Switch to ascending"
             }
           >
-            {sortDirection === "asc" ? "▲ Crescente" : "▼ Decrescente"}
+            {sortDirection === "asc" ? "▲ Ascending" : "▼ Descending"}
           </button>
         </div>
       )}
@@ -353,7 +351,7 @@ function OwnedCards({ apiUrl, session, onSessionExpired, onBalanceChange }) {
                   {quantity > 1 && (
                     <span
                       className="collection-card-quantity"
-                      aria-label={`Você tem ${copiesLabel(quantity)}`}
+                      aria-label={`You have ${copiesLabel(quantity)}`}
                     >
                       ×{quantity}
                     </span>
@@ -369,10 +367,10 @@ function OwnedCards({ apiUrl, session, onSessionExpired, onBalanceChange }) {
                       setSellFeedback(null);
                       setConfirmingKey(key);
                     }}
-                    aria-label={`Vender ${card.name}, ${card.sellPrice} Fragmentos Arcanos por cópia`}
+                    aria-label={`Sell ${card.name}, ${card.sellPrice} Arcane Shards per copy`}
                   >
-                    Vender ✧ {card.sellPrice}
-                    {quantity > 1 && <span className="collection-sell-each"> cada</span>}
+                    Sell ✧ {card.sellPrice}
+                    {quantity > 1 && <span className="collection-sell-each"> each</span>}
                   </button>
                 )}
 

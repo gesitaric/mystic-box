@@ -80,13 +80,13 @@ async function fetchSummon() {
   });
 
   if (!response.ok) {
-    throw new Error(`Falha ao abrir a caixa: ${response.status}`);
+    throw new Error(`Failed to open the box: ${response.status}`);
   }
 
   const data = await response.json();
 
   if (!isValidSummon(data)) {
-    throw new Error("Nenhuma carta retornada.");
+    throw new Error("No cards returned.");
   }
 
   return { cards: data.cards, summonToken: data.summonToken };
@@ -156,7 +156,7 @@ function App() {
         });
 
         if (!response.ok) {
-          throw new Error(`Falha ao consultar o tempo de espera (${response.status}).`);
+          throw new Error(`Failed to fetch the cooldown (${response.status}).`);
         }
 
         const data = await response.json();
@@ -176,7 +176,7 @@ function App() {
       });
 
       if (!response.ok) {
-        throw new Error(`Falha ao consultar o saldo (${response.status}).`);
+        throw new Error(`Failed to fetch the balance (${response.status}).`);
       }
 
       const data = await response.json();
@@ -210,7 +210,7 @@ function App() {
             signOut();
             setSession(null);
             throw new Error(
-              "Sua sessão expirou. Entre novamente para manter as cartas."
+              "Your session has expired. Sign in again to keep your cards."
             );
           }
 
@@ -219,7 +219,7 @@ function App() {
             const data = await response.json().catch(() => ({}));
             startCooldown(data.retryAfterSeconds ?? 0);
             setLostMessage(
-              "Você ainda estava no tempo de espera. Estas cartas não puderam ser guardadas."
+              "You were still on cooldown. These cards could not be kept."
             );
             setPendingSummon(null);
             clearPendingSummon();
@@ -230,14 +230,14 @@ function App() {
             // Sorteio expirado, inválido ou já usado: não adianta tentar de novo.
             const data = await response.json().catch(() => ({}));
             setLostMessage(
-              `${data.message ?? "Este sorteio não é mais válido."} Estas cartas não puderam ser guardadas.`
+              `${data.message ?? "This summon is no longer valid."} These cards could not be kept.`
             );
             setPendingSummon(null);
             clearPendingSummon();
             return;
           }
 
-          throw new Error(`Falha ao guardar as cartas (${response.status}).`);
+          throw new Error(`Failed to keep the cards (${response.status}).`);
         }
 
         const data = await response.json().catch(() => ({}));
@@ -249,7 +249,7 @@ function App() {
       } catch (saveFailure) {
         console.error(saveFailure);
         setSaveError(
-          saveFailure.message ?? "Não foi possível guardar as cartas."
+          saveFailure.message ?? "Could not keep the cards."
         );
       } finally {
         setSaving(false);
@@ -344,7 +344,7 @@ function App() {
     } catch (err) {
       console.error(err);
       setOpening(false);
-      setError("Não foi possível abrir a caixa. Tente novamente.");
+      setError("Could not open the box. Please try again.");
     }
   }
 
@@ -430,11 +430,11 @@ function App() {
   const hasUnsavedCards = showingResults && !saved && !lostMessage;
 
   const nextLabel =
-    flippedCount === totalCards - 1 ? "Revelar última carta" : "Virar carta";
+    flippedCount === totalCards - 1 ? "Reveal last card" : "Flip card";
 
-  let revealStatus = `${flippedCount} DE ${totalCards} REVELADAS`;
-  if (flippedCount === 0) revealStatus = `${totalCards} CARTAS FORAM INVOCADAS`;
-  if (charging) revealStatus = "A ÚLTIMA CARTA ESTÁ CHEGANDO...";
+  let revealStatus = `${flippedCount} OF ${totalCards} REVEALED`;
+  if (flippedCount === 0) revealStatus = `${totalCards} CARDS SUMMONED`;
+  if (charging) revealStatus = "THE LAST CARD IS COMING...";
 
   return (
     <main
@@ -473,7 +473,7 @@ function App() {
               onClick={goHome}
               disabled={!canLeaveSummon}
             >
-              ← Início
+              ← Home
             </button>
           ) : (
             <button
@@ -481,7 +481,7 @@ function App() {
               className="session-button"
               onClick={() => setAuthOpen(true)}
             >
-              Entrar
+              Sign in
             </button>
           )}
         </div>
@@ -565,7 +565,7 @@ function App() {
 
             {onCooldown && !revealing && !charging && (
               <p className="cooldown-message" role="timer" aria-live="off">
-                Próxima invocação em{" "}
+                Next summon in{" "}
                 <span className="cooldown-time">{formatCountdown(cooldownRemaining)}</span>
               </p>
             )}
@@ -580,27 +580,27 @@ function App() {
 
                 {saving && (
                   <p className="keep-message" role="status">
-                    Guardando suas cartas...
+                    Keeping your cards...
                   </p>
                 )}
 
                 {!saving && saved && (
                   <p className="keep-message keep-success" role="status">
-                    ✦ Cartas guardadas na sua coleção
+                    ✦ Cards added to your collection
                   </p>
                 )}
 
                 {!saving && hasUnsavedCards && !session && (
                   <div className="keep-prompt">
                     <p>
-                      Você não está logado. Entre para manter estas cartas na sua coleção.
+                      You are not signed in. Sign in to keep these cards in your collection.
                     </p>
                     <button
                       type="button"
                       className="keep-button"
                       onClick={() => setAuthOpen(true)}
                     >
-                      Entrar e manter cartas
+                      Sign in and keep cards
                     </button>
                   </div>
                 )}
@@ -613,7 +613,7 @@ function App() {
                       className="keep-button"
                       onClick={() => saveCards(pendingSummon, session)}
                     >
-                      Tentar novamente
+                      Try again
                     </button>
                   </div>
                 )}

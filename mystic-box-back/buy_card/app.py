@@ -94,13 +94,13 @@ def lambda_handler(event, context):
 
     user_id = get_user_id(event)
     if not user_id:
-        return response(401, {"message": "Usuário não autenticado."})
+        return response(401, {"message": "User is not authenticated."})
 
     # Só o identificador da carta vem do cliente; nome, raridade e preço são
     # lidos das definições do servidor. Qualquer outro campo é ignorado.
     character = get_shop_character(event)
     if not character:
-        return response(404, {"message": "Esta carta não está à venda."})
+        return response(404, {"message": "This card is not for sale."})
 
     price = buy_price(character)
     now = int(time.time())
@@ -151,12 +151,12 @@ def lambda_handler(event, context):
             return response(
                 409,
                 {
-                    "message": "Fragmentos Arcanos insuficientes para esta compra.",
+                    "message": "Not enough Arcane Shards for this purchase.",
                     "price": price,
                     "balance": balance,
                 },
             )
-        return response(500, {"message": "Não foi possível comprar a carta."})
+        return response(500, {"message": "Could not buy the card."})
 
     try:
         balance = get_balance(user_id)

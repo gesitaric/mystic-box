@@ -5,8 +5,8 @@ import Modal from "./Modal";
 import OwnedCards from "./OwnedCards";
 
 const TABS = [
-  { value: "buy", label: "Comprar" },
-  { value: "sell", label: "Vender" },
+  { value: "buy", label: "Buy" },
+  { value: "sell", label: "Sell" },
 ];
 
 // Catálogo da loja. Preços e se o jogador pode pagar vêm do servidor.
@@ -38,7 +38,7 @@ function ShopCatalog({ apiUrl, session, onSessionExpired, onBalanceChange }) {
         }
 
         if (!response.ok) {
-          throw new Error(`Falha ao abrir a loja (${response.status}).`);
+          throw new Error(`Failed to open the shop (${response.status}).`);
         }
 
         const data = await response.json();
@@ -47,7 +47,7 @@ function ShopCatalog({ apiUrl, session, onSessionExpired, onBalanceChange }) {
         if (typeof data.balance === "number") onBalanceChange?.(data.balance);
       } catch (loadError) {
         console.error(loadError);
-        if (!cancelled) setError("Não foi possível abrir a loja.");
+        if (!cancelled) setError("Could not open the shop.");
       } finally {
         if (!cancelled) setLoading(false);
       }
@@ -81,7 +81,7 @@ function ShopCatalog({ apiUrl, session, onSessionExpired, onBalanceChange }) {
       if (response.status === 409 || response.status === 404) {
         setBuyFeedback({
           type: "error",
-          text: data.message ?? "Não foi possível comprar esta carta.",
+          text: data.message ?? "Could not buy this card.",
         });
         // Atualiza saldo e disponibilidade com o que o servidor sabe agora.
         setReloadKey((key) => key + 1);
@@ -89,20 +89,20 @@ function ShopCatalog({ apiUrl, session, onSessionExpired, onBalanceChange }) {
       }
 
       if (!response.ok) {
-        throw new Error(data.message ?? `Falha ao comprar (${response.status}).`);
+        throw new Error(data.message ?? `Failed to buy (${response.status}).`);
       }
 
       onBalanceChange?.(data.balance);
       setBuyFeedback({
         type: "success",
-        text: `${data.card?.name ?? card.name} comprada por ✧ ${data.price}. Ela já está na sua coleção.`,
+        text: `Bought ${data.card?.name ?? card.name} for ✧ ${data.price}. It is now in your collection.`,
       });
       setReloadKey((key) => key + 1);
     } catch (buyError) {
       console.error(buyError);
       setBuyFeedback({
         type: "error",
-        text: buyError.message ?? "Não foi possível comprar a carta.",
+        text: buyError.message ?? "Could not buy the card.",
       });
     } finally {
       setBuyingId(null);
@@ -114,7 +114,7 @@ function ShopCatalog({ apiUrl, session, onSessionExpired, onBalanceChange }) {
     <>
       {loading && cards.length === 0 && (
         <p className="collection-status" role="status">
-          Carregando...
+          Loading...
         </p>
       )}
 
@@ -126,7 +126,7 @@ function ShopCatalog({ apiUrl, session, onSessionExpired, onBalanceChange }) {
             className="keep-button"
             onClick={() => setReloadKey((key) => key + 1)}
           >
-            Tentar novamente
+            Try again
           </button>
         </div>
       )}
@@ -174,11 +174,11 @@ function ShopCatalog({ apiUrl, session, onSessionExpired, onBalanceChange }) {
                     }}
                     aria-label={
                       card.canAfford
-                        ? `Comprar ${card.name} por ${card.buyPrice} Fragmentos Arcanos`
-                        : `${card.name} custa ${card.buyPrice} Fragmentos Arcanos. Saldo insuficiente`
+                        ? `Buy ${card.name} for ${card.buyPrice} Arcane Shards`
+                        : `${card.name} costs ${card.buyPrice} Arcane Shards. Not enough balance`
                     }
                   >
-                    Comprar ✧ {card.buyPrice}
+                    Buy ✧ {card.buyPrice}
                   </button>
                 )}
 
@@ -190,7 +190,7 @@ function ShopCatalog({ apiUrl, session, onSessionExpired, onBalanceChange }) {
                       disabled={buying}
                       onClick={() => buyCard(card)}
                     >
-                      {buying ? "Comprando..." : "Confirmar"}
+                      {buying ? "Buying..." : "Confirm"}
                     </button>
                     <button
                       type="button"
@@ -198,7 +198,7 @@ function ShopCatalog({ apiUrl, session, onSessionExpired, onBalanceChange }) {
                       disabled={buying}
                       onClick={() => setConfirmingId(null)}
                     >
-                      Cancelar
+                      Cancel
                     </button>
                   </div>
                 )}
@@ -215,16 +215,16 @@ function ShopModal({ apiUrl, session, balance, onClose, onSessionExpired, onBala
   const [tab, setTab] = useState("buy");
 
   return (
-    <Modal label="Loja" className="collection-modal" onClose={onClose}>
+    <Modal label="Shop" className="collection-modal" onClose={onClose}>
       <header className="auth-header">
         <span className="auth-ornament">✦ ✧ ✦</span>
-        <h2>LOJA ARCANA</h2>
+        <h2>ARCANE SHOP</h2>
         <p>
-          Seu saldo: <span className="shop-balance">✧ {balance ?? 0}</span>
+          Your balance: <span className="shop-balance">✧ {balance ?? 0}</span>
         </p>
       </header>
 
-      <div className="shop-tabs" role="tablist" aria-label="Loja">
+      <div className="shop-tabs" role="tablist" aria-label="Shop">
         {TABS.map((option) => (
           <button
             key={option.value}

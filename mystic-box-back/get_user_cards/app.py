@@ -74,9 +74,9 @@ def get_sort_params(event):
     order = params.get("order") or DEFAULT_ORDER
 
     if sort not in SORT_FIELDS:
-        raise ValueError(f"Parâmetro 'sort' inválido. Use: {', '.join(SORT_FIELDS)}.")
+        raise ValueError(f"Invalid 'sort' parameter. Use: {', '.join(SORT_FIELDS)}.")
     if order not in SORT_ORDERS:
-        raise ValueError(f"Parâmetro 'order' inválido. Use: {', '.join(SORT_ORDERS)}.")
+        raise ValueError(f"Invalid 'order' parameter. Use: {', '.join(SORT_ORDERS)}.")
 
     return sort, order
 
@@ -150,7 +150,7 @@ def lambda_handler(event, context):
 
     user_id = get_user_id(event)
     if not user_id:
-        return response(401, {"message": "Usuário não autenticado."})
+        return response(401, {"message": "User is not authenticated."})
 
     try:
         sort, order = get_sort_params(event)
@@ -172,7 +172,7 @@ def lambda_handler(event, context):
                 break
             query_kwargs["ExclusiveStartKey"] = last_key
     except ClientError:
-        return response(500, {"message": "Não foi possível buscar suas cartas."})
+        return response(500, {"message": "Could not load your cards."})
 
     cards = sort_cards(group_cards(items), sort, order)
 

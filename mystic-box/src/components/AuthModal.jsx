@@ -9,19 +9,19 @@ import {
 
 const COPY = {
   signin: {
-    title: "ENTRAR",
-    subtitle: "Acesse sua conta para guardar suas cartas.",
-    submit: "Entrar",
+    title: "SIGN IN",
+    subtitle: "Sign in to your account to keep your cards.",
+    submit: "Sign in",
   },
   signup: {
-    title: "CRIAR CONTA",
-    subtitle: "Crie sua conta para manter as cartas que puxar.",
-    submit: "Criar conta",
+    title: "CREATE ACCOUNT",
+    subtitle: "Create an account to keep the cards you summon.",
+    submit: "Create account",
   },
   confirm: {
-    title: "CONFIRMAR E-MAIL",
-    subtitle: "Informe o código que enviamos para seu e-mail.",
-    submit: "Confirmar",
+    title: "CONFIRM EMAIL",
+    subtitle: "Enter the code we sent to your email.",
+    submit: "Confirm",
   },
 };
 
@@ -73,7 +73,7 @@ function AuthModal({ open, onClose, onAuthenticated }) {
 
         setMode("confirm");
         setCode("");
-        setInfo("Enviamos um código de confirmação para seu e-mail.");
+        setInfo("We sent a confirmation code to your email.");
         return;
       }
 
@@ -85,7 +85,7 @@ function AuthModal({ open, onClose, onAuthenticated }) {
       } catch {
         setMode("signin");
         setPassword("");
-        setInfo("Conta confirmada! Entre com seu e-mail e senha.");
+        setInfo("Account confirmed! Sign in with your email and password.");
       }
     } catch (authError) {
       setError(describeAuthError(authError));
@@ -114,7 +114,7 @@ function AuthModal({ open, onClose, onAuthenticated }) {
           type="button"
           className="auth-close"
           onClick={onClose}
-          aria-label="Fechar"
+          aria-label="Close"
         >
           ×
         </button>
@@ -134,7 +134,7 @@ function AuthModal({ open, onClose, onAuthenticated }) {
               className={`auth-tab ${mode === "signin" ? "active" : ""}`}
               onClick={() => switchMode("signin")}
             >
-              Entrar
+              Sign in
             </button>
             <button
               type="button"
@@ -143,7 +143,7 @@ function AuthModal({ open, onClose, onAuthenticated }) {
               className={`auth-tab ${mode === "signup" ? "active" : ""}`}
               onClick={() => switchMode("signup")}
             >
-              Criar conta
+              Create account
             </button>
           </div>
         )}
@@ -157,7 +157,7 @@ function AuthModal({ open, onClose, onAuthenticated }) {
 
         <form className="auth-form" onSubmit={handleSubmit}>
           <label className="auth-field">
-            <span>E-mail</span>
+            <span>Email</span>
             <input
               type="email"
               value={email}
@@ -170,7 +170,7 @@ function AuthModal({ open, onClose, onAuthenticated }) {
 
           {mode !== "confirm" && (
             <label className="auth-field">
-              <span>Senha</span>
+              <span>Password</span>
               <input
                 type="password"
                 value={password}
@@ -185,13 +185,13 @@ function AuthModal({ open, onClose, onAuthenticated }) {
 
           {mode === "signup" && (
             <p className="auth-hint">
-              A senha deve ter ao menos 8 caracteres, com maiúscula, minúscula e número.
+              Password must be at least 8 characters long and include an uppercase letter, a lowercase letter and a number.
             </p>
           )}
 
           {mode === "confirm" && (
             <label className="auth-field">
-              <span>Código de confirmação</span>
+              <span>Confirmation code</span>
               <input
                 type="text"
                 value={code}
@@ -205,7 +205,7 @@ function AuthModal({ open, onClose, onAuthenticated }) {
           )}
 
           <button type="submit" className="auth-submit" disabled={loading}>
-            {loading ? "Aguarde..." : copy.submit}
+            {loading ? "Please wait..." : copy.submit}
           </button>
         </form>
 
@@ -215,7 +215,7 @@ function AuthModal({ open, onClose, onAuthenticated }) {
             className="auth-link"
             onClick={() => switchMode("signin")}
           >
-            Voltar para o login
+            Back to sign in
           </button>
         )}
       </div>

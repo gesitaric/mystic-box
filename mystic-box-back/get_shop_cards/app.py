@@ -56,12 +56,12 @@ def lambda_handler(event, context):
 
     user_id = get_user_id(event)
     if not user_id:
-        return response(401, {"message": "Usuário não autenticado."})
+        return response(401, {"message": "User is not authenticated."})
 
     try:
         balance = get_balance(user_id)
     except ClientError:
-        return response(500, {"message": "Não foi possível abrir a loja."})
+        return response(500, {"message": "Could not open the shop."})
 
     # Preço e se o jogador pode pagar são decididos aqui, não no cliente.
     cards = [

@@ -9,10 +9,10 @@ function UserCardsList({
   onBalanceChange,
 }) {
   return (
-    <Modal label="Minha coleção" className="collection-modal" onClose={onClose}>
+    <Modal label="My collection" className="collection-modal" onClose={onClose}>
       <header className="auth-header">
         <span className="auth-ornament">✦ ✧ ✦</span>
-        <h2>MINHA COLEÇÃO</h2>
+        <h2>MY COLLECTION</h2>
       </header>
 
       <OwnedCards
