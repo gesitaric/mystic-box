@@ -1736,3 +1736,70 @@ h1 {
     padding: 10px 14px;
   }
 }
+
+/* ---------- Collection ---------- */
+
+.collection-modal {
+  width: min(880px, 94vw);
+}
+
+.collection-status {
+  margin: 28px 0 8px;
+  color: #cbb6ee;
+  font-size: 13px;
+  text-align: center;
+}
+
+.collection-status .keep-button {
+  margin-top: 12px;
+}
+
+.collection-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+  gap: 16px;
+  margin: 24px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.collection-card {
+  --card-rarity: #ffdc8e;
+  --card-rarity-glow: rgba(255, 220, 142, 0.55);
+  aspect-ratio: 13 / 18;
+}
+
+.collection-card .card-content {
+  border-radius: 12px;
+  box-shadow:
+    0 0 0 1px rgba(255, 255, 255, 0.08) inset,
+    0 0 16px var(--card-rarity-glow),
+    0 10px 24px rgba(0, 0, 0, 0.5);
+}
+
+.collection-card .card-content::before {
+  border-radius: 8px;
+}
+
+.collection-card .rarity {
+  margin-top: 6px;
+  font-size: 11px;
+  letter-spacing: 2px;
+}
+
+.collection-card .name {
+  margin-top: 6px;
+  font-size: 13px;
+  letter-spacing: 1px;
+}
+
+.collection-card .card-content.has-image {
+  padding-bottom: 10px;
+}
+
+@media (max-width: 420px) {
+  .collection-grid {
+    grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+    gap: 10px;
+  }
+}

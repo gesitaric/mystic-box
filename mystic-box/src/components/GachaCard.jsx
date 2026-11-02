@@ -1,18 +1,9 @@
 
 import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
+import { getCharacterImage } from "../characterImages";
 
-const characterImages = import.meta.glob("../assets/characters/*", {
-  eager: true,
-  import: "default",
-});
-
-function getCharacterImage(fileName) {
-  if (!fileName) return null;
-  return characterImages[`../assets/characters/${fileName}`] ?? null;
-}
-
-function CardFace({ card, image, rarity }) {
+export function CardFace({ card, image, rarity }) {
   return (
     <div className={`card-content ${image ? "has-image" : ""}`}>
       {image ? (

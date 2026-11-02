@@ -14,6 +14,9 @@ CORS_HEADERS = {
 }
 
 USER_CARDS_TABLE = os.environ.get("USER_CARDS_TABLE")
+
+# Criado uma vez por container e reaproveitado entre invocações.
+table = boto3.resource("dynamodb").Table(USER_CARDS_TABLE)
 FILE_NAME_PATTERN = re.compile(r"^[a-z0-9_\-]+\.(jfif|jpg|jpeg|png|webp)$")
 
 
@@ -90,7 +93,6 @@ def lambda_handler(event, context):
     }
 
     try:
-        table = boto3.resource("dynamodb").Table(USER_CARDS_TABLE)
         table.put_item(Item=item)
     except ClientError:
         return response(500, {"message": "Não foi possível guardar a carta."})

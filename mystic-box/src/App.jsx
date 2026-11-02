@@ -3,6 +3,7 @@ import AuthModal from "./components/AuthModal";
 import GachaMachine from "./components/GachaMachine";
 import Particles from "./components/Particles";
 import SummonButton from "./components/SummonButton";
+import UserCardsList from "./components/UserCardsList";
 import { getCurrentSession, signOut } from "./auth/cognito";
 import "./styles/gacha.css";
 
@@ -41,6 +42,7 @@ function App() {
 
   const [session, setSession] = useState(null);
   const [authOpen, setAuthOpen] = useState(false);
+  const [collectionOpen, setCollectionOpen] = useState(false);
   const [pendingCard, setPendingCard] = useState(null);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
@@ -177,7 +179,17 @@ function App() {
   function handleSignOut() {
     signOut();
     setSession(null);
+    setCollectionOpen(false);
   }
+
+  const closeCollection = useCallback(() => setCollectionOpen(false), []);
+
+  const handleCollectionSessionExpired = useCallback(() => {
+    signOut();
+    setSession(null);
+    setCollectionOpen(false);
+    setAuthOpen(true);
+  }, []);
 
   const isLegendary = revealed && (card?.rarity ?? 0) >= 5;
   const hasUnsavedCard = revealed && Boolean(card) && !saved;
@@ -202,6 +214,13 @@ function App() {
             <span className="session-email" title={session.email}>
               {session.email}
             </span>
+            <button
+              type="button"
+              className="session-button"
+              onClick={() => setCollectionOpen(true)}
+            >
+              Coleção
+            </button>
             <button
               type="button"
               className="session-button"
@@ -298,6 +317,15 @@ function App() {
           <span className="error-icon">✦</span>
           <span>{error}</span>
         </div>
+      )}
+
+      {collectionOpen && session && (
+        <UserCardsList
+          apiUrl={API_URL}
+          session={session}
+          onClose={closeCollection}
+          onSessionExpired={handleCollectionSessionExpired}
+        />
       )}
 
       <AuthModal
