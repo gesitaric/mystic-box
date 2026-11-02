@@ -1,10 +1,15 @@
-
 import GachaCard from "./GachaCard";
 
-function GachaMachine({ card }) {
+function GachaMachine({ card, cardKey, cardClassName }) {
   return (
     <div className="machine">
-      {card && <GachaCard card={card} />}
+      {card && (
+        <GachaCard
+          key={cardKey}
+          card={card}
+          className={cardClassName ? `card ${cardClassName}` : "card"}
+        />
+      )}
 
       <div className="beam" />
       <div className="box" />

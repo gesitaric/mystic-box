@@ -80,7 +80,15 @@ def authenticated_event(apigw_event):
     return build
 
 
-CARD_BODY = json.dumps({"card": {"name": "Astra", "rarity": 5, "file_name": "astra.jfif"}})
+CARD_BODY = json.dumps(
+    {
+        "cards": [
+            {"name": "Rowan", "rarity": 3, "file_name": "rowan.jfif"},
+            {"name": "Kaito", "rarity": 4, "file_name": "kaito.jfif"},
+            {"name": "Astra", "rarity": 5, "file_name": "astra.jfif"},
+        ]
+    }
+)
 
 
 def cooldown_conflict():
@@ -99,8 +107,36 @@ def test_open_box_handler(apigw_event):
 
     assert ret["statusCode"] == 200
     assert ret["headers"]["Access-Control-Allow-Origin"] == "*"
-    assert len(data["cards"]) == 1
-    assert data["cards"][0] in open_box.CHARACTERS
+    assert len(data["cards"]) == 3
+    assert all(card in open_box.CHARACTERS for card in data["cards"])
+
+
+def test_open_box_cards_never_repeat():
+    for _ in range(500):
+        names = [card["name"] for card in open_box.draw_cards()]
+        assert len(set(names)) == 3
+
+
+def test_open_box_last_card_uses_boosted_weights(monkeypatch):
+    calls = []
+
+    def fake_choices(population, weights, k):
+        calls.append(dict(zip((c["name"] for c in population), weights)))
+        return [population[0]]
+
+    monkeypatch.setattr(open_box.random, "choices", fake_choices)
+    open_box.draw_cards()
+
+    assert len(calls) == 3
+    # Os dois primeiros sorteios usam os pesos normais; o último, os reforçados.
+    assert calls[0]["Astra"] == open_box.RARITY_WEIGHTS[5]
+    assert calls[1]["Astra"] == open_box.RARITY_WEIGHTS[5]
+    assert calls[2]["Astra"] == open_box.LAST_CARD_RARITY_WEIGHTS[5]
+    assert calls[2]["Kaito"] == open_box.LAST_CARD_RARITY_WEIGHTS[4]
+    assert calls[2]["Rowan"] == open_box.LAST_CARD_RARITY_WEIGHTS[3]
+    # Personagens já sorteados saem das opções seguintes.
+    assert "Malachar" not in calls[1]
+    assert "Boreas" not in calls[2]
 
 
 def test_open_box_options(apigw_event):
@@ -200,13 +236,15 @@ def test_save_user_card_stores_card_and_starts_cooldown(authenticated_event, sav
     data = json.loads(ret["body"])
 
     assert ret["statusCode"] == 201
-    assert data["card"]["userId"] == "user-123"
-    assert data["card"]["name"] == "Astra"
-    assert data["card"]["ownedCardId"]
-    assert data["card"]["obtainedAt"]
+    assert [card["name"] for card in data["cards"]] == ["Rowan", "Kaito", "Astra"]
+    assert all(card["userId"] == "user-123" for card in data["cards"])
+    assert len({card["ownedCardId"] for card in data["cards"]}) == 3
+    assert data["cards"][0]["obtainedAt"]
     assert data["retryAfterSeconds"] == 3600
 
-    update, put = save_client.transact_write_items.call_args.kwargs["TransactItems"]
+    update, *puts = save_client.transact_write_items.call_args.kwargs["TransactItems"]
+    assert len(puts) == 3
+    put = puts[2]
     assert update["Update"]["TableName"] == "summon-state"
     assert update["Update"]["Key"] == {"userId": {"S": "user-123"}}
     assert update["Update"]["ExpressionAttributeValues"] == {
@@ -218,6 +256,49 @@ def test_save_user_card_stores_card_and_starts_cooldown(authenticated_event, sav
     assert put["Put"]["Item"]["name"] == {"S": "Astra"}
     assert put["Put"]["Item"]["rarity"] == {"N": "5"}
     assert put["Put"]["Item"]["file_name"] == {"S": "astra.jfif"}
+
+
+def test_save_user_card_accepts_legacy_single_card(authenticated_event, save_client):
+    ret = save_user_card.lambda_handler(
+        authenticated_event(
+            httpMethod="POST",
+            body=json.dumps(
+                {"card": {"name": "Astra", "rarity": 5, "file_name": "astra.jfif"}}
+            ),
+        ),
+        "",
+    )
+
+    assert ret["statusCode"] == 201
+    items = save_client.transact_write_items.call_args.kwargs["TransactItems"]
+    assert len(items) == 2
+
+
+def test_save_user_card_rejects_repeated_cards(authenticated_event, save_client):
+    card = {"name": "Astra", "rarity": 5, "file_name": "astra.jfif"}
+
+    ret = save_user_card.lambda_handler(
+        authenticated_event(httpMethod="POST", body=json.dumps({"cards": [card, card]})),
+        "",
+    )
+
+    assert ret["statusCode"] == 400
+    save_client.transact_write_items.assert_not_called()
+
+
+def test_save_user_card_rejects_too_many_cards(authenticated_event, save_client):
+    cards = [
+        {"name": name, "rarity": 3, "file_name": f"{name.lower()}.jfif"}
+        for name in ("Rowan", "Corvus", "Kaito", "Sylva")
+    ]
+
+    ret = save_user_card.lambda_handler(
+        authenticated_event(httpMethod="POST", body=json.dumps({"cards": cards})),
+        "",
+    )
+
+    assert ret["statusCode"] == 400
+    save_client.transact_write_items.assert_not_called()
 
 
 def test_save_user_card_rejects_during_cooldown(authenticated_event, save_client):

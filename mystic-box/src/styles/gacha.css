@@ -341,7 +341,8 @@ h1 {
 /* ---------- Card ---------- */
 
 .card,
-.card-overlay-card {
+.card-overlay-card,
+.result-card {
   --card-rarity: #ffdc8e;
   --card-rarity-glow: rgba(255, 220, 142, 0.55);
 }
@@ -1825,5 +1826,228 @@ h1 {
   .collection-grid {
     grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
     gap: 10px;
+  }
+}
+
+/* ---------- Summon reveal (3 cartas) ---------- */
+
+.revealed .card.card-enter {
+  animation: cardEnter 0.85s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.revealed .card.card-final {
+  animation: cardFinal 1.3s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.legendary.revealed .card.card-enter {
+  animation: legendaryCard 1.6s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.charging .glow {
+  animation: chargeGlow 0.55s ease-in-out infinite alternate;
+}
+
+.charging .machine {
+  animation: chargeShake 0.14s linear infinite;
+}
+
+.reveal-progress {
+  color: #ffe3a1;
+}
+
+.charging .reveal-progress {
+  animation: subtitleGlow 0.8s ease-in-out infinite alternate;
+}
+
+.reveal-next {
+  min-width: 220px;
+  padding: 13px 30px;
+  font-size: 12px;
+  animation: revealNextPulse 1.8s ease-in-out infinite;
+}
+
+.reveal-next:disabled {
+  cursor: default;
+  filter: grayscale(0.4) brightness(0.75);
+  animation: none;
+  transform: none;
+}
+
+.summon-results {
+  position: relative;
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: clamp(10px, 3cqw, 28px);
+  width: 100%;
+  padding: 0 8px;
+}
+
+.result-card {
+  position: relative;
+  flex: 0 1 auto;
+  width: clamp(84px, min(28cqw, 52cqh), 200px);
+  aspect-ratio: 13 / 18;
+  cursor: zoom-in;
+  animation: resultIn 0.6s cubic-bezier(0.22, 1, 0.36, 1) both;
+  transition: transform 0.2s ease;
+}
+
+.result-card:hover {
+  transform: translateY(-6px) scale(1.03);
+}
+
+.result-card:focus-visible {
+  outline: 2px solid var(--card-rarity);
+  outline-offset: 5px;
+  border-radius: 14px;
+}
+
+.result-card[data-rarity="5"] .card-content {
+  animation: resultLegendaryGlow 2.4s ease-in-out infinite;
+}
+
+.result-card .card-content {
+  border-radius: 12px;
+}
+
+.result-card .card-content::before {
+  border-radius: 8px;
+}
+
+.result-card .rarity {
+  margin-top: 6px;
+  font-size: clamp(9px, 1.6cqw, 13px);
+  letter-spacing: 2px;
+}
+
+.result-card .name {
+  margin-top: 6px;
+  font-size: clamp(11px, 2.2cqw, 17px);
+  letter-spacing: 1px;
+}
+
+.result-card .card-content.has-image {
+  padding-bottom: 10px;
+}
+
+@keyframes cardEnter {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, 50%) scale(0.4) rotateY(90deg);
+  }
+
+  60% {
+    opacity: 1;
+    transform: translate(-50%, 50%) scale(1.08) rotateY(0deg);
+  }
+
+  100% {
+    opacity: 1;
+    transform: translate(-50%, 50%) scale(1) rotateY(0deg);
+  }
+}
+
+@keyframes cardFinal {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, 50%) scale(0.2) rotateY(540deg);
+    filter: brightness(3);
+  }
+
+  55% {
+    opacity: 1;
+    transform: translate(-50%, 50%) scale(1.15) rotateY(0deg);
+    filter: brightness(1.8);
+  }
+
+  100% {
+    opacity: 1;
+    transform: translate(-50%, 50%) scale(1) rotateY(0deg);
+    filter: brightness(1);
+  }
+}
+
+@keyframes chargeGlow {
+  from {
+    opacity: 0.45;
+    transform: translate(-50%, -50%) scale(1.2);
+  }
+
+  to {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(2.2);
+  }
+}
+
+@keyframes chargeShake {
+  0%,
+  100% {
+    transform: translate(0, 0) rotate(0deg);
+  }
+
+  25% {
+    transform: translate(-2px, 1px) rotate(-1deg);
+  }
+
+  75% {
+    transform: translate(2px, -1px) rotate(1deg);
+  }
+}
+
+@keyframes revealNextPulse {
+  0%,
+  100% {
+    box-shadow:
+      0 0 0 1px rgba(255, 240, 200, 0.6),
+      0 8px 20px rgba(0, 0, 0, 0.45),
+      0 0 18px rgba(255, 190, 90, 0.3);
+  }
+
+  50% {
+    box-shadow:
+      0 0 0 1px rgba(255, 240, 200, 0.8),
+      0 8px 20px rgba(0, 0, 0, 0.45),
+      0 0 38px rgba(255, 190, 90, 0.75);
+  }
+}
+
+@keyframes resultLegendaryGlow {
+  0%,
+  100% {
+    box-shadow:
+      0 0 0 1px rgba(255, 255, 255, 0.08) inset,
+      0 0 16px var(--card-rarity-glow);
+  }
+
+  50% {
+    box-shadow:
+      0 0 0 1px rgba(255, 255, 255, 0.08) inset,
+      0 0 36px var(--card-rarity-glow);
+  }
+}
+
+@keyframes resultIn {
+  from {
+    opacity: 0;
+    transform: translateY(24px) scale(0.85);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .revealed .card.card-enter,
+  .revealed .card.card-final,
+  .charging .machine,
+  .charging .glow,
+  .reveal-next,
+  .result-card,
+  .result-card[data-rarity="5"] .card-content {
+    animation: none;
   }
 }

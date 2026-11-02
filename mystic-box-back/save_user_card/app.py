@@ -19,6 +19,8 @@ USER_CARDS_TABLE = os.environ.get("USER_CARDS_TABLE")
 USER_SUMMON_STATE_TABLE = os.environ.get("USER_SUMMON_STATE_TABLE")
 SUMMON_COOLDOWN_SECONDS = int(os.environ.get("SUMMON_COOLDOWN_SECONDS", "3600"))
 
+MAX_CARDS_PER_SUMMON = 3
+
 FILE_NAME_PATTERN = re.compile(r"^[a-z0-9_\-]+\.(jfif|jpg|jpeg|png|webp)$")
 
 _serializer = TypeSerializer()
@@ -51,7 +53,7 @@ def get_user_id(event):
     return claims.get("sub")
 
 
-def parse_card(body):
+def parse_cards(body):
     if isinstance(body, str):
         try:
             body = json.loads(body)
@@ -61,8 +63,21 @@ def parse_card(body):
     if not isinstance(body, dict):
         raise ValueError("Corpo da requisição inválido.")
 
-    card = body.get("card", body)
+    # Aceita {"cards": [...]} e o formato antigo {"card": {...}}.
+    cards = body["cards"] if "cards" in body else [body.get("card", body)]
 
+    if not isinstance(cards, list) or not 1 <= len(cards) <= MAX_CARDS_PER_SUMMON:
+        raise ValueError("Quantidade de cartas inválida.")
+
+    parsed = [parse_card(card) for card in cards]
+
+    if len({card["file_name"] for card in parsed}) != len(parsed):
+        raise ValueError("As cartas de uma invocação não podem se repetir.")
+
+    return parsed
+
+
+def parse_card(card):
     if not isinstance(card, dict):
         raise ValueError("Carta inválida.")
 
@@ -113,21 +128,25 @@ def lambda_handler(event, context):
         return response(401, {"message": "Usuário não autenticado."})
 
     try:
-        card = parse_card(event.get("body"))
+        cards = parse_cards(event.get("body"))
     except ValueError as error:
         return response(400, {"message": str(error)})
 
     now = int(time.time())
-    item = {
-        "userId": user_id,
-        "ownedCardId": str(uuid.uuid4()),
-        "obtainedAt": datetime.fromtimestamp(now, timezone.utc).isoformat(),
-        **card,
-    }
+    obtained_at = datetime.fromtimestamp(now, timezone.utc).isoformat()
+    items = [
+        {
+            "userId": user_id,
+            "ownedCardId": str(uuid.uuid4()),
+            "obtainedAt": obtained_at,
+            **card,
+        }
+        for card in cards
+    ]
 
     try:
-        # Registrar a invocação e guardar a carta são atômicos: se o usuário
-        # ainda estiver no tempo de espera, nenhuma das duas escritas acontece.
+        # Registrar a invocação e guardar as cartas é atômico: se o usuário
+        # ainda estiver no tempo de espera, nenhuma escrita acontece.
         get_client().transact_write_items(
             TransactItems=[
                 {
@@ -145,20 +164,23 @@ def lambda_handler(event, context):
                         },
                     }
                 },
-                {
-                    "Put": {
-                        "TableName": USER_CARDS_TABLE,
-                        "Item": {
-                            key: _serializer.serialize(value)
-                            for key, value in item.items()
-                        },
+                *(
+                    {
+                        "Put": {
+                            "TableName": USER_CARDS_TABLE,
+                            "Item": {
+                                key: _serializer.serialize(value)
+                                for key, value in item.items()
+                            },
+                        }
                     }
-                },
+                    for item in items
+                ),
             ]
         )
     except ClientError as error:
         if not is_cooldown_conflict(error):
-            return response(500, {"message": "Não foi possível guardar a carta."})
+            return response(500, {"message": "Não foi possível guardar as cartas."})
 
         try:
             retry_after = max(1, get_retry_after_seconds(user_id, now))
@@ -176,5 +198,5 @@ def lambda_handler(event, context):
 
     return response(
         201,
-        {"card": item, "retryAfterSeconds": SUMMON_COOLDOWN_SECONDS},
+        {"cards": items, "retryAfterSeconds": SUMMON_COOLDOWN_SECONDS},
     )

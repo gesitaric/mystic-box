@@ -3,16 +3,22 @@ import AuthModal from "./components/AuthModal";
 import GachaMachine from "./components/GachaMachine";
 import Particles from "./components/Particles";
 import SummonButton from "./components/SummonButton";
+import SummonResults from "./components/SummonResults";
 import UserCardsList from "./components/UserCardsList";
 import { getCurrentSession, signOut } from "./auth/cognito";
 import "./styles/gacha.css";
 
 const API_URL = (
   import.meta.env.VITE_API_URL ??
-  "https://d64y0i3dpf.execute-api.us-east-1.amazonaws.com/Prod"
+  "https://vzol9m72hi.execute-api.us-east-1.amazonaws.com/Prod"
 ).replace(/\/$/, "");
 
-const PENDING_CARD_KEY = "mystic-box:pending-card";
+const PENDING_CARDS_KEY = "mystic-box:pending-cards";
+// Chave da versão anterior, que guardava uma única carta.
+const LEGACY_PENDING_CARD_KEY = "mystic-box:pending-card";
+
+// Pausa de suspense antes de revelar a última carta.
+const FINAL_CARD_SUSPENSE_MS = 1600;
 
 function formatCountdown(ms) {
   const totalSeconds = Math.ceil(ms / 1000);
@@ -21,7 +27,35 @@ function formatCountdown(ms) {
   return `${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`;
 }
 
-async function fetchCard() {
+function readPendingCards() {
+  try {
+    const raw = localStorage.getItem(PENDING_CARDS_KEY);
+    if (raw) {
+      const cards = JSON.parse(raw);
+      if (Array.isArray(cards) && cards.length > 0) return cards;
+    }
+
+    const legacy = localStorage.getItem(LEGACY_PENDING_CARD_KEY);
+    if (legacy) return [JSON.parse(legacy)];
+  } catch {
+    // Conteúdo inválido: descarta abaixo.
+  }
+
+  clearPendingCards();
+  return null;
+}
+
+function storePendingCards(cards) {
+  localStorage.setItem(PENDING_CARDS_KEY, JSON.stringify(cards));
+  localStorage.removeItem(LEGACY_PENDING_CARD_KEY);
+}
+
+function clearPendingCards() {
+  localStorage.removeItem(PENDING_CARDS_KEY);
+  localStorage.removeItem(LEGACY_PENDING_CARD_KEY);
+}
+
+async function fetchCards() {
   const response = await fetch(`${API_URL}/box/open`, {
     method: "POST",
   });
@@ -31,36 +65,41 @@ async function fetchCard() {
   }
 
   const data = await response.json();
-  const drawnCard = data.cards?.[0];
 
-  if (!drawnCard) {
+  if (!Array.isArray(data.cards) || data.cards.length === 0) {
     throw new Error("Nenhuma carta retornada.");
   }
 
-  return drawnCard;
+  return data.cards;
 }
 
 function App() {
   const [opening, setOpening] = useState(false);
   const [revealed, setRevealed] = useState(false);
   const [particles, setParticles] = useState([]);
-  const [card, setCard] = useState(null);
+  const [cards, setCards] = useState(null);
+  // Índice da carta em exibição; igual a cards.length mostra o resumo.
+  const [revealIndex, setRevealIndex] = useState(0);
+  const [charging, setCharging] = useState(false);
   const [error, setError] = useState("");
 
   const [session, setSession] = useState(null);
   const [authOpen, setAuthOpen] = useState(false);
   const [collectionOpen, setCollectionOpen] = useState(false);
-  const [pendingCard, setPendingCard] = useState(null);
+  const [pendingCards, setPendingCards] = useState(null);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const [saveError, setSaveError] = useState("");
-  const [cardLost, setCardLost] = useState(false);
+  const [cardsLost, setCardsLost] = useState(false);
 
   // Momento (ms) em que o usuário logado poderá invocar de novo.
   const [cooldownUntil, setCooldownUntil] = useState(null);
   const [now, setNow] = useState(() => Date.now());
 
   const autoSaveAttempted = useRef(false);
+  const suspenseTimer = useRef(null);
+
+  useEffect(() => () => clearTimeout(suspenseTimer.current), []);
 
   const startCooldown = useCallback((seconds) => {
     const current = Date.now();
@@ -101,86 +140,82 @@ function App() {
     [startCooldown]
   );
 
-  const saveCard = useCallback(async (cardToSave, activeSession) => {
-    if (!cardToSave || !activeSession) return;
+  const saveCards = useCallback(
+    async (cardsToSave, activeSession) => {
+      if (!cardsToSave?.length || !activeSession) return;
 
-    setSaving(true);
-    setSaveError("");
+      setSaving(true);
+      setSaveError("");
 
-    try {
-      const token = activeSession.session.getIdToken().getJwtToken();
-      const response = await fetch(`${API_URL}/users/me/cards`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: token,
-        },
-        body: JSON.stringify({ card: cardToSave }),
-      });
+      try {
+        const token = activeSession.session.getIdToken().getJwtToken();
+        const response = await fetch(`${API_URL}/users/me/cards`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: token,
+          },
+          body: JSON.stringify({ cards: cardsToSave }),
+        });
 
-      if (!response.ok) {
-        if (response.status === 401) {
-          signOut();
-          setSession(null);
-          throw new Error(
-            "Sua sessão expirou. Entre novamente para manter a carta."
-          );
+        if (!response.ok) {
+          if (response.status === 401) {
+            signOut();
+            setSession(null);
+            throw new Error(
+              "Sua sessão expirou. Entre novamente para manter as cartas."
+            );
+          }
+
+          if (response.status === 429) {
+            // Ainda no tempo de espera: as cartas puxadas são perdidas.
+            const data = await response.json().catch(() => ({}));
+            startCooldown(data.retryAfterSeconds ?? 0);
+            setCardsLost(true);
+            setPendingCards(null);
+            clearPendingCards();
+            return;
+          }
+
+          throw new Error(`Falha ao guardar as cartas (${response.status}).`);
         }
 
-        if (response.status === 429) {
-          // Ainda no tempo de espera: a carta puxada é perdida.
-          const data = await response.json().catch(() => ({}));
-          startCooldown(data.retryAfterSeconds ?? 0);
-          setCardLost(true);
-          setPendingCard(null);
-          localStorage.removeItem(PENDING_CARD_KEY);
-          return;
-        }
+        const data = await response.json().catch(() => ({}));
+        startCooldown(data.retryAfterSeconds ?? 0);
 
-        throw new Error(`Falha ao guardar a carta (${response.status}).`);
+        setSaved(true);
+        setPendingCards(null);
+        clearPendingCards();
+      } catch (saveFailure) {
+        console.error(saveFailure);
+        setSaveError(
+          saveFailure.message ?? "Não foi possível guardar as cartas."
+        );
+      } finally {
+        setSaving(false);
       }
-
-      const data = await response.json().catch(() => ({}));
-      startCooldown(data.retryAfterSeconds ?? 0);
-
-      setSaved(true);
-      setPendingCard(null);
-      localStorage.removeItem(PENDING_CARD_KEY);
-    } catch (saveFailure) {
-      console.error(saveFailure);
-      setSaveError(
-        saveFailure.message ?? "Não foi possível guardar a carta."
-      );
-    } finally {
-      setSaving(false);
-    }
-  }, [startCooldown]);
+    },
+    [startCooldown]
+  );
 
   useEffect(() => {
     async function restore() {
-      let storedCard = null;
-
-      try {
-        const raw = localStorage.getItem(PENDING_CARD_KEY);
-        if (raw) storedCard = JSON.parse(raw);
-      } catch {
-        localStorage.removeItem(PENDING_CARD_KEY);
-      }
-
+      const storedCards = readPendingCards();
       const currentSession = await getCurrentSession();
 
-      if (storedCard) {
-        setCard(storedCard);
-        setPendingCard(storedCard);
+      if (storedCards) {
+        setCards(storedCards);
+        setPendingCards(storedCards);
+        setRevealIndex(storedCards.length);
         setRevealed(true);
       }
 
       if (currentSession) {
         setSession(currentSession);
 
-        if (storedCard && !autoSaveAttempted.current) {
+        if (storedCards && !autoSaveAttempted.current) {
           autoSaveAttempted.current = true;
-          void saveCard(storedCard, currentSession);
+          void saveCards(storedCards, currentSession);
         } else {
           void fetchSummonStatus(currentSession);
         }
@@ -188,22 +223,37 @@ function App() {
     }
 
     void restore();
-  }, [saveCard, fetchSummonStatus]);
+  }, [saveCards, fetchSummonStatus]);
 
   // Sem login não há tempo de espera.
   const cooldownRemaining =
     session && cooldownUntil ? Math.max(0, cooldownUntil - now) : 0;
   const onCooldown = cooldownRemaining > 0;
 
-  async function summon() {
-    if (opening || onCooldown) return;
+  const totalCards = cards?.length ?? 0;
+  const revealing = revealed && totalCards > 0 && revealIndex < totalCards;
+  const showingResults = revealed && totalCards > 0 && revealIndex >= totalCards;
+  const isFinalCard = totalCards > 1 && revealIndex === totalCards - 1;
 
+  // Durante a abertura a primeira carta sobe da caixa.
+  const currentCard = opening
+    ? cards?.[0] ?? null
+    : revealing && !charging
+      ? cards[revealIndex]
+      : null;
+
+  async function summon() {
+    if (opening || revealing || charging || onCooldown) return;
+
+    clearTimeout(suspenseTimer.current);
     setError("");
     setSaveError("");
     setSaved(false);
-    setCardLost(false);
+    setCardsLost(false);
     setRevealed(false);
-    setCard(null);
+    setCharging(false);
+    setCards(null);
+    setRevealIndex(0);
     setOpening(true);
 
     setParticles(
@@ -216,17 +266,17 @@ function App() {
     );
 
     try {
-      const [drawnCard] = await Promise.all([
-        fetchCard(),
+      const [drawnCards] = await Promise.all([
+        fetchCards(),
         new Promise((resolve) => setTimeout(resolve, 700)),
       ]);
 
-      setCard(drawnCard);
-      setPendingCard(drawnCard);
-      localStorage.setItem(PENDING_CARD_KEY, JSON.stringify(drawnCard));
+      setCards(drawnCards);
+      setPendingCards(drawnCards);
+      storePendingCards(drawnCards);
 
       if (session) {
-        void saveCard(drawnCard, session);
+        void saveCards(drawnCards, session);
       }
 
       await new Promise((resolve) => setTimeout(resolve, 2400));
@@ -240,13 +290,31 @@ function App() {
     }
   }
 
+  function revealNext() {
+    if (!revealing || charging) return;
+
+    const nextIndex = revealIndex + 1;
+
+    if (totalCards > 1 && nextIndex === totalCards - 1) {
+      // Suspense antes da última carta.
+      setCharging(true);
+      suspenseTimer.current = setTimeout(() => {
+        setCharging(false);
+        setRevealIndex(nextIndex);
+      }, FINAL_CARD_SUSPENSE_MS);
+      return;
+    }
+
+    setRevealIndex(nextIndex);
+  }
+
   function handleAuthenticated(auth) {
     setSession(auth);
     setAuthOpen(false);
 
-    // Só a carta ainda não guardada; uma já guardada não conta de novo.
-    if (pendingCard) {
-      void saveCard(pendingCard, auth);
+    // Só cartas ainda não guardadas; as já guardadas não contam de novo.
+    if (pendingCards) {
+      void saveCards(pendingCards, auth);
     } else {
       void fetchSummonStatus(auth);
     }
@@ -268,14 +336,24 @@ function App() {
     setAuthOpen(true);
   }, []);
 
-  const isLegendary = revealed && (card?.rarity ?? 0) >= 5;
-  const hasUnsavedCard = revealed && Boolean(card) && !saved && !cardLost;
+  const isLegendary = revealing && !charging && (currentCard?.rarity ?? 0) >= 5;
+  const hasUnsavedCards = showingResults && !saved && !cardsLost;
+
+  let nextLabel = "Próxima carta";
+  if (revealIndex === totalCards - 2) nextLabel = "Revelar última carta";
+  if (revealIndex === totalCards - 1) nextLabel = `Ver as ${totalCards} cartas`;
 
   return (
     <main
-      className={`scene ${opening ? "opening" : ""} ${revealed ? "revealed" : ""} ${
-        isLegendary ? "legendary" : ""
-      }`}
+      className={[
+        "scene",
+        opening && "opening",
+        revealed && "revealed",
+        charging && "charging",
+        isLegendary && "legendary",
+      ]
+        .filter(Boolean)
+        .join(" ")}
     >
       <div className="aurora" />
       <div className="stars" />
@@ -283,7 +361,9 @@ function App() {
       <div className="vignette" />
       <div className="frame" />
 
-      {isLegendary && <div className="legendary-flash" aria-hidden="true" />}
+      {isLegendary && (
+        <div key={revealIndex} className="legendary-flash" aria-hidden="true" />
+      )}
 
       <div className="session-bar">
         {session ? (
@@ -327,78 +407,117 @@ function App() {
         <div className="glow" />
 
         {isLegendary && (
-          <div className="legendary-banner" aria-hidden="true">
+          <div key={revealIndex} className="legendary-banner" aria-hidden="true">
             <span className="legendary-banner-title">LEGENDARY</span>
             <span className="legendary-banner-sub">A RARE CARD APPEARS</span>
           </div>
         )}
 
-        <GachaMachine card={card} />
+        {showingResults ? (
+          <SummonResults cards={cards} />
+        ) : (
+          <GachaMachine
+            card={currentCard}
+            cardKey={revealIndex}
+            cardClassName={
+              revealing && revealIndex > 0
+                ? isFinalCard
+                  ? "card-enter card-final"
+                  : "card-enter"
+                : ""
+            }
+          />
+        )}
 
         <Particles particles={particles} />
       </div>
 
       <div className="action-bar">
-        <div className="subtitle">
-          A MYSTERIOUS GIFT AWAITS...
-        </div>
+        {revealing || charging ? (
+          <>
+            <div className="subtitle reveal-progress" aria-live="polite">
+              {charging
+                ? "A ÚLTIMA CARTA ESTÁ CHEGANDO..."
+                : `CARTA ${revealIndex + 1} DE ${totalCards}`}
+            </div>
 
-        <SummonButton
-          onClick={summon}
-          disabled={opening || onCooldown}
-        />
+            <button
+              type="button"
+              className="keep-button reveal-next"
+              onClick={revealNext}
+              disabled={charging}
+            >
+              {nextLabel}
+            </button>
+          </>
+        ) : (
+          <>
+            <div className="subtitle">
+              A MYSTERIOUS GIFT AWAITS...
+            </div>
 
-        {onCooldown && (
+            <SummonButton
+              onClick={summon}
+              disabled={opening || onCooldown}
+            />
+          </>
+        )}
+
+        {onCooldown && !revealing && !charging && (
           <p className="cooldown-message" role="timer" aria-live="off">
             Próxima invocação em{" "}
             <span className="cooldown-time">{formatCountdown(cooldownRemaining)}</span>
           </p>
         )}
 
-        {!saving && cardLost && (
-          <p className="keep-message keep-lost" role="status">
-            Você ainda estava no tempo de espera. Esta carta não pôde ser guardada.
-          </p>
-        )}
+        {showingResults && (
+          <>
+            {!saving && cardsLost && (
+              <p className="keep-message keep-lost" role="status">
+                Você ainda estava no tempo de espera. Estas cartas não puderam ser guardadas.
+              </p>
+            )}
 
-        {saving && (
-          <p className="keep-message" role="status">
-            Guardando sua carta...
-          </p>
-        )}
+            {saving && (
+              <p className="keep-message" role="status">
+                Guardando suas cartas...
+              </p>
+            )}
 
-        {!saving && saved && (
-          <p className="keep-message keep-success" role="status">
-            ✦ Carta guardada na sua coleção
-          </p>
-        )}
+            {!saving && saved && (
+              <p className="keep-message keep-success" role="status">
+                ✦ Cartas guardadas na sua coleção
+              </p>
+            )}
 
-        {!saving && hasUnsavedCard && !session && (
-          <div className="keep-prompt">
-            <p>
-              Você não está logado. Entre para manter esta carta na sua coleção.
-            </p>
-            <button
-              type="button"
-              className="keep-button"
-              onClick={() => setAuthOpen(true)}
-            >
-              Entrar e manter carta
-            </button>
-          </div>
-        )}
+            {!saving && hasUnsavedCards && !session && (
+              <div className="keep-prompt">
+                <p>
+                  Você não está logado. Entre para manter estas cartas na sua coleção.
+                </p>
+                <button
+                  type="button"
+                  className="keep-button"
+                  onClick={() => setAuthOpen(true)}
+                >
+                  Entrar e manter cartas
+                </button>
+              </div>
+            )}
 
-        {!saving && hasUnsavedCard && session && saveError && (
-          <div className="keep-prompt">
-            <p className="keep-error">{saveError}</p>
-            <button
-              type="button"
-              className="keep-button"
-              onClick={() => saveCard(card ?? pendingCard, session)}
-            >
-              Tentar novamente
-            </button>
-          </div>
+            {!saving && hasUnsavedCards && session && saveError && (
+              <div className="keep-prompt">
+                <p className="keep-error">{saveError}</p>
+                <button
+                  type="button"
+                  className="keep-button"
+                  onClick={() => saveCards(pendingCards ?? cards, session)}
+                >
+                  Tentar novamente
+                </button>
+              </div>
+            )}
+          </>
         )}
       </div>
 
