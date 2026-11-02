@@ -332,6 +332,73 @@ Resources:
             Path: /users/me/cards/{ownedCardId}/sell
             Method: options
 
+  GetShopCardsFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: get_shop_cards/
+      Handler: app.lambda_handler
+      Runtime: python3.14
+      Architectures:
+      - x86_64
+      Layers:
+      - !Ref SharedLayer
+      Environment:
+        Variables:
+          USER_WALLET_TABLE: !Ref UserWalletTable
+      Policies:
+      - DynamoDBReadPolicy:
+          TableName: !Ref UserWalletTable
+      Events:
+        GetShopCards:
+          Type: Api
+          Properties:
+            RestApiId: !Ref MysticBoxApi
+            Path: /shop/cards
+            Method: get
+            Auth:
+              Authorizer: CognitoAuthorizer
+        GetShopCardsOptions:
+          Type: Api
+          Properties:
+            RestApiId: !Ref MysticBoxApi
+            Path: /shop/cards
+            Method: options
+
+  BuyCardFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: buy_card/
+      Handler: app.lambda_handler
+      Runtime: python3.14
+      Architectures:
+      - x86_64
+      Layers:
+      - !Ref SharedLayer
+      Environment:
+        Variables:
+          USER_CARDS_TABLE: !Ref UserCardsTable
+          USER_WALLET_TABLE: !Ref UserWalletTable
+      Policies:
+      - DynamoDBWritePolicy:
+          TableName: !Ref UserCardsTable
+      - DynamoDBCrudPolicy:
+          TableName: !Ref UserWalletTable
+      Events:
+        BuyCard:
+          Type: Api
+          Properties:
+            RestApiId: !Ref MysticBoxApi
+            Path: /shop/cards/{fileName}/buy
+            Method: post
+            Auth:
+              Authorizer: CognitoAuthorizer
+        BuyCardOptions:
+          Type: Api
+          Properties:
+            RestApiId: !Ref MysticBoxApi
+            Path: /shop/cards/{fileName}/buy
+            Method: options
+
   ApplicationResourceGroup:
     Type: AWS::ResourceGroups::Group
     Properties:
@@ -391,3 +458,12 @@ Outputs:
   SellUserCardFunction:
     Description: Sell User Card Lambda Function ARN
     Value: !GetAtt SellUserCardFunction.Arn
+  GetShopCardsApi:
+    Description: API Gateway endpoint URL for the shop catalog
+    Value: !Sub "https://${MysticBoxApi}.execute-api.${AWS::Region}.${AWS::URLSuffix}/Prod/shop/cards"
+  BuyCardApi:
+    Description: API Gateway endpoint URL to buy a card in the shop
+    Value: !Sub "https://${MysticBoxApi}.execute-api.${AWS::Region}.${AWS::URLSuffix}/Prod/shop/cards/{fileName}/buy"
+  BuyCardFunction:
+    Description: Buy Card Lambda Function ARN
+    Value: !GetAtt BuyCardFunction.Arn

@@ -20,14 +20,15 @@ Isso significa:
 ## Onde ficam as regras
 
 - `mystic-box-back/shared/mystic_shared/` é a Lambda Layer `SharedLayer`, compartilhada entre as Lambdas:
-  - `cards.py`: **fonte única** das definições das cartas (`name`, `rarity`, `file_name`, `price`) e das regras do sorteio (pesos por raridade, tamanho da invocação). Para achar uma carta, use `get_character(file_name)`.
+  - `cards.py`: **fonte única** das definições das cartas (`name`, `rarity`, `file_name`, `price`), das regras da loja (`buy_price`, `sell_price`, `shop_catalog`) e das regras do sorteio (pesos por raridade, tamanho da invocação). Para achar uma carta, use `get_character(file_name)`.
   - `summon_token.py`: token assinado (HMAC, chave no Secrets Manager) que comprova que um sorteio foi feito pelo servidor.
 - Uma Lambda nova que precise dessas regras deve declarar `Layers: [!Ref SharedLayer]` no `template.yaml` e importar de `mystic_shared`. Não copie as definições para outra Lambda nem para o frontend.
 
 ## Fluxos atuais
 
 - **Invocar**: `POST /box/open` (público) sorteia no servidor e devolve as cartas + `summonToken`. Para guardá-las, o frontend envia **só** o `summonToken` para `POST /users/me/cards`. O token é de uso único, expira em 30 minutos e consome o tempo de espera do usuário.
-- **Vender**: `POST /users/me/cards/{ownedCardId}/sell` remove a carta e credita o preço definido em `cards.py` na carteira, na mesma transação.
+- **Vender**: `POST /users/me/cards/{ownedCardId}/sell` remove a carta e credita o preço de `sell_price` (`cards.py`) na carteira, na mesma transação.
+- **Loja**: `GET /shop/cards` devolve o catálogo (`shop_catalog`) com `buyPrice` e `canAfford` calculados no servidor, além do `balance`. Comprar é `POST /shop/cards/{fileName}/buy`, que debita o preço de `buy_price` (só se o saldo cobrir, condição na transação) e adiciona a carta à coleção, na mesma transação. A aba "Vender" da loja usa o fluxo de venda acima.
 
 ## Testes
 
