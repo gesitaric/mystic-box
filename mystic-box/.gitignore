@@ -25,3 +25,7 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Imagens originais em alta resolução (ficam só localmente).
+# Gere as versões otimizadas com: npm run images
+original-images
