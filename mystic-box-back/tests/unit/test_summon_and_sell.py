@@ -281,6 +281,16 @@ def test_save_user_card_handles_dynamodb_error(authenticated_event, save_client)
 # ---------- sell_user_card ----------
 
 
+def owned_copies(*copies):
+    """Resposta do Query: (ownedCardId, obtainedAt) de cada cópia."""
+    return {
+        "Items": [
+            {"ownedCardId": {"S": owned_id}, "obtainedAt": {"S": obtained_at}}
+            for owned_id, obtained_at in copies
+        ]
+    }
+
+
 @pytest.fixture()
 def sell_client(monkeypatch):
     client = MagicMock()
@@ -288,27 +298,24 @@ def sell_client(monkeypatch):
     monkeypatch.setattr(sell_user_card, "USER_CARDS_TABLE", "user-cards")
     monkeypatch.setattr(sell_user_card, "USER_WALLET_TABLE", "wallet")
 
-    owned = {
-        "Item": {
-            "userId": {"S": "user-123"},
-            "ownedCardId": {"S": "owned-1"},
-            "name": {"S": "Astra"},
-            "rarity": {"N": "5"},
-            "file_name": {"S": "astra.jfif"},
-        }
-    }
-    wallet = {"Item": {"userId": {"S": "user-123"}, "balance": {"N": "260"}}}
-    client.get_item.side_effect = lambda TableName, **_: (
-        owned if TableName == "user-cards" else wallet
+    client.query.return_value = owned_copies(
+        ("owned-old", "2026-01-01"),
+        ("owned-new", "2026-03-01"),
+        ("owned-mid", "2026-02-01"),
     )
+    client.get_item.return_value = {
+        "Item": {"userId": {"S": "user-123"}, "balance": {"N": "760"}}
+    }
     return client
 
 
-def sell(authenticated_event, owned_card_id="owned-1", **overrides):
+def sell(authenticated_event, body=None, **overrides):
+    if body is None:
+        body = {"fileName": "astra.jfif", "quantity": 1}
     return sell_user_card.lambda_handler(
         authenticated_event(
             httpMethod="POST",
-            pathParameters={"ownedCardId": owned_card_id},
+            body=body if isinstance(body, str) else json.dumps(body),
             **overrides,
         ),
         "",
@@ -328,27 +335,75 @@ def test_sell_user_card_requires_authentication(apigw_event):
     assert ret["statusCode"] == 401
 
 
-def test_sell_user_card_removes_card_and_credits_server_price(
+def test_sell_user_card_sells_newest_copies_and_credits_server_price(
     authenticated_event, sell_client
 ):
     # Um preço enviado pelo cliente é ignorado.
-    ret = sell(authenticated_event, body=json.dumps({"price": 999999}))
+    ret = sell(
+        authenticated_event,
+        {"fileName": "astra.jfif", "quantity": 2, "price": 999999},
+    )
     data = json.loads(ret["body"])
 
     assert ret["statusCode"] == 200
-    assert data == {"soldOwnedCardId": "owned-1", "price": 250, "balance": 260}
-
-    delete, update = sell_client.transact_write_items.call_args.kwargs["TransactItems"]
-    assert delete["Delete"]["TableName"] == "user-cards"
-    assert delete["Delete"]["Key"] == {
-        "userId": {"S": "user-123"},
-        "ownedCardId": {"S": "owned-1"},
+    assert data == {
+        "fileName": "astra.jfif",
+        "name": "Astra",
+        "soldQuantity": 2,
+        "soldOwnedCardIds": ["owned-new", "owned-mid"],
+        "remainingQuantity": 1,
+        "unitPrice": 250,
+        "price": 500,
+        "balance": 760,
     }
-    assert "attribute_exists(ownedCardId)" in delete["Delete"]["ConditionExpression"]
+
+    query = sell_client.query.call_args.kwargs
+    assert query["ExpressionAttributeValues"] == {
+        ":userId": {"S": "user-123"},
+        ":fileName": {"S": "astra.jfif"},
+    }
+    assert query["ConsistentRead"] is True
+
+    *deletes, update = sell_client.transact_write_items.call_args.kwargs[
+        "TransactItems"
+    ]
+    assert [d["Delete"]["Key"] for d in deletes] == [
+        {"userId": {"S": "user-123"}, "ownedCardId": {"S": "owned-new"}},
+        {"userId": {"S": "user-123"}, "ownedCardId": {"S": "owned-mid"}},
+    ]
+    for delete in deletes:
+        assert delete["Delete"]["TableName"] == "user-cards"
+        assert "attribute_exists(ownedCardId)" in delete["Delete"]["ConditionExpression"]
+        assert delete["Delete"]["ExpressionAttributeValues"] == {
+            ":fileName": {"S": "astra.jfif"}
+        }
     assert update["Update"]["TableName"] == "wallet"
     assert update["Update"]["Key"] == {"userId": {"S": "user-123"}}
     assert update["Update"]["UpdateExpression"] == "ADD balance :price"
-    assert update["Update"]["ExpressionAttributeValues"] == {":price": {"N": "250"}}
+    assert update["Update"]["ExpressionAttributeValues"] == {":price": {"N": "500"}}
+
+
+def test_sell_user_card_can_sell_every_copy(authenticated_event, sell_client):
+    ret = sell(authenticated_event, {"fileName": "astra.jfif", "quantity": 3})
+    data = json.loads(ret["body"])
+
+    assert ret["statusCode"] == 200
+    assert data["remainingQuantity"] == 0
+    assert data["price"] == 750
+    assert len(sell_client.transact_write_items.call_args.kwargs["TransactItems"]) == 4
+
+
+def test_sell_user_card_reads_every_page(authenticated_event, sell_client):
+    sell_client.query.return_value = None
+    sell_client.query.side_effect = [
+        {**owned_copies(("owned-1", "2026-01-01")), "LastEvaluatedKey": {"k": 1}},
+        owned_copies(("owned-2", "2026-01-02")),
+    ]
+
+    ret = sell(authenticated_event, {"fileName": "astra.jfif", "quantity": 2})
+
+    assert ret["statusCode"] == 200
+    assert sell_client.query.call_args_list[1].kwargs["ExclusiveStartKey"] == {"k": 1}
 
 
 def test_sell_user_card_only_looks_at_own_cards(authenticated_event, sell_client):
@@ -356,26 +411,43 @@ def test_sell_user_card_only_looks_at_own_cards(authenticated_event, sell_client
         authenticated_event(
             sub="other-user",
             httpMethod="POST",
-            pathParameters={"ownedCardId": "owned-1"},
+            body=json.dumps({"fileName": "astra.jfif", "quantity": 1}),
         ),
         "",
     )
 
-    key = sell_client.get_item.call_args_list[0].kwargs["Key"]
-    assert key == {"userId": {"S": "other-user"}, "ownedCardId": {"S": "owned-1"}}
+    values = sell_client.query.call_args.kwargs["ExpressionAttributeValues"]
+    assert values[":userId"] == {"S": "other-user"}
 
 
-@pytest.mark.parametrize("owned_card_id", [None, "", "x" * 65])
-def test_sell_user_card_rejects_invalid_id(authenticated_event, sell_client, owned_card_id):
-    ret = sell(authenticated_event, owned_card_id)
+@pytest.mark.parametrize(
+    "body",
+    [
+        "not json",
+        json.dumps([]),
+        json.dumps({}),
+        json.dumps({"fileName": "astra.jfif"}),
+        json.dumps({"fileName": "astra.jfif", "quantity": 0}),
+        json.dumps({"fileName": "astra.jfif", "quantity": -1}),
+        json.dumps({"fileName": "astra.jfif", "quantity": 1.5}),
+        json.dumps({"fileName": "astra.jfif", "quantity": "2"}),
+        json.dumps({"fileName": "astra.jfif", "quantity": True}),
+        json.dumps({"fileName": "astra.jfif", "quantity": cards.MAX_SELL_QUANTITY + 1}),
+        json.dumps({"fileName": "", "quantity": 1}),
+        json.dumps({"fileName": "x" * 65, "quantity": 1}),
+        json.dumps({"ownedCardId": "owned-1"}),
+    ],
+)
+def test_sell_user_card_rejects_invalid_body(authenticated_event, sell_client, body):
+    ret = sell(authenticated_event, body)
 
     assert ret["statusCode"] == 400
+    sell_client.query.assert_not_called()
     sell_client.transact_write_items.assert_not_called()
 
 
 def test_sell_user_card_not_found(authenticated_event, sell_client):
-    sell_client.get_item.side_effect = None
-    sell_client.get_item.return_value = {}
+    sell_client.query.return_value = {"Items": []}
 
     ret = sell(authenticated_event)
 
@@ -384,23 +456,36 @@ def test_sell_user_card_not_found(authenticated_event, sell_client):
 
 
 def test_sell_user_card_unknown_card_cannot_be_sold(authenticated_event, sell_client):
-    sell_client.get_item.side_effect = None
-    sell_client.get_item.return_value = {
-        "Item": {"ownedCardId": {"S": "owned-1"}, "file_name": {"S": "antiga.jfif"}}
-    }
-
-    ret = sell(authenticated_event)
+    ret = sell(authenticated_event, {"fileName": "antiga.jfif", "quantity": 1})
 
     assert ret["statusCode"] == 409
     sell_client.transact_write_items.assert_not_called()
 
 
-def test_sell_user_card_already_sold(authenticated_event, sell_client):
-    sell_client.transact_write_items.side_effect = transaction_conflict(0, size=2)
+def test_sell_user_card_rejects_more_than_owned(authenticated_event, sell_client):
+    ret = sell(authenticated_event, {"fileName": "astra.jfif", "quantity": 4})
+    data = json.loads(ret["body"])
+
+    assert ret["statusCode"] == 409
+    assert data["available"] == 3
+    sell_client.transact_write_items.assert_not_called()
+
+
+def test_sell_user_card_collection_changed(authenticated_event, sell_client):
+    sell_client.transact_write_items.side_effect = transaction_conflict(1, size=3)
+
+    ret = sell(authenticated_event, {"fileName": "astra.jfif", "quantity": 2})
+
+    assert ret["statusCode"] == 409
+
+
+def test_sell_user_card_handles_query_error(authenticated_event, sell_client):
+    sell_client.query.side_effect = ClientError({"Error": {"Code": "500"}}, "Query")
 
     ret = sell(authenticated_event)
 
-    assert ret["statusCode"] == 404
+    assert ret["statusCode"] == 500
+    sell_client.transact_write_items.assert_not_called()
 
 
 def test_sell_user_card_handles_dynamodb_error(authenticated_event, sell_client):
@@ -416,18 +501,21 @@ def test_sell_user_card_handles_dynamodb_error(authenticated_event, sell_client)
 def test_sell_user_card_balance_read_failure_still_succeeds(
     authenticated_event, sell_client
 ):
-    def get_item(TableName, **_):
-        if TableName == "wallet":
-            raise ClientError({"Error": {"Code": "500"}}, "GetItem")
-        return {"Item": {"ownedCardId": {"S": "owned-1"}, "file_name": {"S": "rowan.jfif"}}}
+    sell_client.get_item.side_effect = ClientError({"Error": {"Code": "500"}}, "GetItem")
+    sell_client.query.return_value = owned_copies(("owned-1", "2026-01-01"))
 
-    sell_client.get_item.side_effect = get_item
-
-    ret = sell(authenticated_event)
+    ret = sell(authenticated_event, {"fileName": "rowan.jfif", "quantity": 1})
+    data = json.loads(ret["body"])
 
     assert ret["statusCode"] == 200
-    assert json.loads(ret["body"]) == {
-        "soldOwnedCardId": "owned-1",
-        "price": 10,
-        "balance": None,
-    }
+    assert data["price"] == 10
+    assert data["balance"] is None
+
+
+def test_max_sell_quantity_rules():
+    astra = cards.get_character("astra.jfif")
+
+    assert cards.max_sell_quantity(astra, 3) == 3
+    assert cards.max_sell_quantity(astra, 500) == cards.MAX_SELL_QUANTITY
+    assert cards.max_sell_quantity(None, 3) == 0
+    assert cards.sell_total(astra, 3) == 750

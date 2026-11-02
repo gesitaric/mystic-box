@@ -5,7 +5,7 @@ import unicodedata
 import boto3
 from boto3.dynamodb.conditions import Key
 from botocore.exceptions import ClientError
-from mystic_shared.cards import get_character, sell_price
+from mystic_shared.cards import get_character, max_sell_quantity, sell_price
 
 CORS_HEADERS = {
     "Access-Control-Allow-Origin": "*",
@@ -34,7 +34,7 @@ def response(status_code, body):
     }
 
 
-SORT_FIELDS = ("obtainedAt", "rarity", "name")
+SORT_FIELDS = ("obtainedAt", "rarity", "name", "quantity")
 SORT_ORDERS = ("asc", "desc")
 DEFAULT_SORT = "obtainedAt"
 DEFAULT_ORDER = "desc"
@@ -51,7 +51,12 @@ def rarity_key(card):
 
 
 def obtained_at_key(card):
-    return card.get("obtainedAt") or ""
+    # Grupos de cartas repetidas são ordenados pela cópia mais recente.
+    return card.get("lastObtainedAt") or ""
+
+
+def quantity_key(card):
+    return card.get("quantity") or 0
 
 
 # Campo -> (critério principal, critério de desempate sempre crescente).
@@ -59,6 +64,7 @@ SORT_KEYS = {
     "obtainedAt": (obtained_at_key, name_key),
     "rarity": (rarity_key, name_key),
     "name": (name_key, rarity_key),
+    "quantity": (quantity_key, lambda card: (name_key(card), rarity_key(card))),
 }
 
 
@@ -83,9 +89,50 @@ def sort_cards(cards, sort, order):
     return ordered
 
 
-def get_sell_price(file_name):
-    character = get_character(file_name)
-    return sell_price(character) if character else None
+def group_cards(items):
+    """Junta as cópias da mesma carta (mesmo `file_name`) em um só item."""
+    groups = {}
+
+    for item in items:
+        file_name = item.get("file_name")
+        # Cartas antigas sem `file_name` são agrupadas pelo nome.
+        key = file_name or f"name:{item.get('name')}"
+        group = groups.get(key)
+
+        if group is None:
+            groups[key] = group = {
+                "file_name": file_name,
+                "name": item.get("name"),
+                "rarity": int(item["rarity"]) if item.get("rarity") is not None else None,
+                "quantity": 0,
+                "obtainedAt": [],
+            }
+
+        group["quantity"] += 1
+        if item.get("obtainedAt"):
+            group["obtainedAt"].append(item["obtainedAt"])
+
+    cards = []
+    for group in groups.values():
+        character = get_character(group["file_name"])
+        if character:
+            # Nome e raridade oficiais vêm das definições do servidor.
+            group["name"] = character["name"]
+            group["rarity"] = character["rarity"]
+        obtained_at = group.pop("obtainedAt")
+        cards.append(
+            {
+                **group,
+                "firstObtainedAt": min(obtained_at, default=None),
+                "lastObtainedAt": max(obtained_at, default=None),
+                # Preço por cópia definido no servidor; None = não pode ser vendida.
+                "sellPrice": sell_price(character) if character else None,
+                # Quantas cópias podem ser vendidas de uma vez.
+                "maxSellQuantity": max_sell_quantity(character, group["quantity"]),
+            }
+        )
+
+    return cards
 
 
 def get_user_id(event):
@@ -127,18 +174,6 @@ def lambda_handler(event, context):
     except ClientError:
         return response(500, {"message": "Não foi possível buscar suas cartas."})
 
-    cards = [
-        {
-            "ownedCardId": item.get("ownedCardId"),
-            "name": item.get("name"),
-            "rarity": int(item["rarity"]) if item.get("rarity") is not None else None,
-            "file_name": item.get("file_name"),
-            "obtainedAt": item.get("obtainedAt"),
-            # Preço definido no servidor; None = carta que não pode ser vendida.
-            "sellPrice": get_sell_price(item.get("file_name")),
-        }
-        for item in items
-    ]
-    cards = sort_cards(cards, sort, order)
+    cards = sort_cards(group_cards(items), sort, order)
 
-    return response(200, {"cards": cards})
+    return response(200, {"cards": cards, "totalCards": len(items)})

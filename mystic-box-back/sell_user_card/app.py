@@ -3,7 +3,12 @@ import os
 
 import boto3
 from botocore.exceptions import ClientError
-from mystic_shared.cards import get_character, sell_price
+from mystic_shared.cards import (
+    MAX_SELL_QUANTITY,
+    get_character,
+    sell_price,
+    sell_total,
+)
 
 CORS_HEADERS = {
     "Access-Control-Allow-Origin": "*",
@@ -14,7 +19,7 @@ CORS_HEADERS = {
 USER_CARDS_TABLE = os.environ.get("USER_CARDS_TABLE")
 USER_WALLET_TABLE = os.environ.get("USER_WALLET_TABLE")
 
-MAX_OWNED_CARD_ID_LENGTH = 64
+MAX_FILE_NAME_LENGTH = 64
 
 # Criado uma vez por container e reaproveitado entre invocações.
 _client = None
@@ -44,23 +49,80 @@ def get_user_id(event):
     return claims.get("sub")
 
 
-def get_owned_card_id(event):
-    owned_card_id = (event.get("pathParameters") or {}).get("ownedCardId")
+def parse_request(event):
+    """(file_name, quantity) pedidos pelo cliente. Lança ValueError se inválidos.
+
+    O cliente só diz QUAL carta e QUANTAS cópias quer vender; preço e quais
+    cópias saem da coleção são decididos aqui.
+    """
+    try:
+        body = json.loads(event.get("body") or "")
+    except (TypeError, ValueError):
+        raise ValueError("Corpo da requisição inválido.")
+    if not isinstance(body, dict):
+        raise ValueError("Corpo da requisição inválido.")
+
+    file_name = body.get("fileName")
     if (
-        not isinstance(owned_card_id, str)
-        or not owned_card_id
-        or len(owned_card_id) > MAX_OWNED_CARD_ID_LENGTH
+        not isinstance(file_name, str)
+        or not file_name
+        or len(file_name) > MAX_FILE_NAME_LENGTH
     ):
-        return None
-    return owned_card_id
+        raise ValueError("Carta inválida.")
+
+    quantity = body.get("quantity")
+    if (
+        not isinstance(quantity, int)
+        or isinstance(quantity, bool)
+        or not 1 <= quantity <= MAX_SELL_QUANTITY
+    ):
+        raise ValueError(
+            f"Quantidade inválida. Escolha de 1 a {MAX_SELL_QUANTITY} cópias."
+        )
+
+    return file_name, quantity
 
 
-def is_card_already_gone(error):
+def get_owned_copies(user_id, file_name):
+    """Cópias da carta na coleção do usuário, da mais recente para a mais antiga."""
+    copies = []
+    query_kwargs = {
+        "TableName": USER_CARDS_TABLE,
+        "KeyConditionExpression": "userId = :userId",
+        "FilterExpression": "file_name = :fileName",
+        "ProjectionExpression": "ownedCardId, obtainedAt",
+        "ExpressionAttributeValues": {
+            ":userId": {"S": user_id},
+            ":fileName": {"S": file_name},
+        },
+        "ConsistentRead": True,
+    }
+
+    while True:
+        result = get_client().query(**query_kwargs)
+        copies.extend(
+            {
+                "ownedCardId": item["ownedCardId"]["S"],
+                "obtainedAt": item.get("obtainedAt", {}).get("S", ""),
+            }
+            for item in result.get("Items", [])
+        )
+
+        last_key = result.get("LastEvaluatedKey")
+        if not last_key:
+            break
+        query_kwargs["ExclusiveStartKey"] = last_key
+
+    copies.sort(key=lambda copy: copy["obtainedAt"], reverse=True)
+    return copies
+
+
+def is_collection_changed(error):
     if error.response.get("Error", {}).get("Code") != "TransactionCanceledException":
         return False
 
     reasons = error.response.get("CancellationReasons") or []
-    return bool(reasons) and reasons[0].get("Code") == "ConditionalCheckFailed"
+    return any(reason.get("Code") == "ConditionalCheckFailed" for reason in reasons)
 
 
 def get_balance(user_id):
@@ -80,59 +142,81 @@ def lambda_handler(event, context):
     if not user_id:
         return response(401, {"message": "Usuário não autenticado."})
 
-    owned_card_id = get_owned_card_id(event)
-    if not owned_card_id:
-        return response(400, {"message": "Carta inválida."})
-
-    card_key = {"userId": {"S": user_id}, "ownedCardId": {"S": owned_card_id}}
+    try:
+        file_name, quantity = parse_request(event)
+    except ValueError as error:
+        return response(400, {"message": str(error)})
 
     try:
-        result = get_client().get_item(
-            TableName=USER_CARDS_TABLE, Key=card_key, ConsistentRead=True
-        )
+        copies = get_owned_copies(user_id, file_name)
     except ClientError:
         return response(500, {"message": "Não foi possível vender a carta."})
 
-    item = result.get("Item")
-    if not item:
+    if not copies:
         return response(404, {"message": "Carta não encontrada na sua coleção."})
 
     # O preço vem SEMPRE das definições do servidor.
-    file_name = item.get("file_name", {}).get("S")
     character = get_character(file_name)
     if not character:
         return response(409, {"message": "Esta carta não pode ser vendida."})
 
-    price = sell_price(character)
+    if quantity > len(copies):
+        return response(
+            409,
+            {
+                "message": f"Você só tem {len(copies)} cópia(s) desta carta.",
+                "available": len(copies),
+            },
+        )
+
+    # Vende as cópias mais recentes e mantém as mais antigas na coleção.
+    sold_ids = [copy["ownedCardId"] for copy in copies[:quantity]]
+    total = sell_total(character, quantity)
 
     try:
-        # Remover a carta e creditar o valor é atômico. A condição no Delete
-        # impede que a mesma carta seja vendida duas vezes.
+        # Remover as cartas e creditar o valor é atômico. A condição em cada
+        # Delete impede que a mesma carta seja vendida duas vezes.
         get_client().transact_write_items(
             TransactItems=[
-                {
-                    "Delete": {
-                        "TableName": USER_CARDS_TABLE,
-                        "Key": card_key,
-                        "ConditionExpression": (
-                            "attribute_exists(ownedCardId) AND file_name = :fileName"
-                        ),
-                        "ExpressionAttributeValues": {":fileName": {"S": file_name}},
+                *(
+                    {
+                        "Delete": {
+                            "TableName": USER_CARDS_TABLE,
+                            "Key": {
+                                "userId": {"S": user_id},
+                                "ownedCardId": {"S": owned_card_id},
+                            },
+                            "ConditionExpression": (
+                                "attribute_exists(ownedCardId) AND file_name = :fileName"
+                            ),
+                            "ExpressionAttributeValues": {
+                                ":fileName": {"S": file_name}
+                            },
+                        }
                     }
-                },
+                    for owned_card_id in sold_ids
+                ),
                 {
                     "Update": {
                         "TableName": USER_WALLET_TABLE,
                         "Key": {"userId": {"S": user_id}},
                         "UpdateExpression": "ADD balance :price",
-                        "ExpressionAttributeValues": {":price": {"N": str(price)}},
+                        "ExpressionAttributeValues": {":price": {"N": str(total)}},
                     }
                 },
             ]
         )
     except ClientError as error:
-        if is_card_already_gone(error):
-            return response(404, {"message": "Carta não encontrada na sua coleção."})
+        if is_collection_changed(error):
+            return response(
+                409,
+                {
+                    "message": (
+                        "Sua coleção mudou durante a venda. Nada foi vendido; "
+                        "tente novamente."
+                    )
+                },
+            )
         return response(500, {"message": "Não foi possível vender a carta."})
 
     try:
@@ -143,5 +227,14 @@ def lambda_handler(event, context):
 
     return response(
         200,
-        {"soldOwnedCardId": owned_card_id, "price": price, "balance": balance},
+        {
+            "fileName": file_name,
+            "name": character["name"],
+            "soldQuantity": quantity,
+            "soldOwnedCardIds": sold_ids,
+            "remainingQuantity": len(copies) - quantity,
+            "unitPrice": sell_price(character),
+            "price": total,
+            "balance": balance,
+        },
     )

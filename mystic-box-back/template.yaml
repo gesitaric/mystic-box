@@ -321,7 +321,7 @@ Resources:
           Type: Api
           Properties:
             RestApiId: !Ref MysticBoxApi
-            Path: /users/me/cards/{ownedCardId}/sell
+            Path: /users/me/cards/sell
             Method: post
             Auth:
               Authorizer: CognitoAuthorizer
@@ -329,7 +329,7 @@ Resources:
           Type: Api
           Properties:
             RestApiId: !Ref MysticBoxApi
-            Path: /users/me/cards/{ownedCardId}/sell
+            Path: /users/me/cards/sell
             Method: options
 
   GetShopCardsFunction:
@@ -453,8 +453,8 @@ Outputs:
     Description: DynamoDB table that stores each user's Fragmentos Arcanos balance
     Value: !Ref UserWalletTable
   SellUserCardApi:
-    Description: API Gateway endpoint URL to sell one of the user's cards
-    Value: !Sub "https://${MysticBoxApi}.execute-api.${AWS::Region}.${AWS::URLSuffix}/Prod/users/me/cards/{ownedCardId}/sell"
+    Description: API Gateway endpoint URL to sell one or more copies of a card from the user collection
+    Value: !Sub "https://${MysticBoxApi}.execute-api.${AWS::Region}.${AWS::URLSuffix}/Prod/users/me/cards/sell"
   SellUserCardFunction:
     Description: Sell User Card Lambda Function ARN
     Value: !GetAtt SellUserCardFunction.Arn
