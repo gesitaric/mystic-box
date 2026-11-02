@@ -1780,6 +1780,40 @@ h1 {
   margin-top: 12px;
 }
 
+.collection-sort {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  margin: 20px 0 0;
+  color: #cbb6ee;
+  font-size: 13px;
+}
+
+.collection-sort-select,
+.collection-sort-direction {
+  padding: 6px 12px;
+  border: 1px solid rgba(255, 220, 142, 0.35);
+  border-radius: 8px;
+  background: rgba(20, 10, 40, 0.7);
+  color: #ffdc8e;
+  font: inherit;
+  letter-spacing: 1px;
+  cursor: pointer;
+}
+
+.collection-sort-select:focus-visible,
+.collection-sort-direction:focus-visible {
+  outline: 2px solid #ffdc8e;
+  outline-offset: 2px;
+}
+
+.collection-sort-direction:hover,
+.collection-sort-select:hover {
+  border-color: rgba(255, 220, 142, 0.7);
+}
+
 .collection-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
