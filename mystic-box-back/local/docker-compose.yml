@@ -1,0 +1,16 @@
+# DynamoDB Local para rodar o backend na máquina (ver local/README.md).
+# Os dados ficam no volume `mystic-box-dynamodb` (dentro do disco do WSL).
+services:
+  dynamodb:
+    image: amazon/dynamodb-local:latest
+    container_name: mystic-box-dynamodb
+    command: -jar DynamoDBLocal.jar -sharedDb -dbPath /data
+    user: root
+    ports:
+      - "8000:8000"
+    volumes:
+      - mystic-box-dynamodb:/data
+    restart: unless-stopped
+
+volumes:
+  mystic-box-dynamodb:
