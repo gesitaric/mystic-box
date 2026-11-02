@@ -1390,6 +1390,27 @@ h1 {
   outline-offset: 3px;
 }
 
+.wallet {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 14px;
+  border: 1px solid rgba(160, 200, 255, 0.45);
+  border-radius: 999px;
+  background: rgba(20, 12, 38, 0.55);
+  color: #d8ecff;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  white-space: nowrap;
+  backdrop-filter: blur(6px);
+}
+
+.wallet-icon {
+  color: #9fd4ff;
+  text-shadow: 0 0 8px rgba(140, 200, 255, 0.8);
+}
+
 /* ---------- Keep card prompt ---------- */
 
 .keep-message {

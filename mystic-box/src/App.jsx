@@ -96,6 +96,9 @@ function App() {
   const [cooldownUntil, setCooldownUntil] = useState(null);
   const [now, setNow] = useState(() => Date.now());
 
+  // Saldo de Fragmentos Arcanos do usuário logado.
+  const [balance, setBalance] = useState(null);
+
   const autoSaveAttempted = useRef(false);
   const suspenseTimer = useRef(null);
 
@@ -139,6 +142,24 @@ function App() {
     },
     [startCooldown]
   );
+
+  const fetchWallet = useCallback(async (activeSession) => {
+    try {
+      const token = activeSession.session.getIdToken().getJwtToken();
+      const response = await fetch(`${API_URL}/users/me/wallet`, {
+        headers: { Authorization: token },
+      });
+
+      if (!response.ok) {
+        throw new Error(`Falha ao consultar o saldo (${response.status}).`);
+      }
+
+      const data = await response.json();
+      setBalance(data.balance ?? 0);
+    } catch (walletError) {
+      console.error(walletError);
+    }
+  }, []);
 
   const saveCards = useCallback(
     async (cardsToSave, activeSession) => {
@@ -212,6 +233,7 @@ function App() {
 
       if (currentSession) {
         setSession(currentSession);
+        void fetchWallet(currentSession);
 
         if (storedCards && !autoSaveAttempted.current) {
           autoSaveAttempted.current = true;
@@ -223,7 +245,7 @@ function App() {
     }
 
     void restore();
-  }, [saveCards, fetchSummonStatus]);
+  }, [saveCards, fetchSummonStatus, fetchWallet]);
 
   // Sem login não há tempo de espera.
   const cooldownRemaining =
@@ -303,6 +325,7 @@ function App() {
   function handleAuthenticated(auth) {
     setSession(auth);
     setAuthOpen(false);
+    void fetchWallet(auth);
 
     // Só cartas ainda não guardadas; as já guardadas não contam de novo.
     if (pendingCards) {
@@ -317,6 +340,7 @@ function App() {
     setSession(null);
     setCollectionOpen(false);
     setCooldownUntil(null);
+    setBalance(null);
   }
 
   const closeCollection = useCallback(() => setCollectionOpen(false), []);
@@ -374,6 +398,14 @@ function App() {
       <div className="session-bar">
         {session ? (
           <>
+            <span
+              className="wallet"
+              title="Fragmentos Arcanos"
+              aria-label={`${balance ?? 0} Fragmentos Arcanos`}
+            >
+              <span className="wallet-icon" aria-hidden="true">✧</span>
+              <span className="wallet-amount">{balance ?? 0}</span>
+            </span>
             <span className="session-email" title={session.email}>
               {session.email}
             </span>

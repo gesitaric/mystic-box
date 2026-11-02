@@ -65,6 +65,17 @@ Resources:
       - AttributeName: userId
         KeyType: HASH
 
+  UserWalletTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+      - AttributeName: userId
+        AttributeType: S
+      KeySchema:
+      - AttributeName: userId
+        KeyType: HASH
+
   UserPool:
     Type: AWS::Cognito::UserPool
     Properties:
@@ -206,6 +217,36 @@ Resources:
             Path: /users/me/summon-status
             Method: options
 
+  GetWalletFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: get_wallet/
+      Handler: app.lambda_handler
+      Runtime: python3.14
+      Architectures:
+      - x86_64
+      Environment:
+        Variables:
+          USER_WALLET_TABLE: !Ref UserWalletTable
+      Policies:
+      - DynamoDBReadPolicy:
+          TableName: !Ref UserWalletTable
+      Events:
+        GetWallet:
+          Type: Api
+          Properties:
+            RestApiId: !Ref MysticBoxApi
+            Path: /users/me/wallet
+            Method: get
+            Auth:
+              Authorizer: CognitoAuthorizer
+        GetWalletOptions:
+          Type: Api
+          Properties:
+            RestApiId: !Ref MysticBoxApi
+            Path: /users/me/wallet
+            Method: options
+
   ApplicationResourceGroup:
     Type: AWS::ResourceGroups::Group
     Properties:
@@ -253,3 +294,9 @@ Outputs:
   UserCardsTable:
     Description: DynamoDB table that stores the cards owned by each user
     Value: !Ref UserCardsTable
+  GetWalletApi:
+    Description: API Gateway endpoint URL for the user's wallet (Fragmentos Arcanos)
+    Value: !Sub "https://${MysticBoxApi}.execute-api.${AWS::Region}.${AWS::URLSuffix}/Prod/users/me/wallet"
+  UserWalletTable:
+    Description: DynamoDB table that stores each user's Fragmentos Arcanos balance
+    Value: !Ref UserWalletTable
