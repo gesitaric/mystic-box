@@ -184,6 +184,61 @@ def test_get_user_cards_returns_cards(authenticated_event, monkeypatch):
     table.query.assert_called_once()
 
 
+@pytest.fixture()
+def cards_table(monkeypatch):
+    table = MagicMock()
+    table.query.return_value = {
+        "Items": [
+            {"ownedCardId": "1", "name": "Bruma", "rarity": 3, "obtainedAt": "2026-01-03"},
+            {"ownedCardId": "2", "name": "Ágata", "rarity": 5, "obtainedAt": "2026-01-01"},
+            {"ownedCardId": "3", "name": "astra", "rarity": 3, "obtainedAt": "2026-01-02"},
+            {"ownedCardId": "4", "name": "Astra", "rarity": 1, "obtainedAt": "2026-01-04"},
+        ]
+    }
+    monkeypatch.setattr(get_user_cards, "_table", table)
+    return table
+
+
+def get_card_ids(authenticated_event, **query):
+    ret = get_user_cards.lambda_handler(
+        authenticated_event(queryStringParameters=query or None), ""
+    )
+    assert ret["statusCode"] == 200
+    return [card["ownedCardId"] for card in json.loads(ret["body"])["cards"]]
+
+
+def test_get_user_cards_default_sort_is_obtained_at_desc(authenticated_event, cards_table):
+    assert get_card_ids(authenticated_event) == ["4", "1", "3", "2"]
+
+
+@pytest.mark.parametrize(
+    "query, expected",
+    [
+        ({"sort": "rarity", "order": "desc"}, ["2", "3", "1", "4"]),
+        ({"sort": "rarity", "order": "asc"}, ["4", "3", "1", "2"]),
+        ({"sort": "rarity"}, ["2", "3", "1", "4"]),
+        ({"sort": "name", "order": "asc"}, ["2", "4", "3", "1"]),
+        ({"sort": "name", "order": "desc"}, ["1", "4", "3", "2"]),
+        ({"sort": "obtainedAt", "order": "asc"}, ["2", "3", "1", "4"]),
+    ],
+)
+def test_get_user_cards_sorts(authenticated_event, cards_table, query, expected):
+    assert get_card_ids(authenticated_event, **query) == expected
+
+
+@pytest.mark.parametrize(
+    "query",
+    [{"sort": "power"}, {"order": "up"}, {"sort": "name", "order": "ASC"}],
+)
+def test_get_user_cards_rejects_invalid_sort(authenticated_event, cards_table, query):
+    ret = get_user_cards.lambda_handler(
+        authenticated_event(queryStringParameters=query), ""
+    )
+
+    assert ret["statusCode"] == 400
+    cards_table.query.assert_not_called()
+
+
 def test_get_user_cards_handles_dynamodb_error(authenticated_event, monkeypatch):
     table = MagicMock()
     table.query.side_effect = ClientError({"Error": {"Code": "500"}}, "Query")

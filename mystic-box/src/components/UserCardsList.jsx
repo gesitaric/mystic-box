@@ -3,11 +3,18 @@ import { createPortal } from "react-dom";
 import { getCharacterImage } from "../characterImages";
 import { CardFace } from "./GachaCard";
 
+const SORT_FIELDS = [
+  { value: "rarity", label: "Raridade" },
+  { value: "name", label: "Nome" },
+];
+
 function UserCardsList({ apiUrl, session, onClose, onSessionExpired }) {
   const [cards, setCards] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [reloadKey, setReloadKey] = useState(0);
+  const [sortField, setSortField] = useState("rarity");
+  const [sortDirection, setSortDirection] = useState("desc");
 
   useEffect(() => {
     function handleKeyDown(event) {
@@ -27,7 +34,11 @@ function UserCardsList({ apiUrl, session, onClose, onSessionExpired }) {
 
       try {
         const token = session.session.getIdToken().getJwtToken();
-        const response = await fetch(`${apiUrl}/users/me/cards`, {
+        const query = new URLSearchParams({
+          sort: sortField,
+          order: sortDirection,
+        });
+        const response = await fetch(`${apiUrl}/users/me/cards?${query}`, {
           headers: { Authorization: token },
         });
 
@@ -54,7 +65,7 @@ function UserCardsList({ apiUrl, session, onClose, onSessionExpired }) {
     return () => {
       cancelled = true;
     };
-  }, [apiUrl, session, onSessionExpired, reloadKey]);
+  }, [apiUrl, session, onSessionExpired, reloadKey, sortField, sortDirection]);
 
   return createPortal(
     <div
@@ -87,7 +98,7 @@ function UserCardsList({ apiUrl, session, onClose, onSessionExpired }) {
           )}
         </header>
 
-        {loading && (
+        {loading && cards.length === 0 && (
           <p className="collection-status" role="status">
             Carregando...
           </p>
@@ -112,8 +123,49 @@ function UserCardsList({ apiUrl, session, onClose, onSessionExpired }) {
           </p>
         )}
 
-        {!loading && !error && cards.length > 0 && (
-          <ul className="collection-grid">
+        {!error && cards.length > 1 && (
+          <div className="collection-sort">
+            <label className="collection-sort-label" htmlFor="collection-sort-field">
+              Ordenar por
+            </label>
+            <select
+              id="collection-sort-field"
+              className="collection-sort-select"
+              value={sortField}
+              disabled={loading}
+              onChange={(event) => setSortField(event.target.value)}
+            >
+              {SORT_FIELDS.map((option) => (
+                <option key={option.value} value={option.value}>
+                  {option.label}
+                </option>
+              ))}
+            </select>
+            <button
+              type="button"
+              className="collection-sort-direction"
+              disabled={loading}
+              onClick={() =>
+                setSortDirection((direction) =>
+                  direction === "asc" ? "desc" : "asc"
+                )
+              }
+              aria-label={
+                sortDirection === "asc"
+                  ? "Ordem crescente. Alterar para decrescente"
+                  : "Ordem decrescente. Alterar para crescente"
+              }
+            >
+              {sortDirection === "asc" ? "▲ Crescente" : "▼ Decrescente"}
+            </button>
+          </div>
+        )}
+
+        {!error && cards.length > 0 && (
+          <ul
+            className={`collection-grid${loading ? " is-loading" : ""}`}
+            aria-busy={loading}
+          >
             {cards.map((card) => {
               const rarity = Number(card.rarity) || 0;
               return (
