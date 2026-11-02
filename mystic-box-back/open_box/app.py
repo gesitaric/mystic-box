@@ -1,43 +1,14 @@
 import json
-import random
+
+from botocore.exceptions import ClientError
+from mystic_shared import summon_token
+from mystic_shared.cards import draw_cards, public_card
 
 CORS_HEADERS = {
     "Access-Control-Allow-Origin": "*",
     "Access-Control-Allow-Headers": "Content-Type",
     "Access-Control-Allow-Methods": "GET,POST,OPTIONS",
 }
-
-CHARACTERS = [
-    {"name": "Malachar", "rarity": 5, "file_name": "malachar.jfif"},
-    {"name": "Boreas", "rarity": 5, "file_name": "boreas.jfif"},
-    {"name": "Astra", "rarity": 5, "file_name": "astra.jfif"},
-    {"name": "Seraphiel", "rarity": 5, "file_name": "seraphiel.jfif"},
-    {"name": "Ignis", "rarity": 5, "file_name": "ignis.jfif"},
-    {"name": "Leoric", "rarity": 5, "file_name": "leoric.jfif"},
-    {"name": "Lunara", "rarity": 5, "file_name": "lunara.jfif"},
-    {"name": "Mortis", "rarity": 5, "file_name": "mortis.jfif"},
-    {"name": "Kaito", "rarity": 4, "file_name": "kaito.jfif"},
-    {"name": "Solara", "rarity": 4, "file_name": "solara.jfif"},
-    {"name": "Aurelius", "rarity": 4, "file_name": "aurelius.jfif"},
-    {"name": "Scarlett", "rarity": 4, "file_name": "scarlett.jfif"},
-    {"name": "Sylva", "rarity": 4, "file_name": "sylva.jfif"},
-    {"name": "Rosalind", "rarity": 4, "file_name": "rosalind.jfif"},
-    {"name": "Thalion", "rarity": 4, "file_name": "thalion.jfif"},
-    {"name": "Vesper", "rarity": 4, "file_name": "vesper.jfif"},
-    {"name": "Pyralis", "rarity": 4, "file_name": "pyralis.jfif"},
-    {"name": "Glacius", "rarity": 4, "file_name": "glacius.jfif"},
-    {"name": "Isolde", "rarity": 4, "file_name": "isolde.jfif"},
-    {"name": "Elowen", "rarity": 4, "file_name": "elowen.jfif"},
-    {"name": "Rowan", "rarity": 3, "file_name": "rowan.jfif"},
-    {"name": "Corvus", "rarity": 3, "file_name": "corvus.jfif"},
-]
-
-SUMMON_SIZE = 3
-
-RARITY_WEIGHTS = {5: 1, 4: 6, 3: 40}
-
-# A última carta da invocação tem chances um pouco maiores de ser rara.
-LAST_CARD_RARITY_WEIGHTS = {5: 2, 4: 8, 3: 40}
 
 
 def response(status_code, body):
@@ -48,25 +19,22 @@ def response(status_code, body):
     }
 
 
-def draw_cards(count=SUMMON_SIZE):
-    """Sorteia `count` personagens distintos; o último usa pesos mais generosos."""
-    available = list(CHARACTERS)
-    drawn = []
-
-    for position in range(count):
-        rarity_weights = (
-            LAST_CARD_RARITY_WEIGHTS if position == count - 1 else RARITY_WEIGHTS
-        )
-        weights = [rarity_weights[character["rarity"]] for character in available]
-        character = random.choices(available, weights=weights, k=1)[0]
-        available.remove(character)
-        drawn.append(character)
-
-    return drawn
-
-
 def lambda_handler(event, context):
     if event.get("httpMethod") == "OPTIONS":
         return response(200, {})
 
-    return response(200, {"cards": draw_cards()})
+    drawn = draw_cards()
+
+    try:
+        # Só este token (e não as cartas) é aceito depois por POST /users/me/cards.
+        token = summon_token.issue(character["file_name"] for character in drawn)
+    except ClientError:
+        return response(500, {"message": "Não foi possível abrir a caixa."})
+
+    return response(
+        200,
+        {
+            "cards": [public_card(character) for character in drawn],
+            "summonToken": token,
+        },
+    )

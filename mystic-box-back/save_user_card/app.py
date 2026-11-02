@@ -1,6 +1,5 @@
 import json
 import os
-import re
 import time
 import uuid
 from datetime import datetime, timezone
@@ -8,6 +7,8 @@ from datetime import datetime, timezone
 import boto3
 from boto3.dynamodb.types import TypeSerializer
 from botocore.exceptions import ClientError
+from mystic_shared import summon_token
+from mystic_shared.cards import SUMMON_SIZE, get_character
 
 CORS_HEADERS = {
     "Access-Control-Allow-Origin": "*",
@@ -17,11 +18,8 @@ CORS_HEADERS = {
 
 USER_CARDS_TABLE = os.environ.get("USER_CARDS_TABLE")
 USER_SUMMON_STATE_TABLE = os.environ.get("USER_SUMMON_STATE_TABLE")
+SUMMON_TOKENS_TABLE = os.environ.get("SUMMON_TOKENS_TABLE")
 SUMMON_COOLDOWN_SECONDS = int(os.environ.get("SUMMON_COOLDOWN_SECONDS", "3600"))
-
-MAX_CARDS_PER_SUMMON = 3
-
-FILE_NAME_PATTERN = re.compile(r"^[a-z0-9_\-]+\.(jfif|jpg|jpeg|png|webp)$")
 
 _serializer = TypeSerializer()
 
@@ -53,52 +51,32 @@ def get_user_id(event):
     return claims.get("sub")
 
 
-def parse_cards(body):
+def parse_summon(body):
+    """Lê o token do sorteio e devolve (conteúdo do token, cartas sorteadas).
+
+    O corpo só traz `summonToken`. Nome, raridade e imagem das cartas vêm das
+    definições do servidor, nunca do cliente.
+    """
     if isinstance(body, str):
         try:
             body = json.loads(body)
         except json.JSONDecodeError as error:
-            raise ValueError("Corpo da requisição inválido.") from error
+            raise summon_token.InvalidSummonToken("Corpo da requisição inválido.") from error
 
     if not isinstance(body, dict):
-        raise ValueError("Corpo da requisição inválido.")
+        raise summon_token.InvalidSummonToken("Corpo da requisição inválido.")
 
-    # Aceita {"cards": [...]} e o formato antigo {"card": {...}}.
-    cards = body["cards"] if "cards" in body else [body.get("card", body)]
+    payload = summon_token.verify(body.get("summonToken"))
+    file_names = payload["cards"]
 
-    if not isinstance(cards, list) or not 1 <= len(cards) <= MAX_CARDS_PER_SUMMON:
-        raise ValueError("Quantidade de cartas inválida.")
+    if not 1 <= len(file_names) <= SUMMON_SIZE or len(set(file_names)) != len(file_names):
+        raise summon_token.InvalidSummonToken("Sorteio inválido.")
 
-    parsed = [parse_card(card) for card in cards]
+    characters = [get_character(file_name) for file_name in file_names]
+    if any(character is None for character in characters):
+        raise summon_token.InvalidSummonToken("Sorteio inválido.")
 
-    if len({card["file_name"] for card in parsed}) != len(parsed):
-        raise ValueError("As cartas de uma invocação não podem se repetir.")
-
-    return parsed
-
-
-def parse_card(card):
-    if not isinstance(card, dict):
-        raise ValueError("Carta inválida.")
-
-    name = card.get("name")
-    rarity = card.get("rarity")
-    file_name = card.get("file_name")
-
-    if not isinstance(name, str) or not name.strip() or len(name) > 60:
-        raise ValueError("Nome da carta inválido.")
-
-    if not isinstance(rarity, int) or isinstance(rarity, bool) or not 1 <= rarity <= 5:
-        raise ValueError("Raridade da carta inválida.")
-
-    if not isinstance(file_name, str) or not FILE_NAME_PATTERN.match(file_name):
-        raise ValueError("Arquivo da carta inválido.")
-
-    return {
-        "name": name.strip(),
-        "rarity": rarity,
-        "file_name": file_name,
-    }
+    return payload, characters
 
 
 def get_retry_after_seconds(user_id, now):
@@ -111,12 +89,22 @@ def get_retry_after_seconds(user_id, now):
     return max(0, last_summon_at + SUMMON_COOLDOWN_SECONDS - now)
 
 
-def is_cooldown_conflict(error):
+def get_failed_conditions(error):
+    """Índices dos itens da transação cuja condição falhou."""
     if error.response.get("Error", {}).get("Code") != "TransactionCanceledException":
-        return False
+        return set()
 
     reasons = error.response.get("CancellationReasons") or []
-    return bool(reasons) and reasons[0].get("Code") == "ConditionalCheckFailed"
+    return {
+        index
+        for index, reason in enumerate(reasons)
+        if reason.get("Code") == "ConditionalCheckFailed"
+    }
+
+
+# Posições na transação.
+COOLDOWN_ITEM = 0
+TOKEN_ITEM = 1
 
 
 def lambda_handler(event, context):
@@ -128,9 +116,13 @@ def lambda_handler(event, context):
         return response(401, {"message": "Usuário não autenticado."})
 
     try:
-        cards = parse_cards(event.get("body"))
-    except ValueError as error:
+        token, characters = parse_summon(event.get("body"))
+    except summon_token.ExpiredSummonToken as error:
+        return response(410, {"message": str(error)})
+    except summon_token.InvalidSummonToken as error:
         return response(400, {"message": str(error)})
+    except ClientError:
+        return response(500, {"message": "Não foi possível guardar as cartas."})
 
     now = int(time.time())
     obtained_at = datetime.fromtimestamp(now, timezone.utc).isoformat()
@@ -139,14 +131,17 @@ def lambda_handler(event, context):
             "userId": user_id,
             "ownedCardId": str(uuid.uuid4()),
             "obtainedAt": obtained_at,
-            **card,
+            "name": character["name"],
+            "rarity": character["rarity"],
+            "file_name": character["file_name"],
         }
-        for card in cards
+        for character in characters
     ]
 
     try:
-        # Registrar a invocação e guardar as cartas é atômico: se o usuário
-        # ainda estiver no tempo de espera, nenhuma escrita acontece.
+        # Registrar a invocação, gastar o token e guardar as cartas é atômico:
+        # se o usuário estiver no tempo de espera ou o token já tiver sido
+        # usado, nenhuma escrita acontece.
         get_client().transact_write_items(
             TransactItems=[
                 {
@@ -164,6 +159,19 @@ def lambda_handler(event, context):
                         },
                     }
                 },
+                {
+                    "Put": {
+                        "TableName": SUMMON_TOKENS_TABLE,
+                        "Item": {
+                            "tokenId": {"S": token["id"]},
+                            "userId": {"S": user_id},
+                            "usedAt": {"N": str(now)},
+                            # TTL do DynamoDB: some depois que o token expira.
+                            "expiresAt": {"N": str(token["exp"])},
+                        },
+                        "ConditionExpression": "attribute_not_exists(tokenId)",
+                    }
+                },
                 *(
                     {
                         "Put": {
@@ -179,7 +187,12 @@ def lambda_handler(event, context):
             ]
         )
     except ClientError as error:
-        if not is_cooldown_conflict(error):
+        failed = get_failed_conditions(error)
+
+        if TOKEN_ITEM in failed:
+            return response(409, {"message": "Estas cartas já foram guardadas."})
+
+        if COOLDOWN_ITEM not in failed:
             return response(500, {"message": "Não foi possível guardar as cartas."})
 
         try:
