@@ -16,6 +16,12 @@ CHARACTERS = [
     {"name": "Leoric", "rarity": 5, "file_name": "leoric.jfif", "price": 250},
     {"name": "Lunara", "rarity": 5, "file_name": "lunara.jfif", "price": 250},
     {"name": "Mortis", "rarity": 5, "file_name": "mortis.jfif", "price": 250},
+    {"name": "Drakara", "rarity": 5, "file_name": "drakara.jfif", "price": 250},
+    {"name": "Gorvane", "rarity": 5, "file_name": "gorvane.jfif", "price": 250},
+    {"name": "Elysia", "rarity": 5, "file_name": "elysia.jfif", "price": 250},
+    {"name": "Uriel", "rarity": 5, "file_name": "uriel.jfif", "price": 250},
+    {"name": "Celestine", "rarity": 5, "file_name": "celestine.png", "price": 250},
+    {"name": "Lyra", "rarity": 5, "file_name": "lyra.png", "price": 250},
     {"name": "Kaito", "rarity": 4, "file_name": "kaito.jfif", "price": 50},
     {"name": "Solara", "rarity": 4, "file_name": "solara.jfif", "price": 50},
     {"name": "Aurelius", "rarity": 4, "file_name": "aurelius.jfif", "price": 50},
@@ -28,8 +34,32 @@ CHARACTERS = [
     {"name": "Glacius", "rarity": 4, "file_name": "glacius.jfif", "price": 50},
     {"name": "Isolde", "rarity": 4, "file_name": "isolde.jfif", "price": 50},
     {"name": "Elowen", "rarity": 4, "file_name": "elowen.jfif", "price": 50},
+    {"name": "Hayato", "rarity": 4, "file_name": "hayato.jfif", "price": 50},
+    {"name": "Maren", "rarity": 4, "file_name": "maren.jfif", "price": 50},
+    {"name": "Fenric", "rarity": 4, "file_name": "fenric.jfif", "price": 50},
+    {"name": "Faelyn", "rarity": 4, "file_name": "faelyn.jfif", "price": 50},
+    {"name": "Amethia", "rarity": 4, "file_name": "amethia.jfif", "price": 50},
+    {"name": "Valeria", "rarity": 4, "file_name": "valeria.jfif", "price": 50},
+    {"name": "Stellara", "rarity": 4, "file_name": "stellara.jfif", "price": 50},
+    {"name": "Morwen", "rarity": 4, "file_name": "morwen.jfif", "price": 50},
+    {"name": "Kage", "rarity": 4, "file_name": "kage.jfif", "price": 50},
+    {"name": "Odette", "rarity": 4, "file_name": "odette.jfif", "price": 50},
+    {"name": "Nocturna", "rarity": 4, "file_name": "nocturna.jfif", "price": 50},
+    {"name": "Eldric", "rarity": 4, "file_name": "eldric.png", "price": 50},
+    {"name": "Ravenna", "rarity": 4, "file_name": "ravenna.png", "price": 50},
+    {"name": "Cassius", "rarity": 4, "file_name": "cassius.png", "price": 50},
     {"name": "Rowan", "rarity": 3, "file_name": "rowan.jfif", "price": 10},
     {"name": "Corvus", "rarity": 3, "file_name": "corvus.jfif", "price": 10},
+    {"name": "Tobin", "rarity": 3, "file_name": "tobin.jfif", "price": 10},
+    {"name": "Garrick", "rarity": 3, "file_name": "garrick.jfif", "price": 10},
+    {"name": "Maelis", "rarity": 3, "file_name": "maelis.jfif", "price": 10},
+    {"name": "Jory", "rarity": 3, "file_name": "jory.jfif", "price": 10},
+    {"name": "Albin", "rarity": 3, "file_name": "albin.jfif", "price": 10},
+    {"name": "Brina", "rarity": 3, "file_name": "brina.jfif", "price": 10},
+    {"name": "Silas", "rarity": 3, "file_name": "silas.jfif", "price": 10},
+    {"name": "Kael", "rarity": 3, "file_name": "kael.jfif", "price": 10},
+    {"name": "Vexa", "rarity": 3, "file_name": "vexa.jfif", "price": 10},
+    {"name": "Torvin", "rarity": 3, "file_name": "torvin.jfif", "price": 10},
 ]
 
 _BY_FILE_NAME = {character["file_name"]: character for character in CHARACTERS}
@@ -40,10 +70,13 @@ SUMMON_SIZE = 3
 # 100 itens: um para a carteira e o resto para as cartas removidas.
 MAX_SELL_QUANTITY = 99
 
-RARITY_WEIGHTS = {5: 1, 4: 6, 3: 40}
+# Pesos por carta: ao mudar a quantidade de cartas de cada raridade, revise-os
+# para manter a chance total de cada raridade (hoje ~4,5% 5★, ~44% 4★, ~51% 3★).
+RARITY_WEIGHTS = {5: 3, 4: 16, 3: 40}
 
-# A última carta da invocação tem chances um pouco maiores de ser rara.
-LAST_CARD_RARITY_WEIGHTS = {5: 2, 4: 8, 3: 40}
+# A última carta da invocação tem chances um pouco maiores de ser rara
+# (~8,5% 5★, ~50% 4★, ~42% 3★).
+LAST_CARD_RARITY_WEIGHTS = {5: 7, 4: 22, 3: 40}
 
 
 def get_character(file_name):
