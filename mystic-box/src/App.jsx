@@ -3,7 +3,7 @@ import AuthModal from "./components/AuthModal";
 import GachaMachine from "./components/GachaMachine";
 import Particles from "./components/Particles";
 import SummonButton from "./components/SummonButton";
-import SummonResults from "./components/SummonResults";
+import SummonSpread from "./components/SummonSpread";
 import UserCardsList from "./components/UserCardsList";
 import { getCurrentSession, signOut } from "./auth/cognito";
 import "./styles/gacha.css";
@@ -78,8 +78,8 @@ function App() {
   const [revealed, setRevealed] = useState(false);
   const [particles, setParticles] = useState([]);
   const [cards, setCards] = useState(null);
-  // Índice da carta em exibição; igual a cards.length mostra o resumo.
-  const [revealIndex, setRevealIndex] = useState(0);
+  // Quantas cartas já foram viradas (as viradas ficam à esquerda).
+  const [flippedCount, setFlippedCount] = useState(0);
   const [charging, setCharging] = useState(false);
   const [error, setError] = useState("");
 
@@ -206,7 +206,7 @@ function App() {
       if (storedCards) {
         setCards(storedCards);
         setPendingCards(storedCards);
-        setRevealIndex(storedCards.length);
+        setFlippedCount(storedCards.length);
         setRevealed(true);
       }
 
@@ -231,16 +231,10 @@ function App() {
   const onCooldown = cooldownRemaining > 0;
 
   const totalCards = cards?.length ?? 0;
-  const revealing = revealed && totalCards > 0 && revealIndex < totalCards;
-  const showingResults = revealed && totalCards > 0 && revealIndex >= totalCards;
-  const isFinalCard = totalCards > 1 && revealIndex === totalCards - 1;
-
-  // Durante a abertura a primeira carta sobe da caixa.
-  const currentCard = opening
-    ? cards?.[0] ?? null
-    : revealing && !charging
-      ? cards[revealIndex]
-      : null;
+  const showingSpread = revealed && totalCards > 0;
+  const revealing = showingSpread && flippedCount < totalCards;
+  const showingResults = showingSpread && flippedCount >= totalCards;
+  const lastFlippedCard = flippedCount > 0 ? cards?.[flippedCount - 1] : null;
 
   async function summon() {
     if (opening || revealing || charging || onCooldown) return;
@@ -253,7 +247,7 @@ function App() {
     setRevealed(false);
     setCharging(false);
     setCards(null);
-    setRevealIndex(0);
+    setFlippedCount(0);
     setOpening(true);
 
     setParticles(
@@ -279,7 +273,7 @@ function App() {
         void saveCards(drawnCards, session);
       }
 
-      await new Promise((resolve) => setTimeout(resolve, 2400));
+      await new Promise((resolve) => setTimeout(resolve, 1900));
 
       setOpening(false);
       setRevealed(true);
@@ -290,22 +284,20 @@ function App() {
     }
   }
 
-  function revealNext() {
+  function flipNext() {
     if (!revealing || charging) return;
 
-    const nextIndex = revealIndex + 1;
-
-    if (totalCards > 1 && nextIndex === totalCards - 1) {
-      // Suspense antes da última carta.
+    if (totalCards > 1 && flippedCount === totalCards - 1) {
+      // Suspense antes de virar a última carta.
       setCharging(true);
       suspenseTimer.current = setTimeout(() => {
         setCharging(false);
-        setRevealIndex(nextIndex);
+        setFlippedCount((count) => count + 1);
       }, FINAL_CARD_SUSPENSE_MS);
       return;
     }
 
-    setRevealIndex(nextIndex);
+    setFlippedCount((count) => count + 1);
   }
 
   function handleAuthenticated(auth) {
@@ -336,12 +328,21 @@ function App() {
     setAuthOpen(true);
   }, []);
 
-  const isLegendary = revealing && !charging && (currentCard?.rarity ?? 0) >= 5;
+  // Efeito lendário enquanto a última carta virada for lendária.
+  const isLegendary = showingSpread && !charging && (lastFlippedCard?.rarity ?? 0) >= 5;
+  // O clarão espera a carta terminar de girar.
+  const legendaryTiming = {
+    animationDelay: flippedCount === totalCards ? "0.6s" : "0.35s",
+    animationFillMode: "both",
+  };
   const hasUnsavedCards = showingResults && !saved && !cardsLost;
 
-  let nextLabel = "Próxima carta";
-  if (revealIndex === totalCards - 2) nextLabel = "Revelar última carta";
-  if (revealIndex === totalCards - 1) nextLabel = `Ver as ${totalCards} cartas`;
+  const nextLabel =
+    flippedCount === totalCards - 1 ? "Revelar última carta" : "Virar carta";
+
+  let revealStatus = `${flippedCount} DE ${totalCards} REVELADAS`;
+  if (flippedCount === 0) revealStatus = `${totalCards} CARTAS FORAM INVOCADAS`;
+  if (charging) revealStatus = "A ÚLTIMA CARTA ESTÁ CHEGANDO...";
 
   return (
     <main
@@ -362,7 +363,12 @@ function App() {
       <div className="frame" />
 
       {isLegendary && (
-        <div key={revealIndex} className="legendary-flash" aria-hidden="true" />
+        <div
+          key={flippedCount}
+          className="legendary-flash"
+          style={legendaryTiming}
+          aria-hidden="true"
+        />
       )}
 
       <div className="session-bar">
@@ -407,26 +413,26 @@ function App() {
         <div className="glow" />
 
         {isLegendary && (
-          <div key={revealIndex} className="legendary-banner" aria-hidden="true">
+          <div
+            key={flippedCount}
+            className="legendary-banner"
+            style={legendaryTiming}
+            aria-hidden="true"
+          >
             <span className="legendary-banner-title">LEGENDARY</span>
             <span className="legendary-banner-sub">A RARE CARD APPEARS</span>
           </div>
         )}
 
-        {showingResults ? (
-          <SummonResults cards={cards} />
-        ) : (
-          <GachaMachine
-            card={currentCard}
-            cardKey={revealIndex}
-            cardClassName={
-              revealing && revealIndex > 0
-                ? isFinalCard
-                  ? "card-enter card-final"
-                  : "card-enter"
-                : ""
-            }
+        {showingSpread ? (
+          <SummonSpread
+            cards={cards}
+            flippedCount={flippedCount}
+            charging={charging}
+            onFlip={flipNext}
           />
+        ) : (
+          <GachaMachine />
         )}
 
         <Particles particles={particles} />
@@ -436,15 +442,13 @@ function App() {
         {revealing || charging ? (
           <>
             <div className="subtitle reveal-progress" aria-live="polite">
-              {charging
-                ? "A ÚLTIMA CARTA ESTÁ CHEGANDO..."
-                : `CARTA ${revealIndex + 1} DE ${totalCards}`}
+              {revealStatus}
             </div>
 
             <button
               type="button"
               className="keep-button reveal-next"
-              onClick={revealNext}
+              onClick={flipNext}
               disabled={charging}
             >
               {nextLabel}
