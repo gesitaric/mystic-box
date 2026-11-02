@@ -24,6 +24,11 @@ If you are developing a production application, we recommend using TypeScript wi
    - `VITE_COGNITO_CLIENT_ID`: output `UserPoolClientId`
 3. Rode `npm run dev`.
 
+### Rodar contra a API local (testes)
+
+Use `npm run dev:local` com o `.env.localapi` (copie de `.env.localapi.example`).
+O passo a passo completo (Docker, banco e API) está em `../mystic-box-back/local/README.md`.
+
 Fluxo: qualquer pessoa pode puxar cartas sem login. O sorteio e feito no servidor, que devolve as cartas e um `summonToken` assinado. Apos a revelacao, se nao estiver autenticada, aparece a opcao de entrar/criar conta para guardar as cartas na colecao (o token vale por 30 minutos). Usuarios autenticados tem as cartas guardadas automaticamente. Na colecao, cada carta pode ser vendida pelo preco informado pela API.
 
 **Importante:** o frontend nao define NENHUMA regra do jogo (precos, raridades, sorteio, saldo, tempo de espera). Ele so exibe o que a API devolve e envia intencoes (ex.: o `summonToken`, o `ownedCardId` da carta a vender). Veja o `CLAUDE.md` na raiz do repositorio.

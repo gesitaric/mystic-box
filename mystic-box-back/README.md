@@ -72,6 +72,13 @@ The first command will build the source of your application. The second command 
 
 You can find your API Gateway Endpoint URL in the output values displayed after deployment.
 
+## Rodar o jogo localmente (recomendado para testes)
+
+Veja `local/README.md`: DynamoDB Local em Docker (Docker Engine no WSL) + todas as Lambdas
+num único processo Python (`local/dev_server.py`), com o frontend em `npm run dev:local`.
+O `sam local start-api` abaixo não aplica o authorizer do Cognito, então as rotas
+autenticadas não funcionam nele sem esse servidor.
+
 ## Use the SAM CLI to build and test locally
 
 Build your application with the `sam build --use-container` command.
