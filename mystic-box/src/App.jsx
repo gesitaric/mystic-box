@@ -1,11 +1,10 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import AuthModal from "./components/AuthModal";
-import GachaMachine from "./components/GachaMachine";
 import HomeScreen from "./components/HomeScreen";
-import Particles from "./components/Particles";
 import ShopModal from "./components/ShopModal";
-import SummonButton from "./components/SummonButton";
+import SummonPortal from "./components/portal/SummonPortal";
 import SummonSpread from "./components/SummonSpread";
+import RevealFx from "./components/reveal/RevealFx";
 import UserCardsList from "./components/UserCardsList";
 import { getCurrentSession, signOut } from "./auth/cognito";
 import "./styles/gacha.css";
@@ -20,6 +19,9 @@ const API_URL = (
 const PENDING_SUMMON_KEY = "mystic-box:pending-summon";
 // Chaves de versões anteriores, que guardavam só as cartas (sem token).
 const LEGACY_PENDING_KEYS = ["mystic-box:pending-cards", "mystic-box:pending-card"];
+
+// Depois de o portal abrir, tempo mínimo da explosão antes de as cartas saírem dele.
+const PORTAL_REVEAL_DELAY_MS = 1700;
 
 // Pausa de suspense antes de revelar a última carta.
 const FINAL_CARD_SUSPENSE_MS = 1600;
@@ -95,12 +97,13 @@ async function fetchSummon() {
 function App() {
   const [opening, setOpening] = useState(false);
   const [revealed, setRevealed] = useState(false);
-  const [particles, setParticles] = useState([]);
   const [cards, setCards] = useState(null);
   // Quantas cartas já foram viradas (as viradas ficam à esquerda).
   const [flippedCount, setFlippedCount] = useState(0);
   const [charging, setCharging] = useState(false);
   const [error, setError] = useState("");
+  // Muda para recriar o portal (volta ao estado adormecido) depois de um erro.
+  const [portalKey, setPortalKey] = useState(0);
 
   const [session, setSession] = useState(null);
   const [authOpen, setAuthOpen] = useState(false);
@@ -126,6 +129,10 @@ function App() {
 
   const autoSaveAttempted = useRef(false);
   const suspenseTimer = useRef(null);
+  const portalRef = useRef(null);
+  const revealFxRef = useRef(null);
+  const getPortalCenter = useCallback(() => portalRef.current?.getCenter() ?? null, []);
+  const handleCardEmerge = useCallback(() => portalRef.current?.burst(), []);
 
   useEffect(() => () => clearTimeout(suspenseTimer.current), []);
 
@@ -314,19 +321,11 @@ function App() {
     setFlippedCount(0);
     setOpening(true);
 
-    setParticles(
-      Array.from({ length: 40 }, (_, i) => ({
-        id: i,
-        x: Math.random() * 500 - 250,
-        y: Math.random() * -500 - 50,
-        delay: Math.random() * 0.5,
-      }))
-    );
-
     try {
+      // O sorteio corre no servidor enquanto a explosão do portal acontece.
       const [summonResult] = await Promise.all([
         fetchSummon(),
-        new Promise((resolve) => setTimeout(resolve, 700)),
+        new Promise((resolve) => setTimeout(resolve, PORTAL_REVEAL_DELAY_MS)),
       ]);
 
       setCards(summonResult.cards);
@@ -337,16 +336,16 @@ function App() {
         void saveCards(summonResult, session);
       }
 
-      await new Promise((resolve) => setTimeout(resolve, 1900));
-
       setOpening(false);
       setRevealed(true);
     } catch (err) {
       console.error(err);
       setOpening(false);
-      setError("Could not open the box. Please try again.");
+      setError("The summon failed. Please channel the portal again.");
+      setPortalKey((key) => key + 1);
     }
   }
+
 
   function flipNext() {
     if (!revealing || charging) return;
@@ -394,6 +393,18 @@ function App() {
 
   function goHome() {
     if (!canLeaveSummon) return;
+    // Resultado já resolvido (guardado ou perdido): na próxima visita, portal novo.
+    // Cartas ainda não guardadas continuam na tela.
+    if (showingResults && (saved || lostMessage)) {
+      setError("");
+      setSaveError("");
+      setSaved(false);
+      setLostMessage("");
+      setRevealed(false);
+      setCards(null);
+      setFlippedCount(0);
+      setPortalKey((key) => key + 1);
+    }
     setScreen("home");
   }
 
@@ -506,7 +517,6 @@ function App() {
       ) : (
         <>
           <div className="stage">
-            <div className="glow" />
 
             {isLegendary && (
               <div
@@ -520,19 +530,36 @@ function App() {
               </div>
             )}
 
-            {showingSpread ? (
+            {showingSpread && (
               <SummonSpread
                 cards={cards}
                 flippedCount={flippedCount}
                 charging={charging}
                 onFlip={flipNext}
+                getOrigin={getPortalCenter}
+                onEmerge={handleCardEmerge}
+                fx={revealFxRef}
+                suspenseSeconds={FINAL_CARD_SUSPENSE_MS / 1000}
               />
-            ) : (
-              <GachaMachine />
             )}
-
-            <Particles particles={particles} />
           </div>
+
+          <RevealFx ref={revealFxRef} />
+
+          {/* Fica montado durante a revelação: as cartas saem dele e ele vira cenário. */}
+          <SummonPortal
+              ref={portalRef}
+              key={portalKey}
+              embedded
+              backdrop={showingSpread}
+              silenced={showingSpread && flippedCount > 0}
+              onActivated={summon}
+              disabled={opening || onCooldown || showingSpread}
+              disabledLabel={
+                onCooldown ? `PORTAL RECHARGING · ${formatCountdown(cooldownRemaining)}` : ""
+              }
+              activatedLabel={opening ? "THE CARDS ARE ARRIVING..." : undefined}
+          />
 
           <div className="action-bar">
             {revealing || charging ? (
@@ -550,20 +577,9 @@ function App() {
                   {nextLabel}
                 </button>
               </>
-            ) : (
-              <>
-                <div className="subtitle">
-                  A MYSTERIOUS GIFT AWAITS...
-                </div>
+            ) : null}
 
-                <SummonButton
-                  onClick={summon}
-                  disabled={opening || onCooldown}
-                />
-              </>
-            )}
-
-            {onCooldown && !revealing && !charging && (
+            {onCooldown && showingResults && (
               <p className="cooldown-message" role="timer" aria-live="off">
                 Next summon in{" "}
                 <span className="cooldown-time">{formatCountdown(cooldownRemaining)}</span>
