@@ -4,6 +4,7 @@ import HomeScreen from "./components/HomeScreen";
 import ShopModal from "./components/ShopModal";
 import SummonPortal from "./components/portal/SummonPortal";
 import SummonSpread from "./components/SummonSpread";
+import RevealFx from "./components/reveal/RevealFx";
 import UserCardsList from "./components/UserCardsList";
 import { getCurrentSession, signOut } from "./auth/cognito";
 import "./styles/gacha.css";
@@ -129,6 +130,7 @@ function App() {
   const autoSaveAttempted = useRef(false);
   const suspenseTimer = useRef(null);
   const portalRef = useRef(null);
+  const revealFxRef = useRef(null);
   const getPortalCenter = useCallback(() => portalRef.current?.getCenter() ?? null, []);
   const handleCardEmerge = useCallback(() => portalRef.current?.burst(), []);
 
@@ -344,20 +346,6 @@ function App() {
     }
   }
 
-  // Sai do resultado e volta ao portal adormecido (não sorteia nada).
-  function returnToPortal() {
-    if (revealing || charging) return;
-    clearTimeout(suspenseTimer.current);
-    setError("");
-    setSaveError("");
-    setSaved(false);
-    setLostMessage("");
-    setRevealed(false);
-    setCards(null);
-    setFlippedCount(0);
-    // Portal novo, adormecido.
-    setPortalKey((key) => key + 1);
-  }
 
   function flipNext() {
     if (!revealing || charging) return;
@@ -405,6 +393,18 @@ function App() {
 
   function goHome() {
     if (!canLeaveSummon) return;
+    // Resultado já resolvido (guardado ou perdido): na próxima visita, portal novo.
+    // Cartas ainda não guardadas continuam na tela.
+    if (showingResults && (saved || lostMessage)) {
+      setError("");
+      setSaveError("");
+      setSaved(false);
+      setLostMessage("");
+      setRevealed(false);
+      setCards(null);
+      setFlippedCount(0);
+      setPortalKey((key) => key + 1);
+    }
     setScreen("home");
   }
 
@@ -538,9 +538,13 @@ function App() {
                 onFlip={flipNext}
                 getOrigin={getPortalCenter}
                 onEmerge={handleCardEmerge}
+                fx={revealFxRef}
+                suspenseSeconds={FINAL_CARD_SUSPENSE_MS / 1000}
               />
             )}
           </div>
+
+          <RevealFx ref={revealFxRef} />
 
           {/* Fica montado durante a revelação: as cartas saem dele e ele vira cenário. */}
           <SummonPortal
@@ -548,6 +552,7 @@ function App() {
               key={portalKey}
               embedded
               backdrop={showingSpread}
+              silenced={showingSpread && flippedCount > 0}
               onActivated={summon}
               disabled={opening || onCooldown || showingSpread}
               disabledLabel={
@@ -572,13 +577,7 @@ function App() {
                   {nextLabel}
                 </button>
               </>
-            ) : (
-              showingResults && (
-                <button type="button" className="keep-button" onClick={returnToPortal}>
-                  ✦ Return to the portal ✦
-                </button>
-              )
-            )}
+            ) : null}
 
             {onCooldown && showingResults && (
               <p className="cooldown-message" role="timer" aria-live="off">

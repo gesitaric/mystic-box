@@ -301,6 +301,16 @@
   display: none;
 }
 
+/* Efeitos da revelação, por cima das cartas. */
+.reveal-fx {
+  position: absolute;
+  inset: 0;
+  z-index: 7;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+
 /* As cartas (no .stage) ficam acima do portal; o resto do palco deixa o clique passar. */
 .scene > .stage {
   z-index: 6;
@@ -309,4 +319,85 @@
 
 .scene > .stage .summon-spread {
   pointer-events: auto;
+}
+
+/* ---------- Celular e telas pequenas ---------- */
+
+.portal-stage {
+  -webkit-touch-callout: none;
+}
+
+.portal-banner-sub {
+  white-space: normal;
+  max-width: 90vw;
+}
+
+@media (max-width: 640px) {
+  .portal-brand {
+    top: 18px;
+    left: 18px;
+    font-size: 0.7rem;
+    letter-spacing: 0.35em;
+  }
+
+  .portal-banner-title {
+    font-size: clamp(1.35rem, 7.4vw, 2.6rem);
+    letter-spacing: 0.04em;
+  }
+
+  .portal-banner-sub {
+    font-size: 0.68rem;
+    letter-spacing: 0.3em;
+  }
+
+  /* Instrução acima do botão de som, quebrando linha se precisar. */
+  .portal-instruction {
+    bottom: calc(env(safe-area-inset-bottom, 0px) + 76px);
+    width: calc(100% - 32px);
+    padding-left: 0;
+    font-size: 0.78rem;
+    letter-spacing: 0.28em;
+    text-align: center;
+    white-space: normal;
+    line-height: 1.6;
+  }
+
+  .portal-instruction::before,
+  .portal-instruction::after {
+    margin: 0 0.6em;
+  }
+
+  .portal-sound {
+    top: auto;
+    right: 16px;
+    bottom: calc(env(safe-area-inset-bottom, 0px) + 16px);
+    width: 44px;
+    height: 44px;
+  }
+}
+
+/* Celular deitado: pouca altura. */
+@media (max-height: 520px) and (min-width: 641px) {
+  .portal-instruction {
+    bottom: 14px;
+    font-size: 0.75rem;
+    letter-spacing: 0.4em;
+  }
+
+  .portal-banner-title {
+    font-size: clamp(1.4rem, 8vh, 2.8rem);
+  }
+
+  .portal-banner-sub {
+    display: none;
+  }
+
+  .portal-sound,
+  .portal-embedded .portal-sound {
+    top: auto;
+    bottom: 10px;
+    right: 14px;
+    width: 38px;
+    height: 38px;
+  }
 }

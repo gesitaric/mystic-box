@@ -1,26 +1,10 @@
 import { useEffect, useImperativeHandle, useRef, useState } from "react";
 import { createPortalAudio } from "./portalAudio";
 import { PHASE, PortalEngine } from "./portalEngine";
+import { readSoundPreference, storeSoundPreference } from "../../audio/soundPreference";
 import "../../styles/portal.css";
 
-const SOUND_KEY = "mystic-box:portal-sound";
 const KEYBOARD_POINTER = "keyboard";
-
-function readSoundPreference() {
-  try {
-    return localStorage.getItem(SOUND_KEY) !== "off";
-  } catch {
-    return true;
-  }
-}
-
-function storeSoundPreference(on) {
-  try {
-    localStorage.setItem(SOUND_KEY, on ? "on" : "off");
-  } catch {
-    // Sem armazenamento local: vale só nesta visita.
-  }
-}
 
 const INSTRUCTIONS = {
   [PHASE.IDLE]: "HOLD TO CHANNEL ENERGY",
@@ -29,17 +13,25 @@ const INSTRUCTIONS = {
 };
 
 // Layout dentro da tela do jogo: portal mais baixo e menor, abaixo do título.
-const EMBEDDED_LAYOUT = { centerY: 0.56, radiusW: 0.19, radiusH: 0.245 };
+const EMBEDDED_LAYOUT = {
+  centerY: 0.56,
+  radiusW: 0.19,
+  radiusH: 0.245,
+  portrait: { radiusW: 0.33, radiusH: 0.24, centerY: 0.55 },
+  short: { radiusH: 0.24, centerY: 0.6 },
+};
 
 // Portal de invocação: segurar sobre o portal carrega, soltar em 100% ativa.
 // `onActivated` é chamado quando o portal abre (quem usa decide o que acontece).
 // `disabled` impede carregar (ex.: tempo de espera), mostrando `disabledLabel`.
 // `activatedLabel` substitui a dica de fechar o portal depois da ativação.
 // `backdrop`: o portal vira cenário (sem textos, mais escuro), ex.: atrás das cartas.
+// `silenced`: o som do portal diminui aos poucos até sumir.
 // `ref` expõe getCenter() (centro na janela) e burst() (efeito de carta saindo).
 function SummonPortal({
   ref,
   backdrop = false,
+  silenced = false,
   onActivated,
   disabled = false,
   disabledLabel = "",
@@ -150,6 +142,10 @@ function SummonPortal({
     if (disabled) pointerRef.current = null;
     engineRef.current?.setEnabled(!disabled);
   }, [disabled]);
+
+  useEffect(() => {
+    audioRef.current?.fade(silenced);
+  }, [silenced]);
 
   useEffect(() => {
     audioRef.current?.setEnabled(soundOn);

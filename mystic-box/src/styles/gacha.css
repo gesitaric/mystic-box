@@ -2245,6 +2245,74 @@ h1 {
   }
 }
 
+/* Clarão na cor da raridade quando a face aparece. */
+.spread-flash {
+  position: absolute;
+  inset: -6%;
+  z-index: 3;
+  border-radius: 14px;
+  pointer-events: none;
+  opacity: 0;
+  background: radial-gradient(
+    ellipse at center,
+    rgba(255, 255, 255, 0.95) 0%,
+    var(--card-rarity-glow) 45%,
+    transparent 72%
+  );
+  mix-blend-mode: screen;
+}
+
+.spread-card.flipped .spread-flash {
+  animation: cardRevealFlash 0.9s ease-out 0.28s both;
+}
+
+.spread-card.final.flipped .spread-flash {
+  animation-delay: 0.58s;
+  animation-duration: 1.2s;
+}
+
+/* Raridades altas: o clarão vira um halo que pulsa algumas vezes. */
+.spread-card.flipped[data-rarity="4"] .spread-flash,
+.spread-card.flipped[data-rarity="5"] .spread-flash {
+  animation:
+    cardRevealFlash 0.9s ease-out 0.28s both,
+    cardRarityHalo 1.6s ease-in-out 1.2s 3;
+}
+
+.spread-card.final.flipped[data-rarity="4"] .spread-flash,
+.spread-card.final.flipped[data-rarity="5"] .spread-flash {
+  animation:
+    cardRevealFlash 1.2s ease-out 0.58s both,
+    cardRarityHalo 1.6s ease-in-out 1.8s 3;
+}
+
+@keyframes cardRevealFlash {
+  0% {
+    opacity: 0;
+    transform: scale(0.85);
+  }
+  18% {
+    opacity: 1;
+    transform: scale(1.08);
+  }
+  100% {
+    opacity: 0;
+    transform: scale(1.25);
+  }
+}
+
+@keyframes cardRarityHalo {
+  0%,
+  100% {
+    opacity: 0;
+    transform: scale(1.05);
+  }
+  50% {
+    opacity: 0.35;
+    transform: scale(1.14);
+  }
+}
+
 /* Cartas saindo do centro do portal (--emerge-x/y medidos no SummonSpread). */
 .summon-spread.from-portal .spread-card {
   animation: portalEmerge 1.15s cubic-bezier(0.2, 0.9, 0.25, 1) both;

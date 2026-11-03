@@ -203,7 +203,14 @@ function boltPath(x1, y1, x2, y2, roughness) {
 export class PortalEngine {
   constructor(canvas, { audio, onPhase, onFrame, onSettled, reducedMotion = false, layout }) {
     // Posição do centro (fração da altura) e raio (fração da largura/altura).
-    this.layout = { centerY: 0.47, radiusW: 0.21, radiusH: 0.29, ...layout };
+    this.layout = {
+      centerY: 0.47,
+      radiusW: 0.21,
+      radiusH: 0.29,
+      portrait: { radiusW: 0.33, centerY: 0.47 },
+      short: { radiusH: 0.27, centerY: 0.5 },
+      ...layout,
+    };
     this.enabled = true;
     this.canvas = canvas;
     this.ctx = canvas.getContext("2d");
@@ -276,12 +283,22 @@ export class PortalEngine {
     this.canvas.width = Math.round(this.width * this.dpr);
     this.canvas.height = Math.round(this.height * this.dpr);
 
+    // Retrato (celular em pé) e telas baixas (celular deitado) têm ajustes próprios.
+    const portrait = this.width / this.height < 0.85;
+    const short = !portrait && this.height < 520;
+    const layout = {
+      ...this.layout,
+      ...(portrait ? this.layout.portrait : null),
+      ...(short ? this.layout.short : null),
+    };
     this.cx = this.width / 2;
-    this.cy = this.height * this.layout.centerY;
+    this.cy = this.height * layout.centerY;
     this.R = Math.max(
-      80,
-      Math.min(this.width * this.layout.radiusW, this.height * this.layout.radiusH)
+      56,
+      Math.min(this.width * layout.radiusW, this.height * layout.radiusH)
     );
+    // Telas pequenas recebem menos partículas na explosão.
+    this.burstScale = clamp((this.width * this.height) / (1600 * 900), 0.45, 1);
 
     this.background = makeBackground(this.width, this.height, this.cx, this.cy, this.R);
     this.vignette = makeVignette(this.width, this.height);
@@ -352,12 +369,14 @@ export class PortalEngine {
     this.settled = false;
     this.bolts.length = 0;
     this.audio?.explode();
+    navigator.vibrate?.([70, 40, 140]);
 
     const { cx, cy, R } = this;
     const reach = Math.hypot(this.width, this.height);
 
     // Centenas de faíscas.
-    for (let i = 0; i < 520; i += 1) {
+    const sparkCount = Math.round(520 * this.burstScale);
+    for (let i = 0; i < sparkCount; i += 1) {
       const angle = Math.random() * TAU;
       const speed = rand(0.25, 1) ** 1.6 * reach * rand(0.9, 1.9);
       const start = rand(0, R * 0.35);
@@ -472,6 +491,7 @@ export class PortalEngine {
       if (this.charge >= 1) {
         this.setPhase(PHASE.READY);
         this.audio?.charged();
+        navigator.vibrate?.(25);
       }
     } else if (phase === PHASE.IDLE) {
       // Cancelado: esvazia aos poucos.

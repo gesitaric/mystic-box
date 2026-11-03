@@ -1,29 +1,13 @@
 // Sons do portal sintetizados com Web Audio (sem arquivos de áudio).
 // Só apresentação: nada aqui decide regra de jogo.
 
-function makeNoiseBuffer(ctx, seconds) {
-  const length = Math.floor(ctx.sampleRate * seconds);
-  const buffer = ctx.createBuffer(1, length, ctx.sampleRate);
-  const data = buffer.getChannelData(0);
-  for (let i = 0; i < length; i += 1) data[i] = Math.random() * 2 - 1;
-  return buffer;
-}
-
-function makeImpulse(ctx, seconds, decay) {
-  const length = Math.floor(ctx.sampleRate * seconds);
-  const buffer = ctx.createBuffer(2, length, ctx.sampleRate);
-  for (let channel = 0; channel < 2; channel += 1) {
-    const data = buffer.getChannelData(channel);
-    for (let i = 0; i < length; i += 1) {
-      data[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / length, decay);
-    }
-  }
-  return buffer;
-}
+import { makeImpulse, makeNoiseBuffer, playNoise, playTone } from "../../audio/sfxKit";
 
 export function createPortalAudio() {
   let ctx = null;
   let enabled = true;
+  // 1 = volume normal; 0 = portal silenciado (ex.: depois de virar a primeira carta).
+  let presence = 1;
   let nodes = null;
   let lastCrackle = 0;
 
@@ -33,7 +17,7 @@ export function createPortalAudio() {
 
     ctx = new AudioCtor();
     const master = ctx.createGain();
-    master.gain.value = enabled ? 0.6 : 0;
+    master.gain.value = enabled ? 0.6 * presence : 0;
     const compressor = ctx.createDynamicsCompressor();
     compressor.threshold.value = -14;
     compressor.ratio.value = 6;
@@ -150,10 +134,20 @@ export function createPortalAudio() {
     if (ctx.state === "suspended") void ctx.resume();
   }
 
+  function applyVolume(timeConstant) {
+    if (!ctx || !nodes) return;
+    nodes.master.gain.setTargetAtTime(enabled ? 0.6 * presence : 0, ctx.currentTime, timeConstant);
+  }
+
   function setEnabled(value) {
     enabled = value;
-    if (!ctx || !nodes) return;
-    nodes.master.gain.setTargetAtTime(value ? 0.6 : 0, ctx.currentTime, 0.05);
+    applyVolume(0.05);
+  }
+
+  // Diminui o som do portal aos poucos até sumir (ou volta ao normal).
+  function fade(silenced, seconds = 4) {
+    presence = silenced ? 0 : 1;
+    applyVolume(silenced ? seconds / 4 : 0.2);
   }
 
   // Chamado a cada quadro com a carga (0..1) e a fase do portal.
@@ -186,40 +180,14 @@ export function createPortalAudio() {
     nodes.shimmerGain.gain.setTargetAtTime(shimmer, t, 0.2);
   }
 
-  function noiseHit({ duration, filterType, from, to, gain, delay = 0, wet = true }) {
-    const t = ctx.currentTime + delay;
-    const source = ctx.createBufferSource();
-    source.buffer = nodes.noiseBuffer;
-    const filter = ctx.createBiquadFilter();
-    filter.type = filterType;
-    filter.frequency.setValueAtTime(from, t);
-    filter.frequency.exponentialRampToValueAtTime(to, t + duration);
-    const amp = ctx.createGain();
-    amp.gain.setValueAtTime(gain, t);
-    amp.gain.exponentialRampToValueAtTime(0.0001, t + duration);
-    source.connect(filter);
-    filter.connect(amp);
-    amp.connect(nodes.master);
-    if (wet) amp.connect(nodes.reverb);
-    source.start(t, Math.random() * 1.5);
-    source.stop(t + duration + 0.05);
+  function noiseHit({ wet = true, ...options }) {
+    const destinations = wet ? [nodes.master, nodes.reverb] : [nodes.master];
+    playNoise(ctx, nodes.noiseBuffer, destinations, options);
   }
 
-  function tone({ type, from, to, gain, attack, duration, delay = 0, dry = true }) {
-    const t = ctx.currentTime + delay;
-    const osc = ctx.createOscillator();
-    osc.type = type;
-    osc.frequency.setValueAtTime(from, t);
-    if (to && to !== from) osc.frequency.exponentialRampToValueAtTime(to, t + duration);
-    const amp = ctx.createGain();
-    amp.gain.setValueAtTime(0.0001, t);
-    amp.gain.exponentialRampToValueAtTime(gain, t + attack);
-    amp.gain.exponentialRampToValueAtTime(0.0001, t + duration);
-    osc.connect(amp);
-    if (dry) amp.connect(nodes.master);
-    amp.connect(nodes.reverb);
-    osc.start(t);
-    osc.stop(t + duration + 0.05);
+  function tone({ dry = true, ...options }) {
+    const destinations = dry ? [nodes.master, nodes.reverb] : [nodes.reverb];
+    playTone(ctx, destinations, options);
   }
 
   // Estalo curto de raio.
@@ -291,5 +259,5 @@ export function createPortalAudio() {
     nodes = null;
   }
 
-  return { unlock, setEnabled, update, crackle, charged, explode, emerge, seal, destroy };
+  return { unlock, setEnabled, fade, update, crackle, charged, explode, emerge, seal, destroy };
 }
