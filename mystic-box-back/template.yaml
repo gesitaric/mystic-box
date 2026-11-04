@@ -76,6 +76,18 @@ Resources:
       - AttributeName: userId
         KeyType: HASH
 
+  # Experiência acumulada (o nível é calculado dela), vitórias e derrotas.
+  UserProgressTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+      - AttributeName: userId
+        AttributeType: S
+      KeySchema:
+      - AttributeName: userId
+        KeyType: HASH
+
   # Tokens de sorteio já usados para guardar cartas (uso único). Os itens
   # somem sozinhos pelo TTL depois que o token expira.
   SummonTokensTable:
@@ -399,6 +411,38 @@ Resources:
             Path: /shop/cards/{fileName}/buy
             Method: options
 
+  GetProfileFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: get_profile/
+      Handler: app.lambda_handler
+      Runtime: python3.14
+      Architectures:
+      - x86_64
+      Layers:
+      - !Ref SharedLayer
+      Environment:
+        Variables:
+          USER_PROGRESS_TABLE: !Ref UserProgressTable
+      Policies:
+      - DynamoDBReadPolicy:
+          TableName: !Ref UserProgressTable
+      Events:
+        GetProfile:
+          Type: Api
+          Properties:
+            RestApiId: !Ref MysticBoxApi
+            Path: /users/me/profile
+            Method: get
+            Auth:
+              Authorizer: CognitoAuthorizer
+        GetProfileOptions:
+          Type: Api
+          Properties:
+            RestApiId: !Ref MysticBoxApi
+            Path: /users/me/profile
+            Method: options
+
   ApplicationResourceGroup:
     Type: AWS::ResourceGroups::Group
     Properties:
@@ -467,3 +511,9 @@ Outputs:
   BuyCardFunction:
     Description: Buy Card Lambda Function ARN
     Value: !GetAtt BuyCardFunction.Arn
+  GetProfileApi:
+    Description: API Gateway endpoint URL for the player's level and experience
+    Value: !Sub "https://${MysticBoxApi}.execute-api.${AWS::Region}.${AWS::URLSuffix}/Prod/users/me/profile"
+  UserProgressTable:
+    Description: DynamoDB table that stores each player's experience, wins and losses
+    Value: !Ref UserProgressTable
