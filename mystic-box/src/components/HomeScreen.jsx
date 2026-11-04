@@ -1,4 +1,5 @@
 import { getCharacterImage } from "../characterImages";
+import Grimoire from "./Grimoire";
 import "../styles/home.css";
 
 // Artes de vitrine dos cards de ação (só decoração).
@@ -83,6 +84,7 @@ function ProfileChip({ email, progress }) {
 // ações principais no centro e atalhos embaixo. Só apresenta o que veio da
 // API (saldo, nível, vitórias, tempo de espera).
 function HomeScreen({
+  apiUrl,
   email,
   balance,
   progress,
@@ -212,6 +214,7 @@ function HomeScreen({
           </svg>
           <span>Shop</span>
         </button>
+        <Grimoire apiUrl={apiUrl} variant="dock" />
       </nav>
     </section>
   );

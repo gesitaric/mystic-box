@@ -25,6 +25,7 @@ Isso significa:
   - `stats.py`: atributos de batalha (vitality, might, arcana, bulwark, resolve, celerity, fate), elementos e arquétipos. Os atributos saem da raridade, do arquétipo e do nível; elemento e arquétipo de cada carta ficam em `cards.py`.
   - `battle.py`: motor da batalha contra o computador (turnos, Aether, habilidades, efeitos, IA, dificuldades e experiência ganha).
   - `progression.py`: curva de experiência, nível máximo e Fragmentos Arcanos ganhos ao subir de nível.
+  - `rules.py`: monta a explicação das regras para o jogador (`GET /rules`) a partir das constantes dos módulos acima. Não duplica valores: mudar uma regra lá muda o que a ajuda mostra.
 - Uma Lambda nova que precise dessas regras deve declarar `Layers: [!Ref SharedLayer]` no `template.yaml` e importar de `mystic_shared`. Não copie as definições para outra Lambda nem para o frontend.
 
 ## Fluxos atuais
@@ -34,6 +35,7 @@ Isso significa:
 - **Vender**: `POST /users/me/cards/sell` com `{"fileName", "quantity"}`. O servidor escolhe quais cópias saem (as mais recentes), remove todas e credita `sell_total` (`cards.py`) na carteira, na mesma transação. O limite por venda é `MAX_SELL_QUANTITY`.
 - **Loja**: `GET /shop/cards` devolve o catálogo (`shop_catalog`) com `buyPrice` e `canAfford` calculados no servidor, além do `balance`. Comprar é `POST /shop/cards/{fileName}/buy`, que debita o preço de `buy_price` (só se o saldo cobrir, condição na transação) e adiciona a carta à coleção, na mesma transação. A aba "Vender" da loja usa o fluxo de venda acima.
 - **Nível**: `GET /users/me/profile` devolve nível e progresso. Só a experiência total fica salva (`UserProgressTable`); o nível é sempre calculado no servidor.
+- **Regras (Grimório)**: `GET /rules` (público) devolve chances do sorteio, tempo de espera, preços, curva de nível e todas as regras de batalha (Aether, dano, elementos, classes, efeitos, dificuldades, experiência). O componente `Grimoire.jsx` só exibe essa resposta; texto explicativo fica no frontend, números e catálogos vêm da API.
 - **Batalha**: `GET /battles/current` devolve a batalha ativa (ou `null`), as dificuldades liberadas pelo nível e o progresso. `POST /battles` com `{"team": [fileName x3], "difficulty"}` começa uma batalha (posse das cartas conferida no servidor). `POST /battles/current/actions` com `{"battleId", "type": "skill"|"auto"|"forfeit", "skill", "target"}` joga o turno da carta da vez e os turnos do computador, devolvendo a batalha e os `events` para o frontend animar. O estado fica em `BattlesTable` com versão (condição em cada gravação). No fim, resultado, experiência (vitória > derrota; desistir = 0) e Fragmentos Arcanos de subida de nível são gravados numa só transação.
 
 ## Rodar localmente
