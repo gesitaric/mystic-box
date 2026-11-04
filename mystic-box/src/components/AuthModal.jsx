@@ -1,8 +1,10 @@
 import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import {
+  confirmForgotPassword,
   confirmSignUp,
   describeAuthError,
+  forgotPassword,
   resendConfirmationCode,
   signIn,
   signUp,
@@ -45,7 +47,20 @@ const COPY = {
     subtitle: "Enter the code we sent to your email.",
     submit: "Confirm",
   },
+  forgot: {
+    title: "FORGOT PASSWORD",
+    subtitle: "Enter your email and we'll send you a code to reset your password.",
+    submit: "Send code",
+  },
+  reset: {
+    title: "RESET PASSWORD",
+    subtitle: "Enter the code we sent to your email and choose a new password.",
+    submit: "Reset password",
+  },
 };
+
+const PASSWORD_HINT =
+  "Password must be at least 8 characters long and include an uppercase letter, a lowercase letter and a number.";
 
 function AuthModal({ open, onClose, onAuthenticated }) {
   const [mode, setMode] = useState(() =>
@@ -72,6 +87,10 @@ function AuthModal({ open, onClose, onAuthenticated }) {
   if (!open) return null;
 
   const copy = COPY[mode];
+  const showTabs = mode === "signin" || mode === "signup";
+  const emailLocked = mode === "confirm" || mode === "reset";
+  const needsPassword = mode === "signin" || mode === "signup" || mode === "reset";
+  const needsCode = mode === "confirm" || mode === "reset";
 
   function goToConfirm(confirmEmail, message) {
     savePendingEmail(confirmEmail);
@@ -98,6 +117,29 @@ function AuthModal({ open, onClose, onAuthenticated }) {
             email.trim(),
             "Your email isn't confirmed yet. Enter the code we sent you."
           );
+        }
+        return;
+      }
+
+      if (mode === "forgot") {
+        await forgotPassword(email.trim());
+        setMode("reset");
+        setCode("");
+        setPassword("");
+        setInfo("If an account exists for this email, we sent a code to it.");
+        return;
+      }
+
+      if (mode === "reset") {
+        await confirmForgotPassword(email.trim(), code.trim(), password);
+        try {
+          const auth = await signIn(email.trim(), password);
+          onAuthenticated(auth);
+        } catch {
+          setMode("signin");
+          setPassword("");
+          setCode("");
+          setInfo("Password reset! Sign in with your new password.");
         }
         return;
       }
@@ -146,7 +188,8 @@ function AuthModal({ open, onClose, onAuthenticated }) {
     setLoading(true);
 
     try {
-      await resendConfirmationCode(email.trim());
+      if (mode === "reset") await forgotPassword(email.trim());
+      else await resendConfirmationCode(email.trim());
       setInfo("We sent a new code to your email.");
     } catch (authError) {
       setError(describeAuthError(authError));
@@ -161,6 +204,7 @@ function AuthModal({ open, onClose, onAuthenticated }) {
     setError("");
     setInfo("");
     setCode("");
+    if (nextMode === "forgot" || mode === "reset") setPassword("");
   }
 
   return createPortal(
@@ -187,7 +231,7 @@ function AuthModal({ open, onClose, onAuthenticated }) {
           <p>{copy.subtitle}</p>
         </header>
 
-        {mode !== "confirm" && (
+        {showTabs && (
           <div className="auth-tabs" role="tablist">
             <button
               type="button"
@@ -226,34 +270,13 @@ function AuthModal({ open, onClose, onAuthenticated }) {
               onChange={(event) => setEmail(event.target.value)}
               autoComplete="email"
               required
-              disabled={loading || mode === "confirm"}
+              disabled={loading || emailLocked}
             />
           </label>
 
-          {mode !== "confirm" && (
+          {needsCode && (
             <label className="auth-field">
-              <span>Password</span>
-              <input
-                type="password"
-                value={password}
-                onChange={(event) => setPassword(event.target.value)}
-                autoComplete={mode === "signup" ? "new-password" : "current-password"}
-                minLength={8}
-                required
-                disabled={loading}
-              />
-            </label>
-          )}
-
-          {mode === "signup" && (
-            <p className="auth-hint">
-              Password must be at least 8 characters long and include an uppercase letter, a lowercase letter and a number.
-            </p>
-          )}
-
-          {mode === "confirm" && (
-            <label className="auth-field">
-              <span>Confirmation code</span>
+              <span>{mode === "reset" ? "Code" : "Confirmation code"}</span>
               <input
                 type="text"
                 value={code}
@@ -266,12 +289,41 @@ function AuthModal({ open, onClose, onAuthenticated }) {
             </label>
           )}
 
+          {needsPassword && (
+            <label className="auth-field">
+              <span>{mode === "reset" ? "New password" : "Password"}</span>
+              <input
+                type="password"
+                value={password}
+                onChange={(event) => setPassword(event.target.value)}
+                autoComplete={mode === "signin" ? "current-password" : "new-password"}
+                minLength={8}
+                required
+                disabled={loading}
+              />
+            </label>
+          )}
+
+          {(mode === "signup" || mode === "reset") && (
+            <p className="auth-hint">{PASSWORD_HINT}</p>
+          )}
+
           <button type="submit" className="auth-submit" disabled={loading}>
             {loading ? "Please wait..." : copy.submit}
           </button>
         </form>
 
-        {mode === "confirm" && (
+        {mode === "signin" && (
+          <button
+            type="button"
+            className="auth-link"
+            onClick={() => switchMode("forgot")}
+          >
+            Forgot my password
+          </button>
+        )}
+
+        {(mode === "confirm" || mode === "reset") && (
           <>
             <button
               type="button"
@@ -289,6 +341,16 @@ function AuthModal({ open, onClose, onAuthenticated }) {
               Back to sign in
             </button>
           </>
+        )}
+
+        {mode === "forgot" && (
+          <button
+            type="button"
+            className="auth-link"
+            onClick={() => switchMode("signin")}
+          >
+            Back to sign in
+          </button>
         )}
       </div>
     </div>,
