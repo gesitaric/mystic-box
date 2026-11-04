@@ -1,0 +1,90 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: >
+  mystic-box-frontend: CloudFront na frente do bucket S3 do frontend.
+  O bucket deixa de ser publico: so o CloudFront le os arquivos (Origin Access Control).
+
+Parameters:
+  BucketName:
+    Type: String
+    Default: mystic-box-frontend-465926092387
+    Description: Bucket S3 (ja existente) com o build do frontend (conteudo de dist/).
+
+Resources:
+  FrontendOriginAccessControl:
+    Type: AWS::CloudFront::OriginAccessControl
+    Properties:
+      OriginAccessControlConfig:
+        Name: !Sub "${AWS::StackName}-oac"
+        Description: Acesso do CloudFront ao bucket do frontend
+        OriginAccessControlOriginType: s3
+        SigningBehavior: always
+        SigningProtocol: sigv4
+
+  FrontendDistribution:
+    Type: AWS::CloudFront::Distribution
+    Properties:
+      DistributionConfig:
+        Comment: Mystic Box frontend
+        Enabled: true
+        DefaultRootObject: index.html
+        HttpVersion: http2and3
+        IPV6Enabled: true
+        PriceClass: PriceClass_100
+        Origins:
+        - Id: FrontendBucket
+          # Endpoint REST do bucket (nao o de website), exigido pelo OAC.
+          DomainName: !Sub "${BucketName}.s3.${AWS::Region}.amazonaws.com"
+          OriginAccessControlId: !GetAtt FrontendOriginAccessControl.Id
+          S3OriginConfig:
+            OriginAccessIdentity: ''
+        DefaultCacheBehavior:
+          TargetOriginId: FrontendBucket
+          ViewerProtocolPolicy: redirect-to-https
+          AllowedMethods: [GET, HEAD, OPTIONS]
+          CachedMethods: [GET, HEAD]
+          Compress: true
+          # Managed-CachingOptimized: respeita o Cache-Control gravado em cada
+          # objeto pelo deploy (assets com hash = 1 ano, index.html = no-cache).
+          CachePolicyId: 658327ea-f89d-4fab-a63d-7e88639e58f6
+          # Managed-SecurityHeadersPolicy (HSTS, nosniff, frame-options etc.).
+          ResponseHeadersPolicyId: 67f7725c-6f97-4210-82d7-5512b31e9d03
+        # Sem s3:ListBucket, arquivo inexistente vira 403. Devolve o app
+        # (SPA) em vez da pagina de erro do S3, como o ErrorDocument fazia.
+        CustomErrorResponses:
+        - ErrorCode: 403
+          ResponseCode: 200
+          ResponsePagePath: /index.html
+          ErrorCachingMinTTL: 10
+        - ErrorCode: 404
+          ResponseCode: 200
+          ResponsePagePath: /index.html
+          ErrorCachingMinTTL: 10
+
+  # Substitui a politica publica antiga do bucket: so esta distribuicao le.
+  FrontendBucketPolicy:
+    Type: AWS::S3::BucketPolicy
+    Properties:
+      Bucket: !Ref BucketName
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+        - Sid: AllowCloudFrontRead
+          Effect: Allow
+          Principal:
+            Service: cloudfront.amazonaws.com
+          Action: s3:GetObject
+          Resource: !Sub "arn:${AWS::Partition}:s3:::${BucketName}/*"
+          Condition:
+            StringEquals:
+              AWS:SourceArn: !Sub "arn:${AWS::Partition}:cloudfront::${AWS::AccountId}:distribution/${FrontendDistribution}"
+
+Outputs:
+  DistributionId:
+    Description: ID da distribuicao (usado para invalidar o cache no deploy)
+    Value: !Ref FrontendDistribution
+  FrontendUrl:
+    Description: URL publica do frontend
+    Value: !Sub "https://${FrontendDistribution.DomainName}"
+  BucketName:
+    Description: Bucket de origem
+    Value: !Ref BucketName
