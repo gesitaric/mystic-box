@@ -1,0 +1,7 @@
+[
+  {
+    "ResourceType": "AWS::S3::Bucket",
+    "LogicalResourceId": "FrontendBucket",
+    "ResourceIdentifier": { "BucketName": "mystic-box-frontend-465926092387" }
+  }
+]

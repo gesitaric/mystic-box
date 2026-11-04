@@ -1,15 +1,32 @@
 AWSTemplateFormatVersion: '2010-09-09'
 Description: >
-  mystic-box-frontend: CloudFront na frente do bucket S3 do frontend.
-  O bucket deixa de ser publico: so o CloudFront le os arquivos (Origin Access Control).
+  mystic-box-frontend: bucket S3 do frontend + CloudFront na frente dele.
+  O bucket nao e publico: so o CloudFront le os arquivos (Origin Access Control).
 
-Parameters:
-  BucketName:
-    Type: String
-    Default: mystic-box-frontend-465926092387
-    Description: Bucket S3 (ja existente) com o build do frontend (conteudo de dist/).
+# Deploy: `sam deploy` nesta pasta (configuracao em samconfig.toml).
+# O bucket foi criado a mao e importado para a stack uma unica vez (ver README.md).
 
 Resources:
+  FrontendBucket:
+    Type: AWS::S3::Bucket
+    # Exigido pelo import e protege o bucket se a stack for apagada/recriada.
+    DeletionPolicy: Retain
+    UpdateReplacePolicy: Retain
+    Properties:
+      BucketName: !Sub "mystic-box-frontend-${AWS::AccountId}"
+      OwnershipControls:
+        Rules:
+        - ObjectOwnership: BucketOwnerEnforced
+      BucketEncryption:
+        ServerSideEncryptionConfiguration:
+        - ServerSideEncryptionByDefault:
+            SSEAlgorithm: AES256
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        BlockPublicPolicy: true
+        IgnorePublicAcls: true
+        RestrictPublicBuckets: true
+
   FrontendOriginAccessControl:
     Type: AWS::CloudFront::OriginAccessControl
     Properties:
@@ -33,7 +50,7 @@ Resources:
         Origins:
         - Id: FrontendBucket
           # Endpoint REST do bucket (nao o de website), exigido pelo OAC.
-          DomainName: !Sub "${BucketName}.s3.${AWS::Region}.amazonaws.com"
+          DomainName: !GetAtt FrontendBucket.RegionalDomainName
           OriginAccessControlId: !GetAtt FrontendOriginAccessControl.Id
           S3OriginConfig:
             OriginAccessIdentity: ''
@@ -49,7 +66,7 @@ Resources:
           # Managed-SecurityHeadersPolicy (HSTS, nosniff, frame-options etc.).
           ResponseHeadersPolicyId: 67f7725c-6f97-4210-82d7-5512b31e9d03
         # Sem s3:ListBucket, arquivo inexistente vira 403. Devolve o app
-        # (SPA) em vez da pagina de erro do S3, como o ErrorDocument fazia.
+        # (SPA) em vez da pagina de erro do S3.
         CustomErrorResponses:
         - ErrorCode: 403
           ResponseCode: 200
@@ -60,11 +77,11 @@ Resources:
           ResponsePagePath: /index.html
           ErrorCachingMinTTL: 10
 
-  # Substitui a politica publica antiga do bucket: so esta distribuicao le.
+  # Substitui a antiga politica publica do bucket: so esta distribuicao le.
   FrontendBucketPolicy:
     Type: AWS::S3::BucketPolicy
     Properties:
-      Bucket: !Ref BucketName
+      Bucket: !Ref FrontendBucket
       PolicyDocument:
         Version: '2012-10-17'
         Statement:
@@ -73,7 +90,7 @@ Resources:
           Principal:
             Service: cloudfront.amazonaws.com
           Action: s3:GetObject
-          Resource: !Sub "arn:${AWS::Partition}:s3:::${BucketName}/*"
+          Resource: !Sub "${FrontendBucket.Arn}/*"
           Condition:
             StringEquals:
               AWS:SourceArn: !Sub "arn:${AWS::Partition}:cloudfront::${AWS::AccountId}:distribution/${FrontendDistribution}"
@@ -86,5 +103,5 @@ Outputs:
     Description: URL publica do frontend
     Value: !Sub "https://${FrontendDistribution.DomainName}"
   BucketName:
-    Description: Bucket de origem
-    Value: !Ref BucketName
+    Description: Bucket com o build do frontend
+    Value: !Ref FrontendBucket

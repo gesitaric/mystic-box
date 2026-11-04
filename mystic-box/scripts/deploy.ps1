@@ -1,6 +1,6 @@
 # Publica o frontend: build -> S3 -> invalida o index.html no CloudFront.
 # Uso (PowerShell, em mystic-box/): .\scripts\deploy.ps1
-# Requer a stack do CloudFront (infra/cloudfront.yaml) ja criada. Ver infra/README.md.
+# Requer a stack mystic-box-frontend (infra/template.yaml) ja criada. Ver infra/README.md.
 param(
     [string]$StackName = "mystic-box-frontend",
     [switch]$SkipBuild
