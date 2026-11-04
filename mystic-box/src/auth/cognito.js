@@ -61,6 +61,21 @@ export function confirmSignUp(email, code) {
   });
 }
 
+export function resendConfirmationCode(email) {
+  const user = createCognitoUser(email);
+
+  return new Promise((resolve, reject) => {
+    user.resendConfirmationCode((error, result) => {
+      if (error) {
+        reject(error);
+        return;
+      }
+
+      resolve(result);
+    });
+  });
+}
+
 export function signIn(email, password) {
   const user = createCognitoUser(email);
   const authenticationDetails = new AuthenticationDetails({
@@ -123,7 +138,7 @@ export function describeAuthError(error) {
     case "UserNotFoundException":
       return "Incorrect email or password.";
     case "UsernameExistsException":
-      return "An account with this email already exists.";
+      return "An account with this email already exists. Sign in to continue.";
     case "UserNotConfirmedException":
       return "Confirm your email before signing in.";
     case "CodeMismatchException":
