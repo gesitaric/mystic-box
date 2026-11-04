@@ -1,0 +1,13 @@
+# Configuracao do `sam deploy` da infra do frontend (rodar nesta pasta).
+version = 0.1
+
+[default.global.parameters]
+stack_name = "mystic-box-frontend"
+region = "us-east-1"
+
+[default.validate.parameters]
+lint = true
+
+[default.deploy.parameters]
+confirm_changeset = true
+fail_on_empty_changeset = false

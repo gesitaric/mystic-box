@@ -1,0 +1,24 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: >
+  USO UNICO: cria a stack mystic-box-frontend importando o bucket que foi criado
+  a mao, descrito exatamente como ele esta (publico, com website hosting).
+  Depois do import, o `sam deploy` com ../template.yaml aplica a configuracao final.
+  Ver ../README.md.
+
+Resources:
+  FrontendBucket:
+    Type: AWS::S3::Bucket
+    DeletionPolicy: Retain
+    UpdateReplacePolicy: Retain
+    Properties:
+      BucketName: !Sub "mystic-box-frontend-${AWS::AccountId}"
+      OwnershipControls:
+        Rules:
+        - ObjectOwnership: BucketOwnerEnforced
+      BucketEncryption:
+        ServerSideEncryptionConfiguration:
+        - ServerSideEncryptionByDefault:
+            SSEAlgorithm: AES256
+      WebsiteConfiguration:
+        IndexDocument: index.html
+        ErrorDocument: index.html
