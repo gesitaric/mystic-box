@@ -8,7 +8,8 @@ param(
 $ErrorActionPreference = "Stop"
 
 function Invoke-Native {
-    & $args[0] $args[1..($args.Length - 1)]
+    $command, $arguments = $args
+    & $command @arguments
     if ($LASTEXITCODE -ne 0) { throw "Falhou ($LASTEXITCODE): $($args -join ' ')" }
 }
 

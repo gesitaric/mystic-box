@@ -72,6 +72,8 @@ aws cloudformation create-change-set --region us-east-1 --stack-name mystic-box-
 aws cloudformation wait change-set-create-complete --region us-east-1 --stack-name mystic-box-frontend --change-set-name import-bucket
 aws cloudformation execute-change-set --region us-east-1 --stack-name mystic-box-frontend --change-set-name import-bucket
 aws cloudformation wait stack-import-complete --region us-east-1 --stack-name mystic-box-frontend
+# O CloudFormation não cria a FrontendBucketPolicy se o bucket já tiver uma política.
+aws s3api delete-bucket-policy --bucket mystic-box-frontend-465926092387
 sam deploy
 ```
 
