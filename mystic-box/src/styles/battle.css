@@ -1002,3 +1002,35 @@
     transition: none;
   }
 }
+
+/* ---------- Som ---------- */
+
+.battle-sound {
+  display: grid;
+  flex-shrink: 0;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  border: 1px solid rgba(180, 160, 255, 0.3);
+  border-radius: 50%;
+  background: rgba(20, 14, 44, 0.55);
+  color: rgba(233, 228, 255, 0.75);
+  cursor: pointer;
+  transition:
+    color 0.2s,
+    border-color 0.2s,
+    box-shadow 0.2s;
+}
+
+.battle-topbar > .battle-heading + .battle-sound {
+  margin-left: auto;
+}
+
+.battle-sound:hover,
+.battle-sound:focus-visible {
+  color: #fff;
+  border-color: rgba(255, 217, 138, 0.7);
+  box-shadow: 0 0 18px rgba(160, 110, 255, 0.6);
+  outline: none;
+}

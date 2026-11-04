@@ -11,12 +11,42 @@ import {
   describeEvent,
   eventDelay,
 } from "./battlePresentation";
+import { createBattleAudio } from "./battleAudio";
+import { readSoundPreference, storeSoundPreference } from "../../audio/soundPreference";
 
 const SINGLE_TARGETS = ["enemy", "ally", "fallen_ally"];
 const LOG_LIMIT = 60;
 const FLOAT_MS = 1100;
 
 class SessionExpired extends Error {}
+
+function SoundButton({ on, onToggle }) {
+  return (
+    <button
+      type="button"
+      className="battle-sound"
+      onClick={onToggle}
+      aria-pressed={on}
+      aria-label={on ? "Mute sound" : "Unmute sound"}
+      title={on ? "Mute sound" : "Unmute sound"}
+    >
+      <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true">
+        <path d="M4 9v6h4l5 4V5L8 9H4z" fill="currentColor" />
+        {on ? (
+          <path
+            d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="1.8"
+            strokeLinecap="round"
+          />
+        ) : (
+          <path d="M16 9l5 6M21 9l-5 6" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+        )}
+      </svg>
+    </button>
+  );
+}
 
 // Antes da primeira animação, todos aparecem como no começo da batalha.
 function freshView(view) {
@@ -183,12 +213,29 @@ function BattleScreen({
   const busyRef = useRef(false);
   const floatId = useRef(0);
   const logEnd = useRef(null);
+  const [soundOn, setSoundOn] = useState(readSoundPreference);
+  const audio = useRef(null);
   // Callbacks do App sem reiniciar a animação quando a identidade muda.
   const callbacks = useRef({ onProgressChange, onBalanceChange });
+  const autoRef = useRef(autoMode);
 
   useEffect(() => {
     callbacks.current = { onProgressChange, onBalanceChange };
+    autoRef.current = autoMode;
   });
+
+  useEffect(() => {
+    audio.current = createBattleAudio();
+    return () => {
+      audio.current?.destroy();
+      audio.current = null;
+    };
+  }, []);
+
+  useEffect(() => {
+    audio.current?.setEnabled(soundOn);
+    storeSoundPreference(soundOn);
+  }, [soundOn]);
 
   const request = useCallback(
     async (path, init = {}) => {
@@ -249,6 +296,58 @@ function BattleScreen({
     let index = 0;
     const { events, next, outcome } = playback;
     const names = Object.fromEntries(next.units.map((unit) => [unit.id, unit.name]));
+    const unitsById = Object.fromEntries(next.units.map((unit) => [unit.id, unit]));
+    // Lado de quem está agindo: efeito no próprio time soa como buff.
+    let actorSide = null;
+
+    function playSound(event) {
+      const sfx = audio.current;
+      if (!sfx) return;
+      switch (event.type) {
+        case "round":
+          if (event.round > 1) sfx.round();
+          break;
+        case "skill":
+          actorSide = unitsById[event.actor]?.side ?? null;
+          sfx.cast(unitsById[event.actor]?.element, ["strike", "guard"].includes(event.skill));
+          break;
+        case "damage":
+          if (event.amount > 0) {
+            sfx.hit({
+              kind: event.kind,
+              critical: event.critical,
+              effectiveness: event.effectiveness,
+              burn: event.status === "burn",
+            });
+          } else {
+            sfx.block();
+          }
+          break;
+        case "heal":
+          if (event.amount > 0) sfx.heal();
+          break;
+        case "status":
+          sfx.status(unitsById[event.target]?.side === actorSide);
+          break;
+        case "stunned":
+          sfx.stunned();
+          break;
+        case "defeated":
+          sfx.defeated();
+          break;
+        case "revive":
+          sfx.revive();
+          break;
+        case "aether":
+          sfx.siphon();
+          break;
+        case "turn":
+          actorSide = null;
+          break;
+        default:
+          break;
+      }
+    }
 
     function addFloat(unitId, text, kind) {
       const id = ++floatId.current;
@@ -266,6 +365,7 @@ function BattleScreen({
       }
 
       if (event.aether) setAetherOverride(event.aether);
+      playSound(event);
 
       switch (event.type) {
         case "turn":
@@ -327,10 +427,14 @@ function BattleScreen({
         setActingId(null);
         setPlayback(null);
         if (outcome) {
+          if (outcome.outcome === "won") audio.current?.victory();
+          else audio.current?.defeat();
           setAutoMode(false);
           setResult(outcome);
           if (outcome.progress) callbacks.current.onProgressChange?.(outcome.progress);
           if (outcome.shardsReward > 0) callbacks.current.onBalanceChange?.();
+        } else if (next.status === "active" && next.turn && !autoRef.current) {
+          audio.current?.yourTurn();
         }
         return;
       }
@@ -369,6 +473,7 @@ function BattleScreen({
       setSelectedSkill(null);
       setInspectedId(null);
       setLog([]);
+      audio.current?.start();
       setView(freshView(data.battle));
       setPlayback({ events: data.events ?? [], next: data.battle, outcome: data.result });
       setPhase("battle");
@@ -442,6 +547,7 @@ function BattleScreen({
       setSelectedSkill(null);
       return;
     }
+    audio.current?.select();
     if (SINGLE_TARGETS.includes(action.target) && action.targets.length > 1) {
       setSelectedSkill(action);
       return;
@@ -492,6 +598,7 @@ function BattleScreen({
             ← Home
           </button>
           <h1 className="battle-heading">Arena</h1>
+          <SoundButton on={soundOn} onToggle={() => setSoundOn((on) => !on)} />
         </div>
         <TeamSetup
           apiUrl={apiUrl}
@@ -534,6 +641,7 @@ function BattleScreen({
         floats={floats.filter((float) => float.unitId === unit.id)}
         onClick={() => {
           if (targetable) {
+            audio.current?.select();
             void sendAction({ type: "skill", skill: selectedSkill.id, target: unit.id });
           } else {
             setInspectedId((current) => (current === unit.id ? null : unit.id));
@@ -557,6 +665,7 @@ function BattleScreen({
         <span className="battle-round">
           {view.difficultyLabel} · Round {view.round}/{view.maxRounds}
         </span>
+        <SoundButton on={soundOn} onToggle={() => setSoundOn((on) => !on)} />
       </div>
 
       <AetherMeter label="Foes" value={aether.enemy} max={view.maxAether} side="enemy" />
