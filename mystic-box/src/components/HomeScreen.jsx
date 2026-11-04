@@ -41,6 +41,7 @@ function HomeScreen({
   progress,
   cooldownLabel,
   onSummon,
+  onBattle,
   onCollection,
   onShop,
   onSignOut,
@@ -77,6 +78,11 @@ function HomeScreen({
               <span className="cooldown-time">{cooldownLabel}</span>
             </span>
           )}
+        </button>
+
+        <button type="button" className="home-button home-button-battle" onClick={onBattle}>
+          <span className="home-button-title">⚔ Battle ⚔</span>
+          <span className="home-button-hint">Fight the computer and gain experience</span>
         </button>
 
         <button type="button" className="home-button" onClick={onCollection}>

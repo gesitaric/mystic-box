@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import AuthModal from "./components/AuthModal";
+import BattleScreen from "./components/battle/BattleScreen";
 import HomeScreen from "./components/HomeScreen";
 import ShopModal from "./components/ShopModal";
 import SummonPortal from "./components/portal/SummonPortal";
@@ -109,7 +110,7 @@ function App() {
   const [authOpen, setAuthOpen] = useState(false);
   const [collectionOpen, setCollectionOpen] = useState(false);
   const [shopOpen, setShopOpen] = useState(false);
-  // Tela do usuário logado: "home" (início) ou "summon" (invocação).
+  // Tela do usuário logado: "home" (início), "summon" (invocação) ou "battle".
   // Sem login a tela de invocação é sempre a exibida.
   const [screen, setScreen] = useState("home");
   // Sorteio ainda não guardado: { cards, summonToken }.
@@ -320,6 +321,9 @@ function App() {
     session && cooldownUntil ? Math.max(0, cooldownUntil - now) : 0;
   const onCooldown = cooldownRemaining > 0;
   const onHome = Boolean(session) && screen === "home";
+  const onBattle = Boolean(session) && screen === "battle";
+  // Telas que não mostram o portal de invocação.
+  const offSummon = onHome || onBattle;
 
   const totalCards = cards?.length ?? 0;
   const showingSpread = revealed && totalCards > 0;
@@ -453,6 +457,15 @@ function App() {
     setAuthOpen(true);
   }, []);
 
+  const handleBattleSessionExpired = useCallback(() => {
+    signOut();
+    setSession(null);
+    setProgress(null);
+    setBalance(null);
+    setScreen("home");
+    setAuthOpen(true);
+  }, []);
+
   // Efeito lendário enquanto a última carta virada for lendária.
   const isLegendary = showingSpread && !charging && (lastFlippedCard?.rarity ?? 0) >= 5;
   // O clarão espera a carta terminar de girar.
@@ -474,10 +487,11 @@ function App() {
       className={[
         "scene",
         onHome && "home-view",
-        !onHome && opening && "opening",
-        !onHome && revealed && "revealed",
-        !onHome && charging && "charging",
-        !onHome && isLegendary && "legendary",
+        onBattle && "battle-view",
+        !offSummon && opening && "opening",
+        !offSummon && revealed && "revealed",
+        !offSummon && charging && "charging",
+        !offSummon && isLegendary && "legendary",
       ]
         .filter(Boolean)
         .join(" ")}
@@ -488,7 +502,7 @@ function App() {
       <div className="vignette" />
       <div className="frame" />
 
-      {!onHome && isLegendary && (
+      {!offSummon && isLegendary && (
         <div
           key={flippedCount}
           className="legendary-flash"
@@ -497,7 +511,7 @@ function App() {
         />
       )}
 
-      {!onHome && (
+      {!offSummon && (
         <div className={session ? "session-bar session-bar-start" : "session-bar"}>
           {session ? (
             <button
@@ -520,19 +534,31 @@ function App() {
         </div>
       )}
 
-      <header className="title-block">
-        <span className="title-ornament">✦ ✧ ✦</span>
-        <h1>MYSTIC BOX</h1>
-        <p className="tagline">ARCANE SUMMONING</p>
-      </header>
+      {!onBattle && (
+        <header className="title-block">
+          <span className="title-ornament">✦ ✧ ✦</span>
+          <h1>MYSTIC BOX</h1>
+          <p className="tagline">ARCANE SUMMONING</p>
+        </header>
+      )}
 
-      {onHome ? (
+      {onBattle ? (
+        <BattleScreen
+          apiUrl={API_URL}
+          session={session}
+          onExit={() => setScreen("home")}
+          onSessionExpired={handleBattleSessionExpired}
+          onProgressChange={setProgress}
+          onBalanceChange={handleBalanceChange}
+        />
+      ) : onHome ? (
         <HomeScreen
           email={session.email}
           balance={balance}
           progress={progress}
           cooldownLabel={onCooldown ? formatCountdown(cooldownRemaining) : ""}
           onSummon={() => setScreen("summon")}
+          onBattle={() => setScreen("battle")}
           onCollection={() => setCollectionOpen(true)}
           onShop={() => setShopOpen(true)}
           onSignOut={handleSignOut}
