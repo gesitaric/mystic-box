@@ -1034,3 +1034,392 @@
   box-shadow: 0 0 18px rgba(160, 110, 255, 0.6);
   outline: none;
 }
+
+/* ---------- Subida de nível ---------- */
+
+.levelup {
+  position: fixed;
+  inset: 0;
+  z-index: 1800;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  padding: 24px;
+  background: radial-gradient(circle at center, rgb(52, 26, 86), rgb(4, 2, 12) 72%);
+  animation: overlayIn 0.35s ease;
+}
+
+.levelup-flash {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(circle at center, #fff8e0 0%, rgba(255, 210, 120, 0.85) 18%, transparent 60%);
+  opacity: 0;
+  animation: levelupFlash 1.2s ease-out 0.7s forwards;
+  pointer-events: none;
+}
+
+.levelup-rays {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 180vmax;
+  height: 180vmax;
+  background: repeating-conic-gradient(
+    from 0deg,
+    rgba(255, 217, 138, 0.22) 0deg 5deg,
+    transparent 5deg 18deg
+  );
+  -webkit-mask-image: radial-gradient(circle, #000 0%, transparent 55%);
+  mask-image: radial-gradient(circle, #000 0%, transparent 55%);
+  opacity: 0;
+  translate: -50% -50%;
+  scale: 0.2;
+  animation:
+    levelupRaysIn 0.9s cubic-bezier(0.2, 0.9, 0.3, 1) 0.7s forwards,
+    levelupSpin 24s linear 0.7s infinite;
+  pointer-events: none;
+}
+
+.levelup-ring {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 30vmin;
+  height: 30vmin;
+  border: 3px solid rgba(255, 225, 160, 0.9);
+  border-radius: 50%;
+  box-shadow:
+    0 0 30px rgba(255, 200, 110, 0.8),
+    inset 0 0 30px rgba(255, 200, 110, 0.6);
+  opacity: 0;
+  transform: translate(-50%, -50%) scale(0.1);
+  animation: levelupRing 1.4s cubic-bezier(0.1, 0.8, 0.3, 1) 0.7s forwards;
+  pointer-events: none;
+}
+
+.levelup-ring-2 {
+  border-color: rgba(180, 140, 255, 0.9);
+  animation-delay: 0.85s;
+}
+
+.levelup-ring-3 {
+  border-width: 1px;
+  animation-delay: 1s;
+  animation-duration: 1.8s;
+}
+
+.levelup-sparks {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  pointer-events: none;
+}
+
+.levelup-spark {
+  position: absolute;
+  width: var(--size);
+  height: var(--size);
+  border-radius: 50%;
+  background: #fff3cf;
+  box-shadow:
+    0 0 10px #ffd98a,
+    0 0 20px rgba(255, 180, 80, 0.8);
+  opacity: 0;
+  animation: levelupSpark 1.5s cubic-bezier(0.1, 0.8, 0.3, 1) calc(0.72s + var(--delay)) forwards;
+}
+
+.levelup-motes {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.levelup-mote {
+  position: absolute;
+  bottom: -20px;
+  left: var(--x);
+  color: rgba(255, 217, 138, 0.7);
+  font-size: 12px;
+  opacity: 0;
+  animation: levelupMote var(--duration) linear calc(1.2s + var(--delay)) infinite;
+}
+
+.levelup-content {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+  width: min(420px, 92vw);
+  text-align: center;
+}
+
+.levelup-kicker {
+  margin: 0;
+  color: #cbb6ee;
+  font-size: 12px;
+  letter-spacing: 6px;
+  text-transform: uppercase;
+  opacity: 0;
+}
+
+.levelup-title {
+  display: flex;
+  gap: 0.35em;
+  margin: 0;
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: clamp(44px, 11vw, 88px);
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  line-height: 1;
+}
+
+.levelup-title span {
+  background: linear-gradient(180deg, #fffaf0 0%, #ffd98a 45%, #d99a3d 75%, #fff0c4 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  filter: drop-shadow(0 0 18px rgba(255, 200, 110, 0.8));
+  opacity: 0;
+  transform: scale(3);
+}
+
+.levelup-level {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  opacity: 0;
+}
+
+.levelup-level-label {
+  color: #cbb6ee;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 6px;
+  text-transform: uppercase;
+}
+
+.levelup-level-number {
+  color: #fff;
+  font-size: clamp(72px, 18vw, 128px);
+  font-weight: 900;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+  text-shadow:
+    0 0 20px rgba(255, 217, 138, 0.9),
+    0 0 60px rgba(255, 170, 70, 0.6);
+  animation: levelupNumber 0.45s cubic-bezier(0.2, 1.6, 0.4, 1);
+}
+
+.levelup.stage-1 .levelup-kicker,
+.levelup.stage-2 .levelup-kicker,
+.levelup.stage-3 .levelup-kicker {
+  animation: errorIn 0.5s ease forwards;
+}
+
+.levelup.stage-1 .levelup-title span,
+.levelup.stage-2 .levelup-title span,
+.levelup.stage-3 .levelup-title span {
+  animation: levelupSlam 0.45s cubic-bezier(0.3, 1.5, 0.5, 1) forwards;
+}
+
+.levelup.stage-1 .levelup-title span + span,
+.levelup.stage-2 .levelup-title span + span,
+.levelup.stage-3 .levelup-title span + span {
+  animation-delay: 0.14s;
+}
+
+.levelup.stage-1 .levelup-content {
+  animation: levelupShake 0.4s ease 0.15s;
+}
+
+.levelup.stage-2 .levelup-level,
+.levelup.stage-3 .levelup-level {
+  animation: errorIn 0.4s ease forwards;
+}
+
+.levelup-rewards {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  animation: errorIn 0.5s ease;
+}
+
+.levelup-reward {
+  margin: 0;
+  color: #e6f3ff;
+  font-size: 22px;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  text-shadow: 0 0 16px rgba(120, 170, 255, 0.7);
+}
+
+.levelup-unlock {
+  margin: 0;
+  padding: 8px 16px;
+  border: 1px solid rgba(255, 140, 170, 0.6);
+  border-radius: 999px;
+  background: rgba(60, 20, 50, 0.7);
+  color: #ffd0dc;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  box-shadow: 0 0 22px rgba(255, 120, 160, 0.4);
+  animation: levelupUnlock 0.6s cubic-bezier(0.3, 1.5, 0.5, 1) 0.9s both;
+}
+
+.levelup-unlock-tag {
+  margin-right: 6px;
+  color: #fff;
+  font-size: 10px;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+}
+
+.levelup-continue {
+  margin-top: 8px;
+}
+
+@keyframes levelupFlash {
+  0% {
+    opacity: 0;
+  }
+  12% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+
+@keyframes levelupRaysIn {
+  to {
+    opacity: 1;
+    scale: 1;
+  }
+}
+
+@keyframes levelupSpin {
+  to {
+    rotate: 360deg;
+  }
+}
+
+@keyframes levelupRing {
+  0% {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(0.1);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(5);
+  }
+}
+
+@keyframes levelupSpark {
+  0% {
+    opacity: 1;
+    transform: rotate(var(--angle)) translateX(0) scale(1.4);
+  }
+  80% {
+    opacity: 0.9;
+  }
+  100% {
+    opacity: 0;
+    transform: rotate(var(--angle)) translateX(var(--dist)) scale(0.4);
+  }
+}
+
+@keyframes levelupMote {
+  0% {
+    opacity: 0;
+    transform: translateY(0) rotate(0deg);
+  }
+  15% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(-105vh) rotate(180deg);
+  }
+}
+
+@keyframes levelupSlam {
+  0% {
+    opacity: 0;
+    transform: scale(3);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes levelupShake {
+  0%,
+  100% {
+    translate: 0 0;
+  }
+  20% {
+    translate: -6px 3px;
+  }
+  40% {
+    translate: 6px -3px;
+  }
+  60% {
+    translate: -4px 2px;
+  }
+  80% {
+    translate: 3px -1px;
+  }
+}
+
+@keyframes levelupNumber {
+  0% {
+    opacity: 0;
+    transform: translateY(30px) scale(0.6);
+    filter: blur(6px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+    filter: blur(0);
+  }
+}
+
+@keyframes levelupUnlock {
+  0% {
+    opacity: 0;
+    transform: scale(0.6);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .levelup-rays,
+  .levelup-ring,
+  .levelup-spark,
+  .levelup-mote,
+  .levelup-flash {
+    display: none;
+  }
+
+  .levelup .levelup-title span,
+  .levelup .levelup-kicker,
+  .levelup .levelup-level {
+    opacity: 1;
+    transform: none;
+    animation: none !important;
+  }
+
+  .levelup.stage-1 .levelup-content,
+  .levelup-level-number {
+    animation: none;
+  }
+}

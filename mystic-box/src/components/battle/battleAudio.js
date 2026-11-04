@@ -221,6 +221,47 @@ export function createBattleAudio() {
     tone({ type: "sine", from: 65, to: 40, gain: 0.3, attack: 0.02, duration: 1.4, delay: 1.0 }, false);
   }
 
+  // Subida de nível: subida de energia que explode num acorde grande.
+  function levelUpBurst() {
+    if (!ensure()) return;
+    const rise = 0.7;
+    hiss({ duration: rise, filterType: "bandpass", from: 200, to: 7000, gain: 0.16, attack: rise * 0.95 });
+    tone({ type: "sawtooth", from: 80, to: 640, gain: 0.05, attack: rise * 0.9, duration: rise });
+    tone({ type: "sine", from: 70, to: 30, gain: 0.6, attack: 0.005, duration: 0.9, delay: rise }, false);
+    hiss({ duration: 0.5, filterType: "lowpass", from: 3000, to: 200, gain: 0.35, delay: rise }, false);
+    [NOTE.C4, NOTE.G4, NOTE.C5, NOTE.E5, NOTE.G5, NOTE.C6].forEach((freq) =>
+      tone({ type: "sawtooth", from: freq, gain: 0.03, attack: 0.02, duration: 2.4, delay: rise })
+    );
+    [NOTE.C6, NOTE.E6, NOTE.G6, NOTE.C6 * 2].forEach((freq, i) =>
+      tone({ type: "sine", from: freq, gain: 0.04, attack: 0.005, duration: 0.6, delay: rise + 0.15 + i * 0.07 })
+    );
+  }
+
+  // Cada nível que o número passa.
+  function levelTick(step) {
+    if (!ensure()) return;
+    const freq = NOTE.G5 * Math.pow(2, (step * 2) / 12);
+    tone({ type: "triangle", from: freq, gain: 0.07, attack: 0.005, duration: 0.3 });
+    tone({ type: "sine", from: freq * 2, gain: 0.03, attack: 0.005, duration: 0.25 });
+  }
+
+  // Fragmentos Arcanos caindo na carteira.
+  function shards() {
+    if (!ensure()) return;
+    for (let i = 0; i < 6; i += 1) {
+      const freq = 1800 + (i % 3) * 420;
+      tone({ type: "triangle", from: freq, to: freq * 1.02, gain: 0.04, attack: 0.002, duration: 0.18, delay: i * 0.09 });
+    }
+  }
+
+  // Dificuldade nova liberada.
+  function unlock() {
+    if (!ensure()) return;
+    tone({ type: "square", from: NOTE.C5, gain: 0.03, attack: 0.005, duration: 0.15 });
+    tone({ type: "square", from: NOTE.G5, gain: 0.03, attack: 0.005, duration: 0.15, delay: 0.1 });
+    tone({ type: "triangle", from: NOTE.C6, gain: 0.06, attack: 0.005, duration: 0.6, delay: 0.2 });
+  }
+
   function destroy() {
     if (ctx) void ctx.close();
     ctx = null;
@@ -228,6 +269,7 @@ export function createBattleAudio() {
 
   return {
     setEnabled, select, start, round, yourTurn, cast, hit, block, heal, status,
-    stunned, defeated, revive, siphon, victory, defeat, destroy,
+    stunned, defeated, revive, siphon, victory, defeat,
+    levelUpBurst, levelTick, shards, unlock, destroy,
   };
 }

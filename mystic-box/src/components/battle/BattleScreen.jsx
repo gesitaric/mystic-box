@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { getCharacterImage } from "../../characterImages";
 import { LevelBadge } from "../HomeScreen";
+import LevelUpCelebration from "./LevelUpCelebration";
 import TeamSetup, { SkillList, StatGrid } from "./TeamSetup";
 import "../../styles/battle.css";
 import {
@@ -17,6 +18,8 @@ import { readSoundPreference, storeSoundPreference } from "../../audio/soundPref
 const SINGLE_TARGETS = ["enemy", "ally", "fallen_ally"];
 const LOG_LIMIT = 60;
 const FLOAT_MS = 1100;
+// A celebração de nível entra depois da fanfarra de vitória/derrota.
+const LEVEL_UP_DELAY_MS = 1100;
 
 class SessionExpired extends Error {}
 
@@ -210,6 +213,7 @@ function BattleScreen({
   const [autoMode, setAutoMode] = useState(false);
   const [confirmForfeit, setConfirmForfeit] = useState(false);
   const [lastTeam, setLastTeam] = useState([]);
+  const [showLevelUp, setShowLevelUp] = useState(false);
   const busyRef = useRef(false);
   const floatId = useRef(0);
   const logEnd = useRef(null);
@@ -456,6 +460,15 @@ function BattleScreen({
     logEnd.current?.scrollIntoView({ block: "nearest" });
   }, [log]);
 
+  useEffect(() => {
+    if (!result?.leveledUp) return undefined;
+    const timer = setTimeout(() => setShowLevelUp(true), LEVEL_UP_DELAY_MS);
+    return () => clearTimeout(timer);
+  }, [result]);
+
+  const closeLevelUp = useCallback(() => setShowLevelUp(false), []);
+  const playLevelUpSound = useCallback((name, ...args) => audio.current?.[name]?.(...args), []);
+
   async function startBattle(team, difficulty) {
     setStarting(true);
     setStartError("");
@@ -556,6 +569,7 @@ function BattleScreen({
   }
 
   function backToSetup() {
+    setShowLevelUp(false);
     setResult(null);
     setView(null);
     setLog([]);
@@ -818,6 +832,18 @@ function BattleScreen({
       )}
 
       {result && <BattleResult result={result} onAgain={backToSetup} onExit={onExit} />}
+
+      {result && showLevelUp && (
+        <LevelUpCelebration
+          result={result}
+          unlocked={(setup?.difficulties ?? []).filter(
+            (difficulty) =>
+              difficulty.minLevel > result.previousLevel && difficulty.minLevel <= result.level
+          )}
+          onSound={playLevelUpSound}
+          onDone={closeLevelUp}
+        />
+      )}
     </section>
   );
 }
