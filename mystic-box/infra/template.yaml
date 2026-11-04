@@ -6,6 +6,20 @@ Description: >
 # Deploy: `sam deploy` nesta pasta (configuracao em samconfig.toml).
 # O bucket foi criado a mao e importado para a stack uma unica vez (ver README.md).
 
+Parameters:
+  DomainName:
+    Type: String
+    Default: mystic-box.geskee.com.br
+    Description: Dominio publico do jogo.
+  HostedZoneId:
+    Type: AWS::Route53::HostedZone::Id
+    Default: Z07631273VVNV2AWGLCG1
+    Description: Hosted zone do geskee.com.br no Route 53 (fora desta stack).
+  CertificateArn:
+    Type: String
+    Default: arn:aws:acm:us-east-1:465926092387:certificate/ec238d23-530a-478b-87a3-7953140c2b21
+    Description: Certificado ACM (us-east-1, exigido pelo CloudFront) que cobre o DomainName (*.geskee.com.br).
+
 Resources:
   FrontendBucket:
     Type: AWS::S3::Bucket
@@ -47,6 +61,12 @@ Resources:
         HttpVersion: http2and3
         IPV6Enabled: true
         PriceClass: PriceClass_100
+        Aliases:
+        - !Ref DomainName
+        ViewerCertificate:
+          AcmCertificateArn: !Ref CertificateArn
+          SslSupportMethod: sni-only
+          MinimumProtocolVersion: TLSv1.2_2021
         Origins:
         - Id: FrontendBucket
           # Endpoint REST do bucket (nao o de website), exigido pelo OAC.
@@ -95,12 +115,37 @@ Resources:
             StringEquals:
               AWS:SourceArn: !Sub "arn:${AWS::Partition}:cloudfront::${AWS::AccountId}:distribution/${FrontendDistribution}"
 
+  # mystic-box.geskee.com.br -> CloudFront (alias, IPv4 e IPv6).
+  # Z2FDTNDATAQYW2 e a hosted zone fixa de todas as distribuicoes do CloudFront.
+  FrontendDnsRecordIpv4:
+    Type: AWS::Route53::RecordSet
+    Properties:
+      HostedZoneId: !Ref HostedZoneId
+      Name: !Ref DomainName
+      Type: A
+      AliasTarget:
+        DNSName: !GetAtt FrontendDistribution.DomainName
+        HostedZoneId: Z2FDTNDATAQYW2
+
+  FrontendDnsRecordIpv6:
+    Type: AWS::Route53::RecordSet
+    Properties:
+      HostedZoneId: !Ref HostedZoneId
+      Name: !Ref DomainName
+      Type: AAAA
+      AliasTarget:
+        DNSName: !GetAtt FrontendDistribution.DomainName
+        HostedZoneId: Z2FDTNDATAQYW2
+
 Outputs:
   DistributionId:
     Description: ID da distribuicao (usado para invalidar o cache no deploy)
     Value: !Ref FrontendDistribution
   FrontendUrl:
     Description: URL publica do frontend
+    Value: !Sub "https://${DomainName}"
+  CloudFrontUrl:
+    Description: Endereco direto da distribuicao (antes de o DNS propagar)
     Value: !Sub "https://${FrontendDistribution.DomainName}"
   BucketName:
     Description: Bucket com o build do frontend

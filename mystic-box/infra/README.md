@@ -16,7 +16,20 @@ backend (`mystic-box-back`), e também é publicada com `sam deploy`.
   gravado em cada objeto pelo deploy;
 - headers de segurança pela política gerenciada `SecurityHeadersPolicy`;
 - 403/404 devolvendo `index.html` (o app usa rotas por hash, como `#portal`);
-- a política do bucket liberando `s3:GetObject` só para esta distribuição.
+- a política do bucket liberando `s3:GetObject` só para esta distribuição;
+- o domínio `https://mystic-box.geskee.com.br`: alias na distribuição, com TLS 1.2+
+  e o certificado wildcard `*.geskee.com.br`, e registros A/AAAA (alias) na hosted zone.
+
+## Domínio
+
+- A hosted zone `geskee.com.br` (`Z07631273VVNV2AWGLCG1`) fica no Route 53 desta
+  conta, **fora** da stack, porque o domínio raiz pode servir outros projetos.
+  Os nameservers dela estão configurados no registro.br.
+- O certificado `*.geskee.com.br` está no ACM em **us-east-1**, região exigida pelo
+  CloudFront. Ele é validado por DNS: o CNAME `_88962ef0...geskee.com.br` precisa
+  continuar na zona para o ACM renovar o certificado automaticamente.
+- Domínio, zona e certificado são parâmetros do template (`DomainName`,
+  `HostedZoneId`, `CertificateArn`). Os valores padrão já são os de produção.
 
 ## Atualizar a infra
 
@@ -63,4 +76,5 @@ sam deploy
 ```
 
 Depois do `sam deploy`, o endereço de website do S3 deixa de funcionar e o jogo
-passa a ser acessado só pela URL do output `FrontendUrl`.
+passa a ser acessado só por `https://mystic-box.geskee.com.br` (output `FrontendUrl`)
+ou pelo endereço direto da distribuição (output `CloudFrontUrl`).
