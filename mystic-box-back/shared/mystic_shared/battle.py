@@ -33,6 +33,8 @@ TEAM_SIZE = 3
 MAX_AETHER = 10
 STARTING_AETHER = 2
 AETHER_PER_TURN = 1
+# Aether extra que Strike e Guard geram (além do AETHER_PER_TURN).
+BASIC_SKILL_AETHER = 1
 MAX_ROUNDS = 30
 
 DEFENSE_CONSTANT = 50
@@ -282,12 +284,12 @@ def _element_rider(state, caster, target, damage, events):
 
 def _strike(state, actor, targets, rng, events):
     _deal_damage(actor, targets[0], 1.0, _best_kind(actor), rng, events)
-    _gain_aether(state, actor["side"], 1)
+    _gain_aether(state, actor["side"], BASIC_SKILL_AETHER)
 
 
 def _guard(state, actor, targets, rng, events):
     _apply_status(state, actor, "guard", 1, events)
-    _gain_aether(state, actor["side"], 1)
+    _gain_aether(state, actor["side"], BASIC_SKILL_AETHER)
 
 
 def _bastion_call(state, actor, targets, rng, events):
@@ -509,9 +511,14 @@ ARCHETYPE_SKILLS = {
 BASIC_SKILLS = ("strike", "guard")
 
 
+def archetype_skill_count(rarity):
+    """Quantas habilidades do arquétipo a carta dessa raridade conhece."""
+    return max(1, rarity - 2)
+
+
 def skills_for(character):
     """Habilidades da carta: básicas + do arquétipo conforme a raridade."""
-    unlocked = max(1, character["rarity"] - 2)
+    unlocked = archetype_skill_count(character["rarity"])
     return [*BASIC_SKILLS, *ARCHETYPE_SKILLS[character["archetype"]][:unlocked]]
 
 

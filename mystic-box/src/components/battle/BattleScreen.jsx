@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { getCharacterImage } from "../../characterImages";
 import { LevelBadge } from "../HomeScreen";
+import Grimoire from "../Grimoire";
 import LevelUpCelebration from "./LevelUpCelebration";
 import TeamSetup, { SkillList, StatGrid } from "./TeamSetup";
 import "../../styles/battle.css";
@@ -613,6 +614,7 @@ function BattleScreen({
           </button>
           <h1 className="battle-heading">Arena</h1>
           <SoundButton on={soundOn} onToggle={() => setSoundOn((on) => !on)} />
+          <Grimoire apiUrl={apiUrl} chapter="battle" />
         </div>
         <TeamSetup
           apiUrl={apiUrl}
@@ -680,6 +682,7 @@ function BattleScreen({
           {view.difficultyLabel} · Round {view.round}/{view.maxRounds}
         </span>
         <SoundButton on={soundOn} onToggle={() => setSoundOn((on) => !on)} />
+        <Grimoire apiUrl={apiUrl} chapter="battle" />
       </div>
 
       <AetherMeter label="Foes" value={aether.enemy} max={view.maxAether} side="enemy" />

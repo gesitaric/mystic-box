@@ -31,6 +31,16 @@ STAT_LABELS = {
     "fate": "Fate",
 }
 
+STAT_DESCRIPTIONS = {
+    "vitality": "Hit points. At 0 the card falls.",
+    "might": "Physical power: Strike (when higher than Arcana) and weapon skills.",
+    "arcana": "Magical power: spells and heals.",
+    "bulwark": "Defense against physical damage.",
+    "resolve": "Defense against magical damage.",
+    "celerity": "Speed. Higher Celerity acts earlier in the round.",
+    "fate": "Chance (%) of a critical hit.",
+}
+
 # Ciclo de afinidades: cada elemento domina o seguinte
 # (ember > gale > terra > tide > ember). Lumen e umbra dominam um ao outro.
 ELEMENTS = {

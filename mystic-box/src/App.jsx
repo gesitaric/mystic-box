@@ -553,6 +553,7 @@ function App() {
         />
       ) : onHome ? (
         <HomeScreen
+          apiUrl={API_URL}
           email={session.email}
           balance={balance}
           progress={progress}
