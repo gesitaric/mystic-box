@@ -76,6 +76,28 @@ export function resendConfirmationCode(email) {
   });
 }
 
+export function forgotPassword(email) {
+  const user = createCognitoUser(email);
+
+  return new Promise((resolve, reject) => {
+    user.forgotPassword({
+      onSuccess: (result) => resolve(result),
+      onFailure: (error) => reject(error),
+    });
+  });
+}
+
+export function confirmForgotPassword(email, code, newPassword) {
+  const user = createCognitoUser(email);
+
+  return new Promise((resolve, reject) => {
+    user.confirmPassword(code, newPassword, {
+      onSuccess: (result) => resolve(result),
+      onFailure: (error) => reject(error),
+    });
+  });
+}
+
 export function signIn(email, password) {
   const user = createCognitoUser(email);
   const authenticationDetails = new AuthenticationDetails({
@@ -142,7 +164,7 @@ export function describeAuthError(error) {
     case "UserNotConfirmedException":
       return "Confirm your email before signing in.";
     case "CodeMismatchException":
-      return "Invalid confirmation code.";
+      return "Invalid code.";
     case "ExpiredCodeException":
       return "Code expired. Request a new code.";
     case "InvalidPasswordException":
