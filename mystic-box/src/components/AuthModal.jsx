@@ -3,9 +3,31 @@ import { createPortal } from "react-dom";
 import {
   confirmSignUp,
   describeAuthError,
+  resendConfirmationCode,
   signIn,
   signUp,
 } from "../auth/cognito";
+
+// Email da conta criada que ainda espera o código. Fica no navegador para que
+// recarregar a página não tire o usuário da tela de confirmação.
+const PENDING_CONFIRM_KEY = "mysticbox.pendingConfirmEmail";
+
+function readPendingEmail() {
+  try {
+    return localStorage.getItem(PENDING_CONFIRM_KEY) ?? "";
+  } catch {
+    return "";
+  }
+}
+
+function savePendingEmail(email) {
+  try {
+    if (email) localStorage.setItem(PENDING_CONFIRM_KEY, email);
+    else localStorage.removeItem(PENDING_CONFIRM_KEY);
+  } catch {
+    // Sem acesso ao storage: o fluxo segue, só não sobrevive ao reload.
+  }
+}
 
 const COPY = {
   signin: {
@@ -26,8 +48,10 @@ const COPY = {
 };
 
 function AuthModal({ open, onClose, onAuthenticated }) {
-  const [mode, setMode] = useState("signin");
-  const [email, setEmail] = useState("");
+  const [mode, setMode] = useState(() =>
+    readPendingEmail() ? "confirm" : "signin"
+  );
+  const [email, setEmail] = useState(readPendingEmail);
   const [password, setPassword] = useState("");
   const [code, setCode] = useState("");
   const [error, setError] = useState("");
@@ -49,6 +73,13 @@ function AuthModal({ open, onClose, onAuthenticated }) {
 
   const copy = COPY[mode];
 
+  function goToConfirm(confirmEmail, message) {
+    savePendingEmail(confirmEmail);
+    setMode("confirm");
+    setCode("");
+    setInfo(message);
+  }
+
   async function handleSubmit(event) {
     event.preventDefault();
     setError("");
@@ -57,8 +88,17 @@ function AuthModal({ open, onClose, onAuthenticated }) {
 
     try {
       if (mode === "signin") {
-        const auth = await signIn(email.trim(), password);
-        onAuthenticated(auth);
+        try {
+          const auth = await signIn(email.trim(), password);
+          onAuthenticated(auth);
+        } catch (signInError) {
+          const errorCode = signInError?.code ?? signInError?.name;
+          if (errorCode !== "UserNotConfirmedException") throw signInError;
+          goToConfirm(
+            email.trim(),
+            "Your email isn't confirmed yet. Enter the code we sent you."
+          );
+        }
         return;
       }
 
@@ -71,13 +111,19 @@ function AuthModal({ open, onClose, onAuthenticated }) {
           return;
         }
 
-        setMode("confirm");
-        setCode("");
-        setInfo("We sent a confirmation code to your email.");
+        goToConfirm(email.trim(), "We sent a confirmation code to your email.");
         return;
       }
 
       await confirmSignUp(email.trim(), code.trim());
+      savePendingEmail("");
+
+      // Depois de recarregar a página a senha não está mais em memória.
+      if (!password) {
+        setMode("signin");
+        setInfo("Account confirmed! Sign in with your email and password.");
+        return;
+      }
 
       try {
         const auth = await signIn(email.trim(), password);
@@ -94,7 +140,23 @@ function AuthModal({ open, onClose, onAuthenticated }) {
     }
   }
 
+  async function handleResend() {
+    setError("");
+    setInfo("");
+    setLoading(true);
+
+    try {
+      await resendConfirmationCode(email.trim());
+      setInfo("We sent a new code to your email.");
+    } catch (authError) {
+      setError(describeAuthError(authError));
+    } finally {
+      setLoading(false);
+    }
+  }
+
   function switchMode(nextMode) {
+    if (mode === "confirm") savePendingEmail("");
     setMode(nextMode);
     setError("");
     setInfo("");
@@ -210,13 +272,23 @@ function AuthModal({ open, onClose, onAuthenticated }) {
         </form>
 
         {mode === "confirm" && (
-          <button
-            type="button"
-            className="auth-link"
-            onClick={() => switchMode("signin")}
-          >
-            Back to sign in
-          </button>
+          <>
+            <button
+              type="button"
+              className="auth-link"
+              onClick={handleResend}
+              disabled={loading}
+            >
+              Resend code
+            </button>
+            <button
+              type="button"
+              className="auth-link"
+              onClick={() => switchMode("signin")}
+            >
+              Back to sign in
+            </button>
+          </>
         )}
       </div>
     </div>,
