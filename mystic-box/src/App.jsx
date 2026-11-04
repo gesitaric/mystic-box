@@ -126,6 +126,8 @@ function App() {
 
   // Saldo de Fragmentos Arcanos do usuário logado.
   const [balance, setBalance] = useState(null);
+  // Nível e experiência do usuário logado (calculados no servidor).
+  const [progress, setProgress] = useState(null);
 
   const autoSaveAttempted = useRef(false);
   const suspenseTimer = useRef(null);
@@ -190,6 +192,23 @@ function App() {
       setBalance(data.balance ?? 0);
     } catch (walletError) {
       console.error(walletError);
+    }
+  }, []);
+
+  const fetchProfile = useCallback(async (activeSession) => {
+    try {
+      const token = activeSession.session.getIdToken().getJwtToken();
+      const response = await fetch(`${API_URL}/users/me/profile`, {
+        headers: { Authorization: token },
+      });
+
+      if (!response.ok) {
+        throw new Error(`Failed to fetch the profile (${response.status}).`);
+      }
+
+      setProgress(await response.json());
+    } catch (profileError) {
+      console.error(profileError);
     }
   }, []);
 
@@ -282,6 +301,7 @@ function App() {
         // Com um sorteio pendente, mostra a invocação para acompanhar o salvamento.
         setScreen(storedSummon ? "summon" : "home");
         void fetchWallet(currentSession);
+        void fetchProfile(currentSession);
 
         if (storedSummon && !autoSaveAttempted.current) {
           autoSaveAttempted.current = true;
@@ -293,7 +313,7 @@ function App() {
     }
 
     void restore();
-  }, [saveCards, fetchSummonStatus, fetchWallet]);
+  }, [saveCards, fetchSummonStatus, fetchWallet, fetchProfile]);
 
   // Sem login não há tempo de espera.
   const cooldownRemaining =
@@ -369,6 +389,7 @@ function App() {
     // Quem entrou para guardar um sorteio continua vendo as cartas.
     setScreen(pendingSummon || showingSpread ? "summon" : "home");
     void fetchWallet(auth);
+    void fetchProfile(auth);
 
     // Só cartas ainda não guardadas; as já guardadas não contam de novo.
     if (pendingSummon) {
@@ -385,6 +406,7 @@ function App() {
     setShopOpen(false);
     setCooldownUntil(null);
     setBalance(null);
+    setProgress(null);
     setScreen("home");
   }
 
@@ -508,6 +530,7 @@ function App() {
         <HomeScreen
           email={session.email}
           balance={balance}
+          progress={progress}
           cooldownLabel={onCooldown ? formatCountdown(cooldownRemaining) : ""}
           onSummon={() => setScreen("summon")}
           onCollection={() => setCollectionOpen(true)}

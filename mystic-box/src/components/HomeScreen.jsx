@@ -1,8 +1,44 @@
+// Nível e experiência do jogador, como o servidor calculou.
+export function LevelBadge({ progress, compact = false }) {
+  if (!progress) return null;
+
+  const { level, maxLevel, levelExperience, nextLevelExperience } = progress;
+  const atMax = nextLevelExperience == null;
+  const percent = atMax
+    ? 100
+    : Math.min(100, Math.round((levelExperience / nextLevelExperience) * 100));
+
+  return (
+    <div
+      className={`level-badge${compact ? " is-compact" : ""}`}
+      aria-label={
+        atMax
+          ? `Level ${level} (max)`
+          : `Level ${level}, ${levelExperience} of ${nextLevelExperience} experience`
+      }
+    >
+      <span className="level-badge-level">
+        <span className="level-badge-label">LV</span>
+        {level}
+      </span>
+      <span className="level-badge-progress">
+        <span className="level-badge-bar" aria-hidden="true">
+          <span className="level-badge-fill" style={{ width: `${percent}%` }} />
+        </span>
+        <span className="level-badge-xp">
+          {atMax ? `Max level ${maxLevel}` : `${levelExperience} / ${nextLevelExperience} XP`}
+        </span>
+      </span>
+    </div>
+  );
+}
+
 // Tela inicial do usuário logado. Só apresenta o que veio da API (saldo,
-// tempo de espera) e leva para as outras telas.
+// nível, tempo de espera) e leva para as outras telas.
 function HomeScreen({
   email,
   balance,
+  progress,
   cooldownLabel,
   onSummon,
   onCollection,
@@ -17,6 +53,8 @@ function HomeScreen({
             {email}
           </span>
         )}
+
+        <LevelBadge progress={progress} />
 
         <div
           className="home-wallet"
