@@ -22,14 +22,19 @@ Isso significa:
 - `mystic-box-back/shared/mystic_shared/` é a Lambda Layer `SharedLayer`, compartilhada entre as Lambdas:
   - `cards.py`: **fonte única** das definições das cartas (`name`, `rarity`, `file_name`, `price`), das regras da loja (`buy_price`, `sell_price`, `shop_catalog`) e das regras do sorteio (pesos por raridade, tamanho da invocação). Para achar uma carta, use `get_character(file_name)`.
   - `summon_token.py`: token assinado (HMAC, chave no Secrets Manager) que comprova que um sorteio foi feito pelo servidor.
+  - `stats.py`: atributos de batalha (vitality, might, arcana, bulwark, resolve, celerity, fate), elementos e arquétipos. Os atributos saem da raridade, do arquétipo e do nível; elemento e arquétipo de cada carta ficam em `cards.py`.
+  - `battle.py`: motor da batalha contra o computador (turnos, Aether, habilidades, efeitos, IA, dificuldades e experiência ganha).
+  - `progression.py`: curva de experiência, nível máximo e Fragmentos Arcanos ganhos ao subir de nível.
 - Uma Lambda nova que precise dessas regras deve declarar `Layers: [!Ref SharedLayer]` no `template.yaml` e importar de `mystic_shared`. Não copie as definições para outra Lambda nem para o frontend.
 
 ## Fluxos atuais
 
 - **Invocar**: `POST /box/open` (público) sorteia no servidor e devolve as cartas + `summonToken`. Para guardá-las, o frontend envia **só** o `summonToken` para `POST /users/me/cards`. O token é de uso único, expira em 30 minutos e consome o tempo de espera do usuário.
-- **Coleção**: `GET /users/me/cards` devolve as cartas **agrupadas por carta** (`file_name`), com `quantity`, `sellPrice` (por cópia) e `maxSellQuantity` calculados no servidor, além de `totalCards`.
+- **Coleção**: `GET /users/me/cards` devolve as cartas **agrupadas por carta** (`file_name`), com `quantity`, `sellPrice` (por cópia) e `maxSellQuantity` calculados no servidor, além de `totalCards`. Cada carta traz em `battle` o elemento, o arquétipo, os atributos e as habilidades de batalha.
 - **Vender**: `POST /users/me/cards/sell` com `{"fileName", "quantity"}`. O servidor escolhe quais cópias saem (as mais recentes), remove todas e credita `sell_total` (`cards.py`) na carteira, na mesma transação. O limite por venda é `MAX_SELL_QUANTITY`.
 - **Loja**: `GET /shop/cards` devolve o catálogo (`shop_catalog`) com `buyPrice` e `canAfford` calculados no servidor, além do `balance`. Comprar é `POST /shop/cards/{fileName}/buy`, que debita o preço de `buy_price` (só se o saldo cobrir, condição na transação) e adiciona a carta à coleção, na mesma transação. A aba "Vender" da loja usa o fluxo de venda acima.
+- **Nível**: `GET /users/me/profile` devolve nível e progresso. Só a experiência total fica salva (`UserProgressTable`); o nível é sempre calculado no servidor.
+- **Batalha**: `GET /battles/current` devolve a batalha ativa (ou `null`), as dificuldades liberadas pelo nível e o progresso. `POST /battles` com `{"team": [fileName x3], "difficulty"}` começa uma batalha (posse das cartas conferida no servidor). `POST /battles/current/actions` com `{"battleId", "type": "skill"|"auto"|"forfeit", "skill", "target"}` joga o turno da carta da vez e os turnos do computador, devolvendo a batalha e os `events` para o frontend animar. O estado fica em `BattlesTable` com versão (condição em cada gravação). No fim, resultado, experiência (vitória > derrota; desistir = 0) e Fragmentos Arcanos de subida de nível são gravados numa só transação.
 
 ## Rodar localmente
 

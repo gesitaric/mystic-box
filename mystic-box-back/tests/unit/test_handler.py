@@ -3,6 +3,9 @@ from unittest.mock import MagicMock
 
 import pytest
 from botocore.exceptions import ClientError
+from mystic_shared import cards
+from mystic_shared.battle import public_skills
+from mystic_shared.stats import public_battle_profile
 
 from get_summon_status import app as get_summon_status
 from get_user_cards import app as get_user_cards
@@ -68,6 +71,10 @@ def test_get_user_cards_groups_repeated_cards(authenticated_event, monkeypatch):
             # Preço de venda vem das definições do servidor.
             "sellPrice": 250,
             "maxSellQuantity": 3,
+            "battle": {
+                **public_battle_profile(cards.get_character("astra.jfif")),
+                "skills": public_skills(cards.get_character("astra.jfif")),
+            },
         },
         {
             "file_name": "rowan.jfif",
@@ -78,6 +85,10 @@ def test_get_user_cards_groups_repeated_cards(authenticated_event, monkeypatch):
             "lastObtainedAt": "2026-01-01T00:00:00+00:00",
             "sellPrice": 10,
             "maxSellQuantity": 1,
+            "battle": {
+                **public_battle_profile(cards.get_character("rowan.jfif")),
+                "skills": public_skills(cards.get_character("rowan.jfif")),
+            },
         },
     ]
     table.query.assert_called_once()
@@ -97,6 +108,7 @@ def test_get_user_cards_unknown_card_cannot_be_sold(authenticated_event, monkeyp
     assert data["cards"][0]["sellPrice"] is None
     assert data["cards"][0]["maxSellQuantity"] == 0
     assert data["cards"][0]["lastObtainedAt"] is None
+    assert data["cards"][0]["battle"] is None
 
 
 @pytest.fixture()

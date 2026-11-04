@@ -1,56 +1,216 @@
-// Tela inicial do usuário logado. Só apresenta o que veio da API (saldo,
-// tempo de espera) e leva para as outras telas.
+import { getCharacterImage } from "../characterImages";
+import "../styles/home.css";
+
+// Artes de vitrine dos cards de ação (só decoração).
+const SUMMON_ART = ["lyra.png", "astra.jfif", "seraphiel.jfif"];
+const BATTLE_ART = ["pyralis.jfif", "malachar.jfif"];
+
+// Nível e experiência do jogador, como o servidor calculou.
+export function LevelBadge({ progress, compact = false }) {
+  if (!progress) return null;
+
+  const { level, maxLevel, levelExperience, nextLevelExperience } = progress;
+  const atMax = nextLevelExperience == null;
+  const percent = atMax
+    ? 100
+    : Math.min(100, Math.round((levelExperience / nextLevelExperience) * 100));
+
+  return (
+    <div
+      className={`level-badge${compact ? " is-compact" : ""}`}
+      aria-label={
+        atMax
+          ? `Level ${level} (max)`
+          : `Level ${level}, ${levelExperience} of ${nextLevelExperience} experience`
+      }
+    >
+      <span className="level-badge-level">
+        <span className="level-badge-label">LV</span>
+        {level}
+      </span>
+      <span className="level-badge-progress">
+        <span className="level-badge-bar" aria-hidden="true">
+          <span className="level-badge-fill" style={{ width: `${percent}%` }} />
+        </span>
+        <span className="level-badge-xp">
+          {atMax ? `Max level ${maxLevel}` : `${levelExperience} / ${nextLevelExperience} XP`}
+        </span>
+      </span>
+    </div>
+  );
+}
+
+// Perfil do HUD: anel de nível com a experiência e o nome do jogador.
+function ProfileChip({ email, progress }) {
+  const level = progress?.level;
+  const atMax = Boolean(progress) && progress.nextLevelExperience == null;
+  let percent = 0;
+  if (atMax) percent = 100;
+  else if (progress) {
+    percent = Math.min(100, (progress.levelExperience / progress.nextLevelExperience) * 100);
+  }
+  const name = email ? email.split("@")[0] : "Summoner";
+
+  let xpText = "…";
+  if (atMax) xpText = "MAX LEVEL";
+  else if (progress) xpText = `${progress.levelExperience} / ${progress.nextLevelExperience} XP`;
+
+  return (
+    <div
+      className="hud-profile"
+      aria-label={progress ? `${name}, level ${level}, ${xpText}` : name}
+    >
+      <span className="hud-level" style={{ "--xp": `${percent * 3.6}deg` }} aria-hidden="true">
+        <span className="hud-level-inner">
+          <span className="hud-level-label">LV</span>
+          {level ?? "—"}
+        </span>
+      </span>
+      <span className="hud-profile-info" aria-hidden="true">
+        <span className="hud-name" title={email}>
+          {name}
+        </span>
+        <span className="hud-xp-bar">
+          <span className="hud-xp-fill" style={{ width: `${percent}%` }} />
+        </span>
+        <span className="hud-xp-text">{xpText}</span>
+      </span>
+    </div>
+  );
+}
+
+// Tela inicial do usuário logado, no formato de lobby de jogo: HUD em cima,
+// ações principais no centro e atalhos embaixo. Só apresenta o que veio da
+// API (saldo, nível, vitórias, tempo de espera).
 function HomeScreen({
   email,
   balance,
+  progress,
   cooldownLabel,
   onSummon,
+  onBattle,
   onCollection,
   onShop,
   onSignOut,
 }) {
-  return (
-    <section className="home" aria-label="Home">
-      <div className="home-profile">
-        {email && (
-          <span className="home-email" title={email}>
-            {email}
-          </span>
-        )}
+  const wins = progress?.wins ?? 0;
+  const losses = progress?.losses ?? 0;
 
-        <div
-          className="home-wallet"
-          aria-label={`${balance ?? 0} Arcane Shards`}
-        >
-          <span className="home-wallet-label">Arcane Shards</span>
-          <span className="home-wallet-amount">
-            <span className="wallet-icon" aria-hidden="true">✧</span>
-            {balance ?? "—"}
-          </span>
+  return (
+    <section className="lobby" aria-label="Home">
+      <header className="lobby-hud">
+        <ProfileChip email={email} progress={progress} />
+
+        <div className="hud-right">
+          <button
+            type="button"
+            className="hud-currency"
+            onClick={onShop}
+            aria-label={`${balance ?? 0} Arcane Shards. Open shop`}
+            title="Arcane Shards · open shop"
+          >
+            <span className="wallet-icon" aria-hidden="true">
+              ✧
+            </span>
+            <span className="hud-currency-amount">{balance ?? "—"}</span>
+            <span className="hud-currency-plus" aria-hidden="true">
+              +
+            </span>
+          </button>
+
+          <button
+            type="button"
+            className="hud-icon-button"
+            onClick={onSignOut}
+            aria-label="Sign out"
+            title="Sign out"
+          >
+            <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true">
+              <path
+                d="M10 4H5v16h5M15 8l4 4-4 4M19 12H9"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="1.8"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+            </svg>
+          </button>
         </div>
+      </header>
+
+      <div className="lobby-logo">
+        <span className="title-ornament">✦ ✧ ✦</span>
+        <h1>MYSTIC BOX</h1>
+        <p className="tagline">ARCANE SUMMONING</p>
       </div>
 
-      <nav className="home-menu" aria-label="Main menu">
-        <button type="button" className="home-button home-button-primary" onClick={onSummon}>
-          <span className="home-button-title">✦ Summon cards ✦</span>
-          {cooldownLabel && (
-            <span className="home-button-hint">
-              Next summon in{" "}
-              <span className="cooldown-time">{cooldownLabel}</span>
+      <nav className="lobby-main" aria-label="Main actions">
+        <button type="button" className="lobby-card is-summon" onClick={onSummon}>
+          <span className="lobby-card-art" aria-hidden="true">
+            {SUMMON_ART.map((fileName, index) => (
+              <img
+                key={fileName}
+                src={getCharacterImage(fileName)}
+                alt=""
+                className={`lobby-fan lobby-fan-${index}`}
+              />
+            ))}
+            <span className="lobby-portal-glow" />
+          </span>
+          <span className="lobby-card-body">
+            <span className="lobby-card-kicker">Arcane portal</span>
+            <span className="lobby-card-title">Summon</span>
+            {cooldownLabel ? (
+              <span className="lobby-card-status is-waiting">
+                Recharging · <span className="cooldown-time">{cooldownLabel}</span>
+              </span>
+            ) : (
+              <span className="lobby-card-status is-ready">Portal ready</span>
+            )}
+          </span>
+        </button>
+
+        <button type="button" className="lobby-card is-battle" onClick={onBattle}>
+          <span className="lobby-card-art" aria-hidden="true">
+            <img
+              src={getCharacterImage(BATTLE_ART[0])}
+              alt=""
+              className="lobby-duel lobby-duel-left"
+            />
+            <img
+              src={getCharacterImage(BATTLE_ART[1])}
+              alt=""
+              className="lobby-duel lobby-duel-right"
+            />
+            <span className="lobby-vs">VS</span>
+          </span>
+          <span className="lobby-card-body">
+            <span className="lobby-card-kicker">Arena</span>
+            <span className="lobby-card-title">Battle</span>
+            <span className="lobby-card-status">
+              {wins}W · {losses}L
             </span>
-          )}
+          </span>
         </button>
+      </nav>
 
-        <button type="button" className="home-button" onClick={onCollection}>
-          <span className="home-button-title">Collection</span>
+      <nav className="lobby-dock" aria-label="Shortcuts">
+        <button type="button" className="dock-button" onClick={onCollection}>
+          <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true">
+            <rect x="3" y="5" width="11" height="15" rx="2" fill="none" stroke="currentColor" strokeWidth="1.7" />
+            <path d="M17 7l3 1-3 12-3-1" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinejoin="round" />
+            <path d="M8.5 10l1.2 2.4 2.3.3-1.7 1.6.4 2.4-2.2-1.2-2.2 1.2.4-2.4L5 12.7l2.3-.3z" fill="currentColor" />
+          </svg>
+          <span>Collection</span>
         </button>
-
-        <button type="button" className="home-button" onClick={onShop}>
-          <span className="home-button-title">Shop</span>
-        </button>
-
-        <button type="button" className="home-button home-button-quiet" onClick={onSignOut}>
-          <span className="home-button-title">Sign out</span>
+        <button type="button" className="dock-button" onClick={onShop}>
+          <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true">
+            <path d="M4 9h16l-1.5 11h-13z" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinejoin="round" />
+            <path d="M8 9V7a4 4 0 0 1 8 0v2" fill="none" stroke="currentColor" strokeWidth="1.7" />
+            <path d="M12 12.5l1 2 2.2.3-1.6 1.5.4 2.2-2-1.1-2 1.1.4-2.2-1.6-1.5 2.2-.3z" fill="currentColor" />
+          </svg>
+          <span>Shop</span>
         </button>
       </nav>
     </section>

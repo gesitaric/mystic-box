@@ -76,6 +76,34 @@ Resources:
       - AttributeName: userId
         KeyType: HASH
 
+  # Experiência acumulada (o nível é calculado dela), vitórias e derrotas.
+  UserProgressTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+      - AttributeName: userId
+        AttributeType: S
+      KeySchema:
+      - AttributeName: userId
+        KeyType: HASH
+
+  # Batalha de cada jogador contra o computador (uma por vez). O estado fica
+  # em JSON e some sozinho pelo TTL um dia depois da última ação.
+  BattlesTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+      - AttributeName: userId
+        AttributeType: S
+      KeySchema:
+      - AttributeName: userId
+        KeyType: HASH
+      TimeToLiveSpecification:
+        AttributeName: expiresAt
+        Enabled: true
+
   # Tokens de sorteio já usados para guardar cartas (uso único). Os itens
   # somem sozinhos pelo TTL depois que o token expira.
   SummonTokensTable:
@@ -399,6 +427,128 @@ Resources:
             Path: /shop/cards/{fileName}/buy
             Method: options
 
+  GetProfileFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: get_profile/
+      Handler: app.lambda_handler
+      Runtime: python3.14
+      Architectures:
+      - x86_64
+      Layers:
+      - !Ref SharedLayer
+      Environment:
+        Variables:
+          USER_PROGRESS_TABLE: !Ref UserProgressTable
+      Policies:
+      - DynamoDBReadPolicy:
+          TableName: !Ref UserProgressTable
+      Events:
+        GetProfile:
+          Type: Api
+          Properties:
+            RestApiId: !Ref MysticBoxApi
+            Path: /users/me/profile
+            Method: get
+            Auth:
+              Authorizer: CognitoAuthorizer
+        GetProfileOptions:
+          Type: Api
+          Properties:
+            RestApiId: !Ref MysticBoxApi
+            Path: /users/me/profile
+            Method: options
+
+  PlayBattleFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: play_battle/
+      Handler: app.lambda_handler
+      Runtime: python3.14
+      Architectures:
+      - x86_64
+      Layers:
+      - !Ref SharedLayer
+      Environment:
+        Variables:
+          BATTLES_TABLE: !Ref BattlesTable
+          USER_CARDS_TABLE: !Ref UserCardsTable
+          USER_PROGRESS_TABLE: !Ref UserProgressTable
+          USER_WALLET_TABLE: !Ref UserWalletTable
+      Policies:
+      - DynamoDBCrudPolicy:
+          TableName: !Ref BattlesTable
+      - DynamoDBReadPolicy:
+          TableName: !Ref UserCardsTable
+      - DynamoDBCrudPolicy:
+          TableName: !Ref UserProgressTable
+      - DynamoDBCrudPolicy:
+          TableName: !Ref UserWalletTable
+      Events:
+        StartBattle:
+          Type: Api
+          Properties:
+            RestApiId: !Ref MysticBoxApi
+            Path: /battles
+            Method: post
+            Auth:
+              Authorizer: CognitoAuthorizer
+        StartBattleOptions:
+          Type: Api
+          Properties:
+            RestApiId: !Ref MysticBoxApi
+            Path: /battles
+            Method: options
+        BattleAction:
+          Type: Api
+          Properties:
+            RestApiId: !Ref MysticBoxApi
+            Path: /battles/current/actions
+            Method: post
+            Auth:
+              Authorizer: CognitoAuthorizer
+        BattleActionOptions:
+          Type: Api
+          Properties:
+            RestApiId: !Ref MysticBoxApi
+            Path: /battles/current/actions
+            Method: options
+
+  GetBattleFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: get_battle/
+      Handler: app.lambda_handler
+      Runtime: python3.14
+      Architectures:
+      - x86_64
+      Layers:
+      - !Ref SharedLayer
+      Environment:
+        Variables:
+          BATTLES_TABLE: !Ref BattlesTable
+          USER_PROGRESS_TABLE: !Ref UserProgressTable
+      Policies:
+      - DynamoDBReadPolicy:
+          TableName: !Ref BattlesTable
+      - DynamoDBReadPolicy:
+          TableName: !Ref UserProgressTable
+      Events:
+        GetBattle:
+          Type: Api
+          Properties:
+            RestApiId: !Ref MysticBoxApi
+            Path: /battles/current
+            Method: get
+            Auth:
+              Authorizer: CognitoAuthorizer
+        GetBattleOptions:
+          Type: Api
+          Properties:
+            RestApiId: !Ref MysticBoxApi
+            Path: /battles/current
+            Method: options
+
   ApplicationResourceGroup:
     Type: AWS::ResourceGroups::Group
     Properties:
@@ -467,3 +617,21 @@ Outputs:
   BuyCardFunction:
     Description: Buy Card Lambda Function ARN
     Value: !GetAtt BuyCardFunction.Arn
+  GetProfileApi:
+    Description: API Gateway endpoint URL for the player's level and experience
+    Value: !Sub "https://${MysticBoxApi}.execute-api.${AWS::Region}.${AWS::URLSuffix}/Prod/users/me/profile"
+  UserProgressTable:
+    Description: DynamoDB table that stores each player's experience, wins and losses
+    Value: !Ref UserProgressTable
+  StartBattleApi:
+    Description: API Gateway endpoint URL to start a battle against the computer
+    Value: !Sub "https://${MysticBoxApi}.execute-api.${AWS::Region}.${AWS::URLSuffix}/Prod/battles"
+  BattleActionApi:
+    Description: API Gateway endpoint URL to play a turn in the current battle
+    Value: !Sub "https://${MysticBoxApi}.execute-api.${AWS::Region}.${AWS::URLSuffix}/Prod/battles/current/actions"
+  GetBattleApi:
+    Description: API Gateway endpoint URL for the current battle and battle options
+    Value: !Sub "https://${MysticBoxApi}.execute-api.${AWS::Region}.${AWS::URLSuffix}/Prod/battles/current"
+  BattlesTable:
+    Description: DynamoDB table that stores each player's current battle
+    Value: !Ref BattlesTable

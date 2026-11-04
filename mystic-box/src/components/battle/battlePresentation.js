@@ -1,0 +1,149 @@
+// Só apresentação: ícones, cores e textos do registro da batalha.
+// Nenhuma regra do jogo fica aqui; tudo vem calculado da API.
+
+export const ELEMENT_STYLE = {
+  ember: { icon: "🔥", color: "#ff8a4c" },
+  tide: { icon: "🌊", color: "#5cc0ff" },
+  gale: { icon: "🌪️", color: "#7fe6c8" },
+  terra: { icon: "⛰️", color: "#d6ad6e" },
+  lumen: { icon: "☀️", color: "#ffe27a" },
+  umbra: { icon: "🌑", color: "#b48cff" },
+};
+
+export const STATUS_ICON = {
+  burn: "🔥",
+  stun: "💫",
+  weaken: "🥀",
+  expose: "🎯",
+  slow: "🐌",
+  shield: "🛡️",
+  taunt: "📣",
+  regen: "✚",
+  empower: "⚔️",
+  guard: "◈",
+};
+
+export const STAT_LABELS = [
+  ["vitality", "VIT"],
+  ["might", "MIG"],
+  ["arcana", "ARC"],
+  ["bulwark", "BUL"],
+  ["resolve", "RES"],
+  ["celerity", "CEL"],
+  ["fate", "FATE"],
+];
+
+export const STAT_NAMES = {
+  vitality: "Vitality (health)",
+  might: "Might (physical power)",
+  arcana: "Arcana (magical power and healing)",
+  bulwark: "Bulwark (physical defense)",
+  resolve: "Resolve (magical defense)",
+  celerity: "Celerity (turn order)",
+  fate: "Fate (critical hit chance %)",
+};
+
+export const TARGET_LABELS = {
+  enemy: "One foe",
+  all_enemies: "All foes",
+  ally: "One ally",
+  all_allies: "All allies",
+  self: "Self",
+  fallen_ally: "Fallen ally",
+};
+
+export const END_REASON_TEXT = {
+  victory: "Every foe has fallen.",
+  defeat: "Your whole team has fallen.",
+  forfeit: "You fled the battle.",
+  timeout: "The battle dragged on for too long.",
+};
+
+const STATUS_NAMES = {
+  burn: "Burn",
+  stun: "Stun",
+  weaken: "Weaken",
+  expose: "Expose",
+  slow: "Slow",
+  shield: "Shield",
+  taunt: "Taunt",
+  regen: "Regen",
+  empower: "Empower",
+  guard: "Guard",
+};
+
+// Texto do registro para um evento devolvido pela API (ou null para não mostrar).
+export function describeEvent(event, names) {
+  const name = (id) => names[id] ?? "???";
+
+  switch (event.type) {
+    case "round":
+      return { text: `— Round ${event.round} —`, kind: "round" };
+    case "skill":
+      return { text: `${name(event.actor)} uses ${event.skillName}.`, kind: "skill", side: event.actor?.[0] };
+    case "damage": {
+      if (event.status === "burn") {
+        return { text: `${name(event.target)} burns for ${event.amount}.`, kind: "damage" };
+      }
+      const notes = [
+        event.critical && "critical",
+        event.effectiveness === "strong" && "super effective",
+        event.effectiveness === "weak" && "resisted",
+        event.absorbed > 0 && `${event.absorbed} absorbed`,
+      ].filter(Boolean);
+      return {
+        text: `${name(event.target)} takes ${event.amount} damage${notes.length ? ` (${notes.join(", ")})` : ""}.`,
+        kind: "damage",
+      };
+    }
+    case "heal":
+      if (event.amount <= 0) return null;
+      return { text: `${name(event.target)} recovers ${event.amount}.`, kind: "heal" };
+    case "status":
+      return { text: `${name(event.target)}: ${STATUS_NAMES[event.status] ?? event.status}.`, kind: "status" };
+    case "cleanse":
+      return { text: `${name(event.target)} is cleansed.`, kind: "heal" };
+    case "revive":
+      return { text: `${name(event.target)} returns to the fight!`, kind: "heal" };
+    case "defeated":
+      return { text: `${name(event.target)} has fallen.`, kind: "defeat" };
+    case "stunned":
+      return { text: `${name(event.target)} is stunned and loses the turn.`, kind: "status" };
+    case "aether":
+      return { text: `${name(event.source)} steals ${event.amount} Aether.`, kind: "status" };
+    case "end":
+      return {
+        text: event.result === "won" ? "Victory!" : "Defeat.",
+        kind: event.result === "won" ? "heal" : "defeat",
+      };
+    default:
+      return null;
+  }
+}
+
+// Quanto tempo (ms) cada evento fica na tela antes do próximo.
+export function eventDelay(event) {
+  switch (event.type) {
+    case "skill":
+      return 650;
+    case "damage":
+      return 420;
+    case "heal":
+      return event.amount > 0 ? 380 : 0;
+    case "defeated":
+    case "revive":
+    case "stunned":
+      return 520;
+    case "round":
+      return 380;
+    case "aether":
+      return 320;
+    case "status":
+    case "cleanse":
+      return 170;
+    case "turn":
+      return 140;
+    default:
+      return 0;
+  }
+}
