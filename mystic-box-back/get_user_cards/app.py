@@ -6,6 +6,7 @@ import boto3
 from boto3.dynamodb.conditions import Key
 from botocore.exceptions import ClientError
 from mystic_shared.cards import get_character, max_sell_quantity, sell_price
+from mystic_shared.stats import public_battle_profile
 
 CORS_HEADERS = {
     "Access-Control-Allow-Origin": "*",
@@ -129,6 +130,8 @@ def group_cards(items):
                 "sellPrice": sell_price(character) if character else None,
                 # Quantas cópias podem ser vendidas de uma vez.
                 "maxSellQuantity": max_sell_quantity(character, group["quantity"]),
+                # Elemento, arquétipo e atributos de batalha (nível 1).
+                "battle": public_battle_profile(character) if character else None,
             }
         )
 
