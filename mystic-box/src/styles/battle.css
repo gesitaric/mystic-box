@@ -913,14 +913,7 @@
   margin-top: 6px;
 }
 
-.home-button-battle {
-  border-color: rgba(255, 140, 170, 0.55);
-  color: #ffd0dc;
-}
 
-.home-button-battle:hover {
-  box-shadow: 0 0 18px rgba(255, 120, 160, 0.4);
-}
 
 @keyframes battleFloat {
   0% {

@@ -534,7 +534,7 @@ function App() {
         </div>
       )}
 
-      {!onBattle && (
+      {!offSummon && (
         <header className="title-block">
           <span className="title-ornament">✦ ✧ ✦</span>
           <h1>MYSTIC BOX</h1>
