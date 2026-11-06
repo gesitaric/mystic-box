@@ -1,12 +1,12 @@
 """Regras do jogo explicadas ao jogador (tela de ajuda / Grimório).
 
-Monta, a partir das constantes de `cards.py`, `stats.py`, `battle.py` e
-`progression.py`, tudo que a tela de regras mostra: chances do sorteio,
+Monta, a partir das constantes de `cards.py`, `stats.py`, `battle.py`,
+`pvp.py` e `progression.py`, tudo que a tela de regras mostra: chances do sorteio,
 preços, curva de nível e as regras da batalha. Nada aqui é copiado: mudar uma
 regra nesses módulos muda o que o jogador lê.
 """
 
-from . import battle, cards, progression, stats
+from . import battle, cards, progression, pvp, stats
 
 RARITIES = (5, 4, 3)
 
@@ -196,4 +196,5 @@ def public_rules(cooldown_seconds, token_ttl_seconds):
         "shop": _shop_rules(),
         "progression": _progression_rules(),
         "battle": _battle_rules(),
+        "pvp": pvp.public_rules(),
     }

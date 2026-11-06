@@ -43,6 +43,7 @@ export { StatGrid };
 
 // Escolha do time e da dificuldade. Cartas, atributos, habilidades e
 // dificuldades liberadas vêm da API; aqui só se escolhe.
+// Sem `setup.difficulties` (duelo online) só o time é escolhido.
 function TeamSetup({
   apiUrl,
   session,
@@ -52,6 +53,10 @@ function TeamSetup({
   startError,
   onStart,
   onSessionExpired,
+  startLabel = "Begin battle",
+  startingLabel = "Opening the arena...",
+  canStart = true,
+  children,
 }) {
   const teamSize = setup?.teamSize ?? 3;
   const [cards, setCards] = useState([]);
@@ -110,38 +115,42 @@ function TeamSetup({
   }
 
   const inspectedCard = cards.find((card) => card.file_name === inspected);
-  const ready = team.length === teamSize && !starting;
+  const ready = team.length === teamSize && !starting && canStart;
+  const showDifficulty = Boolean(setup?.difficulties);
 
   return (
     <div className="battle-setup">
-      <section className="battle-panel" aria-label="Difficulty">
-        <h2 className="battle-panel-title">Choose your challenge</h2>
-        <div className="battle-difficulties" role="radiogroup" aria-label="Difficulty">
-          {(setup?.difficulties ?? []).map((option) => (
-            <button
-              key={option.id}
-              type="button"
-              role="radio"
-              aria-checked={difficulty === option.id}
-              disabled={!option.unlocked}
-              className={`battle-difficulty${difficulty === option.id ? " is-active" : ""}`}
-              onClick={() => setDifficulty(option.id)}
-            >
-              <span className="battle-difficulty-name">{option.label}</span>
-              <span className="battle-difficulty-desc">
-                {option.unlocked
-                  ? option.description
-                  : `Unlocks at level ${option.minLevel}`}
-              </span>
-              {option.unlocked && (
-                <span className="battle-difficulty-meta">
-                  Foes Lv {option.enemyLevel} · Win +{option.experience} XP
+      {children}
+      {showDifficulty && (
+        <section className="battle-panel" aria-label="Difficulty">
+          <h2 className="battle-panel-title">Choose your challenge</h2>
+          <div className="battle-difficulties" role="radiogroup" aria-label="Difficulty">
+            {(setup?.difficulties ?? []).map((option) => (
+              <button
+                key={option.id}
+                type="button"
+                role="radio"
+                aria-checked={difficulty === option.id}
+                disabled={!option.unlocked}
+                className={`battle-difficulty${difficulty === option.id ? " is-active" : ""}`}
+                onClick={() => setDifficulty(option.id)}
+              >
+                <span className="battle-difficulty-name">{option.label}</span>
+                <span className="battle-difficulty-desc">
+                  {option.unlocked
+                    ? option.description
+                    : `Unlocks at level ${option.minLevel}`}
                 </span>
-              )}
-            </button>
-          ))}
-        </div>
-      </section>
+                {option.unlocked && (
+                  <span className="battle-difficulty-meta">
+                    Foes Lv {option.enemyLevel} · Win +{option.experience} XP
+                  </span>
+                )}
+              </button>
+            ))}
+          </div>
+        </section>
+      )}
 
       <section className="battle-panel" aria-label="Team">
         <h2 className="battle-panel-title">
@@ -221,7 +230,7 @@ function TeamSetup({
           disabled={!ready}
           onClick={() => onStart(team, difficulty)}
         >
-          {starting ? "Opening the arena..." : "Begin battle"}
+          {starting ? startingLabel : startLabel}
         </button>
       </div>
     </div>

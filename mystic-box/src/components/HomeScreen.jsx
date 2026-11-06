@@ -97,6 +97,7 @@ function HomeScreen({
   balance,
   progress,
   cooldownLabel,
+  duels,
   onSummon,
   onBattle,
   onCollection,
@@ -203,6 +204,15 @@ function HomeScreen({
             <span className="lobby-card-status">
               {wins}W · {losses}L
             </span>
+            {duels?.battle ? (
+              <span className="lobby-card-status is-ready">Duel in progress</span>
+            ) : (
+              duels?.incoming > 0 && (
+                <span className="lobby-card-status is-ready">
+                  {duels.incoming} duel challenge{duels.incoming === 1 ? "" : "s"}
+                </span>
+              )
+            )}
           </span>
         </button>
       </nav>

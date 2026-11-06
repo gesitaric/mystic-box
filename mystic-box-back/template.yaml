@@ -144,6 +144,69 @@ Resources:
         AttributeName: expiresAt
         Enabled: true
 
+  # Desafios do duelo online: um por par (quem foi desafiado, quem desafiou).
+  # Expiram sozinhos (TTL); o código também ignora os vencidos.
+  PvpChallengesTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+      - AttributeName: opponentId
+        AttributeType: S
+      - AttributeName: challengerId
+        AttributeType: S
+      - AttributeName: createdAt
+        AttributeType: N
+      KeySchema:
+      - AttributeName: opponentId
+        KeyType: HASH
+      - AttributeName: challengerId
+        KeyType: RANGE
+      GlobalSecondaryIndexes:
+      - IndexName: ChallengerIndex
+        KeySchema:
+        - AttributeName: challengerId
+          KeyType: HASH
+        - AttributeName: createdAt
+          KeyType: RANGE
+        Projection:
+          ProjectionType: ALL
+      TimeToLiveSpecification:
+        AttributeName: expiresAt
+        Enabled: true
+
+  # Duelos online (estado em JSON, com versão). Somem pelo TTL um dia depois
+  # da última ação.
+  PvpBattlesTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+      - AttributeName: battleId
+        AttributeType: S
+      KeySchema:
+      - AttributeName: battleId
+        KeyType: HASH
+      TimeToLiveSpecification:
+        AttributeName: expiresAt
+        Enabled: true
+
+  # Duelo de cada jogador (status active/finished): garante um duelo ativo
+  # por jogador e aponta para o último duelo.
+  PvpPlayersTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+      - AttributeName: userId
+        AttributeType: S
+      KeySchema:
+      - AttributeName: userId
+        KeyType: HASH
+      TimeToLiveSpecification:
+        AttributeName: expiresAt
+        Enabled: true
+
   # Tokens de sorteio já usados para guardar cartas (uso único). Os itens
   # somem sozinhos pelo TTL depois que o token expira.
   SummonTokensTable:
@@ -667,6 +730,167 @@ Resources:
             Path: /battles/current
             Method: options
 
+  PvpChallengesFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: pvp_challenges/
+      Handler: app.lambda_handler
+      Runtime: python3.14
+      Architectures:
+      - x86_64
+      Layers:
+      - !Ref SharedLayer
+      Environment:
+        Variables:
+          PVP_CHALLENGES_TABLE: !Ref PvpChallengesTable
+          PVP_BATTLES_TABLE: !Ref PvpBattlesTable
+          PVP_PLAYERS_TABLE: !Ref PvpPlayersTable
+          USER_PROFILES_TABLE: !Ref UserProfilesTable
+          USERNAMES_TABLE: !Ref UsernamesTable
+          USER_CARDS_TABLE: !Ref UserCardsTable
+          USER_PROGRESS_TABLE: !Ref UserProgressTable
+      Policies:
+      - DynamoDBCrudPolicy:
+          TableName: !Ref PvpChallengesTable
+      - DynamoDBCrudPolicy:
+          TableName: !Ref PvpBattlesTable
+      - DynamoDBCrudPolicy:
+          TableName: !Ref PvpPlayersTable
+      - DynamoDBReadPolicy:
+          TableName: !Ref UserProfilesTable
+      - DynamoDBReadPolicy:
+          TableName: !Ref UsernamesTable
+      - DynamoDBReadPolicy:
+          TableName: !Ref UserCardsTable
+      - DynamoDBReadPolicy:
+          TableName: !Ref UserProgressTable
+      Events:
+        PvpLobby:
+          Type: Api
+          Properties:
+            RestApiId: !Ref MysticBoxApi
+            Path: /pvp
+            Method: get
+            Auth:
+              Authorizer: CognitoAuthorizer
+        PvpLobbyOptions:
+          Type: Api
+          Properties:
+            RestApiId: !Ref MysticBoxApi
+            Path: /pvp
+            Method: options
+        PvpChallenge:
+          Type: Api
+          Properties:
+            RestApiId: !Ref MysticBoxApi
+            Path: /pvp/challenges
+            Method: post
+            Auth:
+              Authorizer: CognitoAuthorizer
+        PvpChallengeOptions:
+          Type: Api
+          Properties:
+            RestApiId: !Ref MysticBoxApi
+            Path: /pvp/challenges
+            Method: options
+        PvpAccept:
+          Type: Api
+          Properties:
+            RestApiId: !Ref MysticBoxApi
+            Path: /pvp/challenges/accept
+            Method: post
+            Auth:
+              Authorizer: CognitoAuthorizer
+        PvpAcceptOptions:
+          Type: Api
+          Properties:
+            RestApiId: !Ref MysticBoxApi
+            Path: /pvp/challenges/accept
+            Method: options
+        PvpDecline:
+          Type: Api
+          Properties:
+            RestApiId: !Ref MysticBoxApi
+            Path: /pvp/challenges/decline
+            Method: post
+            Auth:
+              Authorizer: CognitoAuthorizer
+        PvpDeclineOptions:
+          Type: Api
+          Properties:
+            RestApiId: !Ref MysticBoxApi
+            Path: /pvp/challenges/decline
+            Method: options
+        PvpCancel:
+          Type: Api
+          Properties:
+            RestApiId: !Ref MysticBoxApi
+            Path: /pvp/challenges/cancel
+            Method: post
+            Auth:
+              Authorizer: CognitoAuthorizer
+        PvpCancelOptions:
+          Type: Api
+          Properties:
+            RestApiId: !Ref MysticBoxApi
+            Path: /pvp/challenges/cancel
+            Method: options
+
+  PvpBattleFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: pvp_battle/
+      Handler: app.lambda_handler
+      Runtime: python3.14
+      Architectures:
+      - x86_64
+      Layers:
+      - !Ref SharedLayer
+      Environment:
+        Variables:
+          PVP_BATTLES_TABLE: !Ref PvpBattlesTable
+          PVP_PLAYERS_TABLE: !Ref PvpPlayersTable
+          USER_PROGRESS_TABLE: !Ref UserProgressTable
+          USER_WALLET_TABLE: !Ref UserWalletTable
+      Policies:
+      - DynamoDBCrudPolicy:
+          TableName: !Ref PvpBattlesTable
+      - DynamoDBCrudPolicy:
+          TableName: !Ref PvpPlayersTable
+      - DynamoDBCrudPolicy:
+          TableName: !Ref UserProgressTable
+      - DynamoDBCrudPolicy:
+          TableName: !Ref UserWalletTable
+      Events:
+        PvpBattle:
+          Type: Api
+          Properties:
+            RestApiId: !Ref MysticBoxApi
+            Path: /pvp/battle
+            Method: get
+            Auth:
+              Authorizer: CognitoAuthorizer
+        PvpBattleOptions:
+          Type: Api
+          Properties:
+            RestApiId: !Ref MysticBoxApi
+            Path: /pvp/battle
+            Method: options
+        PvpBattleAction:
+          Type: Api
+          Properties:
+            RestApiId: !Ref MysticBoxApi
+            Path: /pvp/battle/actions
+            Method: post
+            Auth:
+              Authorizer: CognitoAuthorizer
+        PvpBattleActionOptions:
+          Type: Api
+          Properties:
+            RestApiId: !Ref MysticBoxApi
+            Path: /pvp/battle/actions
+            Method: options
+
   GetRulesFunction:
     Type: AWS::Serverless::Function
     Properties:
@@ -786,3 +1010,12 @@ Outputs:
   BattlesTable:
     Description: DynamoDB table that stores each player's current battle
     Value: !Ref BattlesTable
+  PvpLobbyApi:
+    Description: API Gateway endpoint URL for online duel challenges and the current duel
+    Value: !Sub "https://${MysticBoxApi}.execute-api.${AWS::Region}.${AWS::URLSuffix}/Prod/pvp"
+  PvpBattleApi:
+    Description: API Gateway endpoint URL for the current online duel
+    Value: !Sub "https://${MysticBoxApi}.execute-api.${AWS::Region}.${AWS::URLSuffix}/Prod/pvp/battle"
+  PvpBattlesTable:
+    Description: DynamoDB table that stores online duels
+    Value: !Ref PvpBattlesTable

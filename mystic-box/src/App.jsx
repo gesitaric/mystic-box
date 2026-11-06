@@ -16,6 +16,9 @@ const API_URL = (
   "https://vzol9m72hi.execute-api.us-east-1.amazonaws.com/Prod"
 ).replace(/\/$/, "");
 
+// De quanto em quanto tempo a tela inicial confere desafios de duelo.
+const DUELS_POLL_MS = 20000;
+
 // Guarda o sorteio ainda não salvo: as cartas (só para exibir) e o token
 // assinado pelo servidor, que é a única coisa enviada para guardá-las.
 const PENDING_SUMMON_KEY = "mystic-box:pending-summon";
@@ -325,6 +328,32 @@ function App() {
   const onCooldown = cooldownRemaining > 0;
   const onHome = Boolean(session) && screen === "home";
   const onBattle = Boolean(session) && screen === "battle";
+
+  // Desafios de duelo recebidos e duelo em andamento, para avisar na tela inicial.
+  const [duels, setDuels] = useState(null);
+  useEffect(() => {
+    if (!onHome || !session) return undefined;
+    let cancelled = false;
+    let timer = null;
+    async function poll() {
+      try {
+        const token = session.session.getIdToken().getJwtToken();
+        const response = await fetch(`${API_URL}/pvp`, { headers: { Authorization: token } });
+        if (response.ok) {
+          const data = await response.json();
+          if (!cancelled) setDuels({ incoming: data.incoming.length, battle: Boolean(data.battle) });
+        }
+      } catch (duelsError) {
+        console.error(duelsError);
+      }
+      if (!cancelled) timer = setTimeout(poll, DUELS_POLL_MS);
+    }
+    void poll();
+    return () => {
+      cancelled = true;
+      clearTimeout(timer);
+    };
+  }, [onHome, session]);
   // Telas que não mostram o portal de invocação.
   const offSummon = onHome || onBattle;
 
@@ -569,6 +598,7 @@ function App() {
           balance={balance}
           progress={progress}
           cooldownLabel={onCooldown ? formatCountdown(cooldownRemaining) : ""}
+          duels={duels}
           onSummon={() => setScreen("summon")}
           onBattle={() => setScreen("battle")}
           onCollection={() => setCollectionOpen(true)}

@@ -1416,3 +1416,61 @@
     animation: none;
   }
 }
+
+/* ---------- Duelo online ---------- */
+
+.battle-mode-tabs {
+  margin: 0 0 14px;
+}
+
+.pvp-lobby .battle-setup-actions {
+  position: static;
+  padding-bottom: 0;
+}
+
+.pvp-back {
+  display: flex;
+}
+
+.pvp-selected {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 12px;
+  border: 1px solid rgba(255, 220, 150, 0.35);
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.pvp-challenges .player-result {
+  flex-wrap: wrap;
+}
+
+.pvp-expires {
+  color: #cbb6ee;
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.5px;
+}
+
+.pvp-challenge-actions {
+  display: flex;
+  gap: 6px;
+  margin-left: auto;
+}
+
+.battle-turn-timer {
+  color: #cbb6ee;
+  font-variant-numeric: tabular-nums;
+}
+
+.battle-turn-timer.is-low {
+  color: #ff8a7a;
+}
+
+.battle-turn-warning {
+  margin: 0;
+  color: #ffb27a;
+  font-size: 12px;
+  text-align: center;
+}

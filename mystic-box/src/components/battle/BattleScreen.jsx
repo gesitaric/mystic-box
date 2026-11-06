@@ -3,7 +3,9 @@ import { getCharacterImage } from "../../characterImages";
 import { LevelBadge } from "../HomeScreen";
 import Grimoire from "../Grimoire";
 import LevelUpCelebration from "./LevelUpCelebration";
+import PvpLobby from "./PvpLobby";
 import TeamSetup, { SkillList, StatGrid } from "./TeamSetup";
+import { SessionExpired, arenaRequest } from "./arenaApi";
 import "../../styles/battle.css";
 import {
   ELEMENT_STYLE,
@@ -21,8 +23,18 @@ const LOG_LIMIT = 60;
 const FLOAT_MS = 1100;
 // A celebração de nível entra depois da fanfarra de vitória/derrota.
 const LEVEL_UP_DELAY_MS = 1100;
+// Duelo online: de quanto em quanto tempo busca a jogada do adversário.
+const DUEL_POLL_MS = 1500;
 
-class SessionExpired extends Error {}
+const ARENA_TABS = [
+  { value: "pve", label: "vs Computer" },
+  { value: "pvp", label: "Online duel" },
+];
+
+// Guarda quando a resposta chegou, para contar o tempo de turno na tela.
+function received(battle) {
+  return battle ? { ...battle, receivedAt: Date.now() } : battle;
+}
 
 function SoundButton({ on, onToggle }) {
   return (
@@ -156,13 +168,15 @@ function BattleUnit({ unit, hp, alive, active, acting, targetable, inspected, fl
   );
 }
 
+const RESULT_TITLE = { won: "VICTORY", lost: "DEFEAT", draw: "DRAW" };
+
 function BattleResult({ result, onAgain, onExit }) {
   const won = result.outcome === "won";
   return (
     <div className="battle-result" role="dialog" aria-modal="true" aria-label="Battle result">
       <div className={`battle-result-card${won ? " is-won" : " is-lost"}`}>
         <span className="auth-ornament">✦ ✧ ✦</span>
-        <h2>{won ? "VICTORY" : "DEFEAT"}</h2>
+        <h2>{RESULT_TITLE[result.outcome] ?? "DEFEAT"}</h2>
         <p className="battle-result-reason">{END_REASON_TEXT[result.reason] ?? ""}</p>
         <p className="battle-result-xp">+{result.experienceGained} XP</p>
         {result.leveledUp && (
@@ -215,6 +229,12 @@ function BattleScreen({
   const [confirmForfeit, setConfirmForfeit] = useState(false);
   const [lastTeam, setLastTeam] = useState([]);
   const [showLevelUp, setShowLevelUp] = useState(false);
+  // Aba da preparação: contra o computador ou duelo online.
+  const [arena, setArena] = useState("pve");
+  const [clock, setClock] = useState(() => Date.now());
+  // Último lote de eventos do duelo já recebido.
+  const seqRef = useRef(0);
+  const enteringDuel = useRef(false);
   const busyRef = useRef(false);
   const floatId = useRef(0);
   const logEnd = useRef(null);
@@ -243,22 +263,7 @@ function BattleScreen({
   }, [soundOn]);
 
   const request = useCallback(
-    async (path, init = {}) => {
-      const token = session.session.getIdToken().getJwtToken();
-      const response = await fetch(`${apiUrl}${path}`, {
-        ...init,
-        headers: {
-          ...(init.body ? { "Content-Type": "application/json" } : {}),
-          Authorization: token,
-        },
-      });
-      if (response.status === 401) {
-        onSessionExpired();
-        throw new SessionExpired();
-      }
-      const data = await response.json().catch(() => ({}));
-      return { ok: response.ok, status: response.status, data };
-    },
+    (path, init) => arenaRequest({ apiUrl, session, onSessionExpired }, path, init),
     [apiUrl, session, onSessionExpired]
   );
 
@@ -266,11 +271,23 @@ function BattleScreen({
     setPhase("loading");
     setError("");
     try {
-      const { ok, status, data } = await request("/battles/current");
+      const [current, duel] = await Promise.all([
+        request("/battles/current"),
+        request("/pvp/battle"),
+      ]);
+      const { ok, status, data } = current;
       if (!ok) throw new Error(data.message ?? `Failed to load (${status}).`);
       setSetup({ teamSize: data.teamSize, difficulties: data.difficulties });
       if (data.progress) callbacks.current.onProgressChange?.(data.progress);
-      if (data.battle) {
+      // Um duelo em andamento tem prioridade: o tempo de turno está correndo.
+      const activeDuel = duel.ok && duel.data.battle?.status === "active" ? duel.data.battle : null;
+      if (activeDuel) {
+        seqRef.current = activeDuel.seq;
+        setArena("pvp");
+        setView(received(activeDuel));
+        setLog([{ id: "resume", text: "Duel resumed.", kind: "round" }]);
+        setPhase("battle");
+      } else if (data.battle) {
         setView(data.battle);
         setLog([{ id: "resume", text: "Battle resumed.", kind: "round" }]);
         setPhase("battle");
@@ -438,7 +455,12 @@ function BattleScreen({
           setResult(outcome);
           if (outcome.progress) callbacks.current.onProgressChange?.(outcome.progress);
           if (outcome.shardsReward > 0) callbacks.current.onBalanceChange?.();
-        } else if (next.status === "active" && next.turn && !autoRef.current) {
+        } else if (
+          next.status === "active" &&
+          next.turn &&
+          (next.yourTurn ?? true) &&
+          !autoRef.current
+        ) {
           audio.current?.yourTurn();
         }
         return;
@@ -500,29 +522,86 @@ function BattleScreen({
     }
   }
 
+  // Entra no duelo que acabou de começar (aceito por um dos dois jogadores).
+  const enterDuel = useCallback(async () => {
+    if (enteringDuel.current) return;
+    enteringDuel.current = true;
+    try {
+      const { ok, data } = await request("/pvp/battle?since=0");
+      if (!ok || !data.battle) return;
+      seqRef.current = data.battle.seq;
+      setResult(null);
+      setSelectedSkill(null);
+      setInspectedId(null);
+      setAutoMode(false);
+      setLog([]);
+      audio.current?.start();
+      setView(freshView(data.battle));
+      setPlayback({ events: data.events ?? [], next: received(data.battle), outcome: data.result });
+      setPhase("battle");
+    } catch (enterError) {
+      if (enterError instanceof SessionExpired) return;
+      console.error(enterError);
+      setStartError("Could not enter the duel.");
+    } finally {
+      enteringDuel.current = false;
+    }
+  }, [request]);
+
+  // Busca o que mudou no duelo desde o último lote recebido.
+  const syncDuel = useCallback(async () => {
+    const { ok, data } = await request(`/pvp/battle?since=${seqRef.current}`);
+    if (!ok || !data.battle) return;
+    const changed = data.battle.seq !== seqRef.current;
+    seqRef.current = data.battle.seq;
+    if (changed) {
+      setPlayback({ events: data.events ?? [], next: received(data.battle), outcome: data.result });
+    } else {
+      setView(received(data.battle));
+    }
+  }, [request]);
+
   const sendAction = useCallback(
     async (action) => {
       if (!view || busyRef.current) return;
+      const duel = view.mode === "pvp";
       busyRef.current = true;
       setBusy(true);
       setError("");
       setSelectedSkill(null);
       setConfirmForfeit(false);
       try {
-        const { ok, status, data } = await request("/battles/current/actions", {
-          method: "POST",
-          body: JSON.stringify({ battleId: view.battleId, ...action }),
-        });
+        const { ok, status, data } = await request(
+          duel ? "/pvp/battle/actions" : "/battles/current/actions",
+          {
+            method: "POST",
+            body: JSON.stringify({
+              battleId: view.battleId,
+              ...action,
+              ...(duel ? { since: seqRef.current } : {}),
+            }),
+          }
+        );
         if (!ok) {
           setAutoMode(false);
           if (status === 409 || status === 404) {
-            await loadCurrent();
+            if (duel) {
+              if (data.message) setError(data.message);
+              await syncDuel();
+            } else {
+              await loadCurrent();
+            }
             return;
           }
           setError(data.message ?? "That action failed.");
           return;
         }
-        setPlayback({ events: data.events ?? [], next: data.battle, outcome: data.result });
+        if (duel) seqRef.current = data.battle.seq;
+        setPlayback({
+          events: data.events ?? [],
+          next: duel ? received(data.battle) : data.battle,
+          outcome: data.result,
+        });
       } catch (actionError) {
         if (actionError instanceof SessionExpired) return;
         console.error(actionError);
@@ -533,11 +612,37 @@ function BattleScreen({
         setBusy(false);
       }
     },
-    [view, request, loadCurrent]
+    [view, request, loadCurrent, syncDuel]
   );
 
+  const inDuel = phase === "battle" && view?.mode === "pvp";
   const waitingForPlayer =
-    phase === "battle" && view?.status === "active" && Boolean(view?.turn) && !playback;
+    phase === "battle" &&
+    view?.status === "active" &&
+    Boolean(view?.turn) &&
+    (view?.yourTurn ?? true) &&
+    !playback;
+
+  // Duelo: busca a jogada do adversário (e o tempo de turno) enquanto ativo.
+  useEffect(() => {
+    if (!inDuel || view.status !== "active" || playback || busy) return undefined;
+    const timer = setTimeout(() => {
+      syncDuel().catch((pollError) => {
+        if (pollError instanceof SessionExpired) return;
+        console.error(pollError);
+        // Tenta de novo no próximo ciclo.
+        setView((current) => (current ? { ...current } : current));
+      });
+    }, DUEL_POLL_MS);
+    return () => clearTimeout(timer);
+  }, [inDuel, view, playback, busy, syncDuel]);
+
+  // Relógio da tela para o tempo de turno do duelo.
+  useEffect(() => {
+    if (!inDuel) return undefined;
+    const timer = setInterval(() => setClock(Date.now()), 500);
+    return () => clearInterval(timer);
+  }, [inDuel]);
 
   // Modo automático: o servidor escolhe a ação a cada turno do jogador.
   useEffect(() => {
@@ -616,16 +721,49 @@ function BattleScreen({
           <SoundButton on={soundOn} onToggle={() => setSoundOn((on) => !on)} />
           <Grimoire apiUrl={apiUrl} chapter="battle" />
         </div>
-        <TeamSetup
-          apiUrl={apiUrl}
-          session={session}
-          setup={setup}
-          initialTeam={lastTeam}
-          starting={starting}
-          startError={startError}
-          onStart={startBattle}
-          onSessionExpired={onSessionExpired}
-        />
+        <div className="shop-tabs battle-mode-tabs" role="tablist" aria-label="Battle mode">
+          {ARENA_TABS.map((option) => (
+            <button
+              key={option.value}
+              type="button"
+              role="tab"
+              aria-selected={arena === option.value}
+              className={`shop-tab${arena === option.value ? " is-active" : ""}`}
+              onClick={() => setArena(option.value)}
+            >
+              {option.label}
+            </button>
+          ))}
+        </div>
+        {arena === "pvp" ? (
+          <>
+            {startError && (
+              <p className="auth-error" role="alert">
+                {startError}
+              </p>
+            )}
+            <PvpLobby
+              apiUrl={apiUrl}
+              session={session}
+              request={request}
+              initialTeam={lastTeam}
+              onTeamChosen={setLastTeam}
+              onEnterDuel={enterDuel}
+              onSessionExpired={onSessionExpired}
+            />
+          </>
+        ) : (
+          <TeamSetup
+            apiUrl={apiUrl}
+            session={session}
+            setup={setup}
+            initialTeam={lastTeam}
+            starting={starting}
+            startError={startError}
+            onStart={startBattle}
+            onSessionExpired={onSessionExpired}
+          />
+        )}
       </section>
     );
   }
@@ -634,7 +772,22 @@ function BattleScreen({
   const units = view.units;
   const enemies = units.filter((unit) => unit.side === "enemy");
   const allies = units.filter((unit) => unit.side === "player");
-  const currentUnit = !playback && view.turn ? units.find((u) => u.id === view.turn) : null;
+  const duel = view.mode === "pvp";
+  const yourTurn = view.yourTurn ?? true;
+  const currentUnit =
+    !playback && view.turn && yourTurn ? units.find((u) => u.id === view.turn) : null;
+  const rivalName = view.opponent?.username ?? "Your rival";
+  const turnLeft =
+    duel && view.turnSecondsLeft != null && !playback
+      ? Math.max(
+          0,
+          Math.ceil(view.turnSecondsLeft - (clock - (view.receivedAt ?? clock)) / 1000)
+        )
+      : null;
+  let waitingText = view.status === "active" ? "The foes are acting..." : "The battle is over.";
+  if (duel && view.status === "active") {
+    waitingText = playback ? "..." : `${rivalName} is choosing`;
+  }
   const inspectedUnit = units.find((unit) => unit.id === inspectedId) ?? null;
   const targetIds = selectedSkill?.targets ?? [];
   const upcoming = (view.upcoming ?? [])
@@ -674,18 +827,28 @@ function BattleScreen({
           type="button"
           className="session-button"
           onClick={onExit}
-          title="The battle stays open; you can come back to it."
+          title={
+            duel
+              ? "The duel goes on: when your time runs out, your cards act on their own."
+              : "The battle stays open; you can come back to it."
+          }
         >
           ← Home
         </button>
         <span className="battle-round">
-          {view.difficultyLabel} · Round {view.round}/{view.maxRounds}
+          {duel ? `Duel vs ${rivalName}` : view.difficultyLabel} · Round {view.round}/
+          {view.maxRounds}
         </span>
         <SoundButton on={soundOn} onToggle={() => setSoundOn((on) => !on)} />
         <Grimoire apiUrl={apiUrl} chapter="battle" />
       </div>
 
-      <AetherMeter label="Foes" value={aether.enemy} max={view.maxAether} side="enemy" />
+      <AetherMeter
+        label={duel ? rivalName : "Foes"}
+        value={aether.enemy}
+        max={view.maxAether}
+        side="enemy"
+      />
       <div className="battle-row is-enemy">{enemies.map(renderUnit)}</div>
 
       <div className="battle-center">
@@ -723,7 +886,19 @@ function BattleScreen({
               {selectedSkill
                 ? `${selectedSkill.name}: choose a target (${TARGET_LABELS[selectedSkill.target]}) · Esc to cancel`
                 : `${currentUnit.name}'s turn`}
+              {turnLeft != null && (
+                <span className={`battle-turn-timer${turnLeft <= 10 ? " is-low" : ""}`}>
+                  {" "}
+                  · {turnLeft}s
+                </span>
+              )}
             </p>
+            {duel && view.missedTurns > 0 && (
+              <p className="battle-turn-warning" role="status">
+                You missed {view.missedTurns} of {view.maxMissedTurns} turns in a row. Miss them
+                all and you abandon the duel.
+              </p>
+            )}
             <div className="battle-skills">
               {view.actions.map((action) => (
                 <button
@@ -745,7 +920,13 @@ function BattleScreen({
           </>
         ) : (
           <p className="battle-actions-title">
-            {view.status === "active" ? "The foes are acting..." : "The battle is over."}
+            {waitingText}
+            {turnLeft != null && (
+              <span className={`battle-turn-timer${turnLeft <= 10 ? " is-low" : ""}`}>
+                {" "}
+                · {turnLeft}s
+              </span>
+            )}
           </p>
         )}
 
@@ -782,7 +963,7 @@ function BattleScreen({
               <button
                 type="button"
                 className="collection-sell-button is-cancel"
-                disabled={busy || Boolean(playback) || !view.turn}
+                disabled={busy || Boolean(playback) || (!duel && !view.turn)}
                 onClick={() => setConfirmForfeit(true)}
               >
                 Flee
