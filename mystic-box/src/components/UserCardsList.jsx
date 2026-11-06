@@ -6,7 +6,6 @@ function UserCardsList({
   session,
   onClose,
   onSessionExpired,
-  onBalanceChange,
 }) {
   return (
     <Modal label="My collection" className="collection-modal" onClose={onClose}>
@@ -19,7 +18,6 @@ function UserCardsList({
         apiUrl={apiUrl}
         session={session}
         onSessionExpired={onSessionExpired}
-        onBalanceChange={onBalanceChange}
       />
     </Modal>
   );

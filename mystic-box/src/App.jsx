@@ -715,7 +715,6 @@ function App() {
           session={session}
           onClose={closeCollection}
           onSessionExpired={handleCollectionSessionExpired}
-          onBalanceChange={handleBalanceChange}
         />
       )}
 
