@@ -25,6 +25,8 @@ const FLOAT_MS = 1100;
 const LEVEL_UP_DELAY_MS = 1100;
 // Duelo online: de quanto em quanto tempo busca a jogada do adversário.
 const DUEL_POLL_MS = 1500;
+// Folga depois do fim do turno antes de conferir o que o servidor fez.
+const TURN_END_MARGIN_MS = 1000;
 
 const ARENA_TABS = [
   { value: "pve", label: "vs Computer" },
@@ -624,9 +626,18 @@ function BattleScreen({
     (view?.yourTurn ?? true) &&
     !playback;
 
-  // Duelo: busca a jogada do adversário (e o tempo de turno) enquanto ativo.
+  // Duelo: na vez do adversário, busca a jogada dele a cada DUEL_POLL_MS. Na
+  // própria vez não consulta: só uma vez quando o tempo do turno acaba (o
+  // servidor joga no automático). Se o adversário desistir nesse meio tempo,
+  // a próxima ação devolve 409 e a tela se atualiza.
   useEffect(() => {
     if (!inDuel || view.status !== "active" || playback || busy) return undefined;
+    let delay = DUEL_POLL_MS;
+    if (view.yourTurn) {
+      if (view.turnSecondsLeft == null) return undefined;
+      const elapsed = Date.now() - (view.receivedAt ?? Date.now());
+      delay = Math.max(DUEL_POLL_MS, view.turnSecondsLeft * 1000 - elapsed + TURN_END_MARGIN_MS);
+    }
     const timer = setTimeout(() => {
       syncDuel().catch((pollError) => {
         if (pollError instanceof SessionExpired) return;
@@ -634,7 +645,7 @@ function BattleScreen({
         // Tenta de novo no próximo ciclo.
         setView((current) => (current ? { ...current } : current));
       });
-    }, DUEL_POLL_MS);
+    }, delay);
     return () => clearTimeout(timer);
   }, [inDuel, view, playback, busy, syncDuel]);
 
