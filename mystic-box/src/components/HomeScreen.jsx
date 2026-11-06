@@ -1,4 +1,5 @@
 import { getCharacterImage } from "../characterImages";
+import DuelBell from "./DuelBell";
 import Grimoire from "./Grimoire";
 import "../styles/home.css";
 
@@ -97,6 +98,12 @@ function HomeScreen({
   balance,
   progress,
   cooldownLabel,
+  duels,
+  duelsLoading,
+  onRefreshDuels,
+  onAnswerDuel,
+  onDeclineDuel,
+  onOpenDuel,
   onSummon,
   onBattle,
   onCollection,
@@ -129,6 +136,15 @@ function HomeScreen({
               +
             </span>
           </button>
+
+          <DuelBell
+            duels={duels}
+            loading={duelsLoading}
+            onRefresh={onRefreshDuels}
+            onAnswer={onAnswerDuel}
+            onDecline={onDeclineDuel}
+            onOpenDuel={onOpenDuel}
+          />
 
           <button
             type="button"

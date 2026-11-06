@@ -57,6 +57,9 @@ export const END_REASON_TEXT = {
   defeat: "Your whole team has fallen.",
   forfeit: "You fled the battle.",
   timeout: "The battle dragged on for too long.",
+  opponent_forfeit: "Your rival fled the duel.",
+  abandon: "You missed too many turns and abandoned the duel.",
+  opponent_abandon: "Your rival stopped playing and abandoned the duel.",
 };
 
 const STATUS_NAMES = {
@@ -111,7 +114,10 @@ export function describeEvent(event, names) {
       return { text: `${name(event.target)} is stunned and loses the turn.`, kind: "status" };
     case "aether":
       return { text: `${name(event.source)} steals ${event.amount} Aether.`, kind: "status" };
+    case "timeout":
+      return { text: `${name(event.target)} ran out of time and acts on its own.`, kind: "status" };
     case "end":
+      if (event.result === "draw") return { text: "Draw.", kind: "round" };
       return {
         text: event.result === "won" ? "Victory!" : "Defeat.",
         kind: event.result === "won" ? "heal" : "defeat",
@@ -138,6 +144,8 @@ export function eventDelay(event) {
       return 380;
     case "aether":
       return 320;
+    case "timeout":
+      return 450;
     case "status":
     case "cleanse":
       return 170;

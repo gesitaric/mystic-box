@@ -43,6 +43,7 @@ export { StatGrid };
 
 // Escolha do time e da dificuldade. Cartas, atributos, habilidades e
 // dificuldades liberadas vêm da API; aqui só se escolhe.
+// Sem `setup.difficulties` (duelo online) só o time é escolhido.
 function TeamSetup({
   apiUrl,
   session,
@@ -52,12 +53,25 @@ function TeamSetup({
   startError,
   onStart,
   onSessionExpired,
+  startLabel = "Begin battle",
+  startingLabel = "Opening the arena...",
+  canStart = true,
+  // Coleção já carregada nesta visita à arena (evita buscar de novo).
+  cachedCards = null,
+  onCardsLoaded,
+  children,
 }) {
   const teamSize = setup?.teamSize ?? 3;
-  const [cards, setCards] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [loadedCards, setLoadedCards] = useState(null);
   const [error, setError] = useState("");
-  const [team, setTeam] = useState(initialTeam ?? []);
+  const cards = cachedCards ?? loadedCards ?? [];
+  const loading = !cachedCards && !loadedCards && !error;
+  // Cartas que o jogador não tem mais saem do time sugerido.
+  const [team, setTeam] = useState(() =>
+    (initialTeam ?? []).filter(
+      (name) => !cachedCards || cachedCards.some((card) => card.file_name === name)
+    )
+  );
   const [inspected, setInspected] = useState(initialTeam?.[0] ?? null);
   const unlockedDifficulties = (setup?.difficulties ?? []).filter((d) => d.unlocked);
   const [difficulty, setDifficulty] = useState(
@@ -65,6 +79,7 @@ function TeamSetup({
   );
 
   useEffect(() => {
+    if (cachedCards) return undefined;
     let cancelled = false;
 
     async function load() {
@@ -81,7 +96,8 @@ function TeamSetup({
         const data = await response.json();
         if (cancelled) return;
         const usable = (data.cards ?? []).filter((card) => card.battle && card.file_name);
-        setCards(usable);
+        setLoadedCards(usable);
+        onCardsLoaded?.(usable);
         // Cartas que o jogador não tem mais saem do time sugerido.
         setTeam((current) =>
           current.filter((name) => usable.some((card) => card.file_name === name))
@@ -89,8 +105,6 @@ function TeamSetup({
       } catch (loadError) {
         console.error(loadError);
         if (!cancelled) setError("Could not load your cards.");
-      } finally {
-        if (!cancelled) setLoading(false);
       }
     }
 
@@ -98,7 +112,7 @@ function TeamSetup({
     return () => {
       cancelled = true;
     };
-  }, [apiUrl, session, onSessionExpired]);
+  }, [apiUrl, session, onSessionExpired, cachedCards, onCardsLoaded]);
 
   function toggle(fileName) {
     setInspected(fileName);
@@ -110,38 +124,42 @@ function TeamSetup({
   }
 
   const inspectedCard = cards.find((card) => card.file_name === inspected);
-  const ready = team.length === teamSize && !starting;
+  const ready = team.length === teamSize && !starting && canStart;
+  const showDifficulty = Boolean(setup?.difficulties);
 
   return (
     <div className="battle-setup">
-      <section className="battle-panel" aria-label="Difficulty">
-        <h2 className="battle-panel-title">Choose your challenge</h2>
-        <div className="battle-difficulties" role="radiogroup" aria-label="Difficulty">
-          {(setup?.difficulties ?? []).map((option) => (
-            <button
-              key={option.id}
-              type="button"
-              role="radio"
-              aria-checked={difficulty === option.id}
-              disabled={!option.unlocked}
-              className={`battle-difficulty${difficulty === option.id ? " is-active" : ""}`}
-              onClick={() => setDifficulty(option.id)}
-            >
-              <span className="battle-difficulty-name">{option.label}</span>
-              <span className="battle-difficulty-desc">
-                {option.unlocked
-                  ? option.description
-                  : `Unlocks at level ${option.minLevel}`}
-              </span>
-              {option.unlocked && (
-                <span className="battle-difficulty-meta">
-                  Foes Lv {option.enemyLevel} · Win +{option.experience} XP
+      {children}
+      {showDifficulty && (
+        <section className="battle-panel" aria-label="Difficulty">
+          <h2 className="battle-panel-title">Choose your challenge</h2>
+          <div className="battle-difficulties" role="radiogroup" aria-label="Difficulty">
+            {(setup?.difficulties ?? []).map((option) => (
+              <button
+                key={option.id}
+                type="button"
+                role="radio"
+                aria-checked={difficulty === option.id}
+                disabled={!option.unlocked}
+                className={`battle-difficulty${difficulty === option.id ? " is-active" : ""}`}
+                onClick={() => setDifficulty(option.id)}
+              >
+                <span className="battle-difficulty-name">{option.label}</span>
+                <span className="battle-difficulty-desc">
+                  {option.unlocked
+                    ? option.description
+                    : `Unlocks at level ${option.minLevel}`}
                 </span>
-              )}
-            </button>
-          ))}
-        </div>
-      </section>
+                {option.unlocked && (
+                  <span className="battle-difficulty-meta">
+                    Foes Lv {option.enemyLevel} · Win +{option.experience} XP
+                  </span>
+                )}
+              </button>
+            ))}
+          </div>
+        </section>
+      )}
 
       <section className="battle-panel" aria-label="Team">
         <h2 className="battle-panel-title">
@@ -221,7 +239,7 @@ function TeamSetup({
           disabled={!ready}
           onClick={() => onStart(team, difficulty)}
         >
-          {starting ? "Opening the arena..." : "Begin battle"}
+          {starting ? startingLabel : startLabel}
         </button>
       </div>
     </div>
