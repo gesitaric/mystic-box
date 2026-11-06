@@ -23,8 +23,12 @@ const LOG_LIMIT = 60;
 const FLOAT_MS = 1100;
 // A celebração de nível entra depois da fanfarra de vitória/derrota.
 const LEVEL_UP_DELAY_MS = 1100;
-// Duelo online: de quanto em quanto tempo busca a jogada do adversário.
+// Duelo online: de quanto em quanto tempo busca a jogada do adversário. Começa
+// em DUEL_POLL_MS e cresce (x DUEL_POLL_GROWTH) enquanto nada muda, até
+// DUEL_POLL_MAX_MS; volta ao começo quando chega jogada nova.
 const DUEL_POLL_MS = 1500;
+const DUEL_POLL_GROWTH = 1.5;
+const DUEL_POLL_MAX_MS = 5000;
 // Folga depois do fim do turno antes de conferir o que o servidor fez.
 const TURN_END_MARGIN_MS = 1000;
 
@@ -238,6 +242,10 @@ function BattleScreen({
   // Último lote de eventos do duelo já recebido.
   const seqRef = useRef(0);
   const enteringDuel = useRef(false);
+  // Consultas seguidas sem novidade (para o intervalo crescente).
+  const idlePolls = useRef(0);
+  // Aba visível: com a aba escondida o duelo não é consultado.
+  const [pageVisible, setPageVisible] = useState(() => document.visibilityState !== "hidden");
   const busyRef = useRef(false);
   const floatId = useRef(0);
   const logEnd = useRef(null);
@@ -557,6 +565,7 @@ function BattleScreen({
     if (!ok || !data.battle) return;
     const changed = data.battle.seq !== seqRef.current;
     seqRef.current = data.battle.seq;
+    idlePolls.current = changed ? 0 : idlePolls.current + 1;
     if (changed) {
       setPlayback({ events: data.events ?? [], next: received(data.battle), outcome: data.result });
     } else {
@@ -599,7 +608,10 @@ function BattleScreen({
           setError(data.message ?? "That action failed.");
           return;
         }
-        if (duel) seqRef.current = data.battle.seq;
+        if (duel) {
+          seqRef.current = data.battle.seq;
+          idlePolls.current = 0;
+        }
         setPlayback({
           events: data.events ?? [],
           next: duel ? received(data.battle) : data.battle,
@@ -626,14 +638,31 @@ function BattleScreen({
     (view?.yourTurn ?? true) &&
     !playback;
 
-  // Duelo: na vez do adversário, busca a jogada dele a cada DUEL_POLL_MS. Na
-  // própria vez não consulta: só uma vez quando o tempo do turno acaba (o
-  // servidor joga no automático). Se o adversário desistir nesse meio tempo,
-  // a próxima ação devolve 409 e a tela se atualiza.
   useEffect(() => {
-    if (!inDuel || view.status !== "active" || playback || busy) return undefined;
-    let delay = DUEL_POLL_MS;
-    if (view.yourTurn) {
+    function handleVisibility() {
+      const visible = document.visibilityState !== "hidden";
+      // Ao voltar para a aba, confere o duelo logo.
+      if (visible) idlePolls.current = -1;
+      setPageVisible(visible);
+    }
+    document.addEventListener("visibilitychange", handleVisibility);
+    return () => document.removeEventListener("visibilitychange", handleVisibility);
+  }, []);
+
+  // Duelo: na vez do adversário, busca a jogada dele com intervalo crescente
+  // (DUEL_POLL_MS até DUEL_POLL_MAX_MS). Na própria vez não consulta: só uma
+  // vez quando o tempo do turno acaba (o servidor joga no automático). Se o
+  // adversário desistir nesse meio tempo, a próxima ação devolve 409 e a tela
+  // se atualiza. Com a aba escondida, não consulta.
+  useEffect(() => {
+    if (!inDuel || !pageVisible || view.status !== "active" || playback || busy) {
+      return undefined;
+    }
+    let delay =
+      idlePolls.current < 0
+        ? 0
+        : Math.min(DUEL_POLL_MAX_MS, DUEL_POLL_MS * DUEL_POLL_GROWTH ** idlePolls.current);
+    if (view.yourTurn && delay > 0) {
       if (view.turnSecondsLeft == null) return undefined;
       const elapsed = Date.now() - (view.receivedAt ?? Date.now());
       delay = Math.max(DUEL_POLL_MS, view.turnSecondsLeft * 1000 - elapsed + TURN_END_MARGIN_MS);
@@ -642,12 +671,13 @@ function BattleScreen({
       syncDuel().catch((pollError) => {
         if (pollError instanceof SessionExpired) return;
         console.error(pollError);
-        // Tenta de novo no próximo ciclo.
+        // Tenta de novo no próximo ciclo (sem repetir na hora).
+        idlePolls.current = Math.max(0, idlePolls.current) + 1;
         setView((current) => (current ? { ...current } : current));
       });
     }, delay);
     return () => clearTimeout(timer);
-  }, [inDuel, view, playback, busy, syncDuel]);
+  }, [inDuel, pageVisible, view, playback, busy, syncDuel]);
 
   // Relógio da tela para o tempo de turno do duelo.
   useEffect(() => {
