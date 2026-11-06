@@ -1,4 +1,5 @@
 import { getCharacterImage } from "../characterImages";
+import DuelBell from "./DuelBell";
 import Grimoire from "./Grimoire";
 import "../styles/home.css";
 
@@ -98,6 +99,11 @@ function HomeScreen({
   progress,
   cooldownLabel,
   duels,
+  duelsLoading,
+  onRefreshDuels,
+  onAnswerDuel,
+  onDeclineDuel,
+  onOpenDuel,
   onSummon,
   onBattle,
   onCollection,
@@ -130,6 +136,15 @@ function HomeScreen({
               +
             </span>
           </button>
+
+          <DuelBell
+            duels={duels}
+            loading={duelsLoading}
+            onRefresh={onRefreshDuels}
+            onAnswer={onAnswerDuel}
+            onDecline={onDeclineDuel}
+            onOpenDuel={onOpenDuel}
+          />
 
           <button
             type="button"
@@ -204,15 +219,6 @@ function HomeScreen({
             <span className="lobby-card-status">
               {wins}W · {losses}L
             </span>
-            {duels?.battle ? (
-              <span className="lobby-card-status is-ready">Duel in progress</span>
-            ) : (
-              duels?.incoming > 0 && (
-                <span className="lobby-card-status is-ready">
-                  {duels.incoming} duel challenge{duels.incoming === 1 ? "" : "s"}
-                </span>
-              )
-            )}
           </span>
         </button>
       </nav>

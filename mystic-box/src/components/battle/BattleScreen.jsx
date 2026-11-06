@@ -204,6 +204,7 @@ function BattleResult({ result, onAgain, onExit }) {
 function BattleScreen({
   apiUrl,
   session,
+  duelIntent,
   onExit,
   onSessionExpired,
   onProgressChange,
@@ -230,7 +231,7 @@ function BattleScreen({
   const [lastTeam, setLastTeam] = useState([]);
   const [showLevelUp, setShowLevelUp] = useState(false);
   // Aba da preparação: contra o computador ou duelo online.
-  const [arena, setArena] = useState("pve");
+  const [arena, setArena] = useState(duelIntent ? "pvp" : "pve");
   const [clock, setClock] = useState(() => Date.now());
   // Último lote de eventos do duelo já recebido.
   const seqRef = useRef(0);
@@ -747,6 +748,7 @@ function BattleScreen({
               session={session}
               request={request}
               initialTeam={lastTeam}
+              initialChallenge={duelIntent?.challenge}
               onTeamChosen={setLastTeam}
               onEnterDuel={enterDuel}
               onSessionExpired={onSessionExpired}

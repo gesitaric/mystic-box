@@ -1474,3 +1474,8 @@
   font-size: 12px;
   text-align: center;
 }
+
+.pvp-refresh {
+  display: flex;
+  justify-content: flex-end;
+}

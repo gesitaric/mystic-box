@@ -2,7 +2,6 @@ import { useCallback, useEffect, useState } from "react";
 import TeamSetup from "./TeamSetup";
 import { SessionExpired } from "./arenaApi";
 
-const LOBBY_POLL_MS = 4000;
 const SEARCH_DEBOUNCE_MS = 350;
 
 function formatClock(seconds) {
@@ -116,6 +115,7 @@ function PvpLobby({
   session,
   request,
   initialTeam,
+  initialChallenge,
   onTeamChosen,
   onEnterDuel,
   onSessionExpired,
@@ -124,7 +124,10 @@ function PvpLobby({
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
   // list | challenge | accept
-  const [view, setView] = useState({ name: "list" });
+  const [view, setView] = useState(
+    initialChallenge ? { name: "accept", challenge: initialChallenge } : { name: "list" }
+  );
+  const [refreshing, setRefreshing] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState("");
   const [busyId, setBusyId] = useState(null);
@@ -146,19 +149,18 @@ function PvpLobby({
     }
   }, [request, onEnterDuel]);
 
+  // Uma consulta ao abrir; depois só quando o jogador pede (botão Refresh).
   useEffect(() => {
-    let timer = null;
-    let stopped = false;
-    async function tick() {
-      await refresh();
-      if (!stopped) timer = setTimeout(tick, LOBBY_POLL_MS);
-    }
-    void tick();
-    return () => {
-      stopped = true;
-      clearTimeout(timer);
-    };
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    void refresh();
   }, [refresh]);
+
+  async function manualRefresh() {
+    setRefreshing(true);
+    setNotice("");
+    await refresh();
+    setRefreshing(false);
+  }
 
   const teamSize = lobby?.rules?.teamSize ?? 3;
 
@@ -175,7 +177,9 @@ function PvpLobby({
         setSubmitError(data.message ?? "Could not send the challenge.");
         return;
       }
-      setNotice(`Challenge sent to ${data.challenge.username}. Waiting for an answer...`);
+      setNotice(
+        `Challenge sent to ${data.challenge.username}. Press Refresh to see if they accepted.`
+      );
       setView({ name: "list" });
       void refresh();
     } catch (sendError) {
@@ -289,6 +293,16 @@ function PvpLobby({
 
   return (
     <div className="battle-setup pvp-lobby">
+      <div className="pvp-refresh">
+        <button
+          type="button"
+          className="session-button"
+          disabled={refreshing}
+          onClick={() => void manualRefresh()}
+        >
+          {refreshing ? "Checking..." : "↻ Refresh"}
+        </button>
+      </div>
       {!lobby.hasUsername && (
         <section className="battle-panel">
           <p className="auth-info">

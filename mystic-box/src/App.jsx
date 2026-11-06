@@ -16,9 +16,6 @@ const API_URL = (
   "https://vzol9m72hi.execute-api.us-east-1.amazonaws.com/Prod"
 ).replace(/\/$/, "");
 
-// De quanto em quanto tempo a tela inicial confere desafios de duelo.
-const DUELS_POLL_MS = 20000;
-
 // Guarda o sorteio ainda não salvo: as cartas (só para exibir) e o token
 // assinado pelo servidor, que é a única coisa enviada para guardá-las.
 const PENDING_SUMMON_KEY = "mystic-box:pending-summon";
@@ -329,31 +326,51 @@ function App() {
   const onHome = Boolean(session) && screen === "home";
   const onBattle = Boolean(session) && screen === "battle";
 
-  // Desafios de duelo recebidos e duelo em andamento, para avisar na tela inicial.
+  // Desafios de duelo do sininho. Não há consulta periódica: busca ao abrir a
+  // tela inicial e quando o jogador abre/atualiza o sininho.
   const [duels, setDuels] = useState(null);
+  const [duelsLoading, setDuelsLoading] = useState(false);
+  // Como a arena abre: null (normal) ou { challenge } vindo do sininho.
+  const [duelIntent, setDuelIntent] = useState(null);
+
+  const fetchDuels = useCallback(async (activeSession) => {
+    if (!activeSession) return;
+    setDuelsLoading(true);
+    try {
+      const token = activeSession.session.getIdToken().getJwtToken();
+      const response = await fetch(`${API_URL}/pvp`, { headers: { Authorization: token } });
+      if (!response.ok) throw new Error(`Failed to fetch the duels (${response.status}).`);
+      setDuels(await response.json());
+    } catch (duelsError) {
+      console.error(duelsError);
+    } finally {
+      setDuelsLoading(false);
+    }
+  }, []);
+
   useEffect(() => {
-    if (!onHome || !session) return undefined;
-    let cancelled = false;
-    let timer = null;
-    async function poll() {
+    if (!onHome || !session) return;
+    // Uma consulta ao abrir a tela inicial (o resultado vem da API).
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    void fetchDuels(session);
+  }, [onHome, session, fetchDuels]);
+
+  const declineDuel = useCallback(
+    async (challenge) => {
       try {
         const token = session.session.getIdToken().getJwtToken();
-        const response = await fetch(`${API_URL}/pvp`, { headers: { Authorization: token } });
-        if (response.ok) {
-          const data = await response.json();
-          if (!cancelled) setDuels({ incoming: data.incoming.length, battle: Boolean(data.battle) });
-        }
-      } catch (duelsError) {
-        console.error(duelsError);
+        await fetch(`${API_URL}/pvp/challenges/decline`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json", Authorization: token },
+          body: JSON.stringify({ challengeId: challenge.challengeId }),
+        });
+      } catch (declineError) {
+        console.error(declineError);
       }
-      if (!cancelled) timer = setTimeout(poll, DUELS_POLL_MS);
-    }
-    void poll();
-    return () => {
-      cancelled = true;
-      clearTimeout(timer);
-    };
-  }, [onHome, session]);
+      await fetchDuels(session);
+    },
+    [session, fetchDuels]
+  );
   // Telas que não mostram o portal de invocação.
   const offSummon = onHome || onBattle;
 
@@ -586,6 +603,7 @@ function App() {
         <BattleScreen
           apiUrl={API_URL}
           session={session}
+          duelIntent={duelIntent}
           onExit={() => setScreen("home")}
           onSessionExpired={handleBattleSessionExpired}
           onProgressChange={setProgress}
@@ -599,8 +617,22 @@ function App() {
           progress={progress}
           cooldownLabel={onCooldown ? formatCountdown(cooldownRemaining) : ""}
           duels={duels}
+          duelsLoading={duelsLoading}
+          onRefreshDuels={() => void fetchDuels(session)}
+          onAnswerDuel={(challenge) => {
+            setDuelIntent({ challenge });
+            setScreen("battle");
+          }}
+          onDeclineDuel={declineDuel}
+          onOpenDuel={() => {
+            setDuelIntent({});
+            setScreen("battle");
+          }}
           onSummon={() => setScreen("summon")}
-          onBattle={() => setScreen("battle")}
+          onBattle={() => {
+            setDuelIntent(null);
+            setScreen("battle");
+          }}
           onCollection={() => setCollectionOpen(true)}
           onShop={() => setShopOpen(true)}
           onProfile={() => setPlayersTab("name")}
