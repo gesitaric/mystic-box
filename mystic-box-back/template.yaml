@@ -102,6 +102,46 @@ Resources:
       - AttributeName: userId
         KeyType: HASH
 
+  # Nome de cada jogador e quando ele foi trocado pela última vez. Quem tem
+  # nome também tem searchKey, que o coloca no índice de busca por nome.
+  UserProfilesTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+      - AttributeName: userId
+        AttributeType: S
+      - AttributeName: searchKey
+        AttributeType: S
+      - AttributeName: usernameLower
+        AttributeType: S
+      KeySchema:
+      - AttributeName: userId
+        KeyType: HASH
+      GlobalSecondaryIndexes:
+      - IndexName: UsernameSearchIndex
+        KeySchema:
+        - AttributeName: searchKey
+          KeyType: HASH
+        - AttributeName: usernameLower
+          KeyType: RANGE
+        Projection:
+          ProjectionType: INCLUDE
+          NonKeyAttributes:
+          - username
+
+  # Reserva de nomes (em minúsculas): garante que cada nome tem um só dono.
+  UsernamesTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+      - AttributeName: usernameLower
+        AttributeType: S
+      KeySchema:
+      - AttributeName: usernameLower
+        KeyType: HASH
+
   # Batalha de cada jogador contra o computador (uma por vez). O estado fica
   # em JSON e some sozinho pelo TTL um dia depois da última ação.
   BattlesTable:
@@ -500,9 +540,12 @@ Resources:
       Environment:
         Variables:
           USER_PROGRESS_TABLE: !Ref UserProgressTable
+          USER_PROFILES_TABLE: !Ref UserProfilesTable
       Policies:
       - DynamoDBReadPolicy:
           TableName: !Ref UserProgressTable
+      - DynamoDBReadPolicy:
+          TableName: !Ref UserProfilesTable
       Events:
         GetProfile:
           Type: Api
@@ -517,6 +560,76 @@ Resources:
           Properties:
             RestApiId: !Ref MysticBoxApi
             Path: /users/me/profile
+            Method: options
+
+  SetUsernameFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: set_username/
+      Handler: app.lambda_handler
+      Runtime: python3.14
+      Architectures:
+      - x86_64
+      Layers:
+      - !Ref SharedLayer
+      Environment:
+        Variables:
+          USER_PROFILES_TABLE: !Ref UserProfilesTable
+          USERNAMES_TABLE: !Ref UsernamesTable
+      Policies:
+      - DynamoDBCrudPolicy:
+          TableName: !Ref UserProfilesTable
+      - DynamoDBCrudPolicy:
+          TableName: !Ref UsernamesTable
+      Events:
+        SetUsername:
+          Type: Api
+          Properties:
+            RestApiId: !Ref MysticBoxApi
+            Path: /users/me/username
+            Method: post
+            Auth:
+              Authorizer: CognitoAuthorizer
+        SetUsernameOptions:
+          Type: Api
+          Properties:
+            RestApiId: !Ref MysticBoxApi
+            Path: /users/me/username
+            Method: options
+
+  SearchUsersFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: search_users/
+      Handler: app.lambda_handler
+      Runtime: python3.14
+      Architectures:
+      - x86_64
+      Layers:
+      - !Ref SharedLayer
+      Environment:
+        Variables:
+          USER_PROFILES_TABLE: !Ref UserProfilesTable
+          USER_PROGRESS_TABLE: !Ref UserProgressTable
+      Policies:
+      - DynamoDBReadPolicy:
+          TableName: !Ref UserProfilesTable
+      - DynamoDBReadPolicy:
+          TableName: !Ref UserProgressTable
+      Events:
+        SearchUsers:
+          Type: Api
+          Properties:
+            RestApiId: !Ref MysticBoxApi
+            Path: /users/search
+            Method: get
+            Auth:
+              Authorizer: CognitoAuthorizer
+        SearchUsersOptions:
+          Type: Api
+          Properties:
+            RestApiId: !Ref MysticBoxApi
+            Path: /users/search
             Method: options
 
   PlayBattleFunction:
@@ -704,6 +817,15 @@ Outputs:
   UserProgressTable:
     Description: DynamoDB table that stores each player's experience, wins and losses
     Value: !Ref UserProgressTable
+  SetUsernameApi:
+    Description: API Gateway endpoint URL to set or change the player's username
+    Value: !Sub "https://${MysticBoxApi}.execute-api.${AWS::Region}.${AWS::URLSuffix}/Prod/users/me/username"
+  SearchUsersApi:
+    Description: API Gateway endpoint URL to search players by username
+    Value: !Sub "https://${MysticBoxApi}.execute-api.${AWS::Region}.${AWS::URLSuffix}/Prod/users/search"
+  UserProfilesTable:
+    Description: DynamoDB table that stores each player's username
+    Value: !Ref UserProfilesTable
   StartBattleApi:
     Description: API Gateway endpoint URL to start a battle against the computer
     Value: !Sub "https://${MysticBoxApi}.execute-api.${AWS::Region}.${AWS::URLSuffix}/Prod/battles"
