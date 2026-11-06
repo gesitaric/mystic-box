@@ -1,9 +1,11 @@
 import json
 import os
+import time
 
 import boto3
 from botocore.exceptions import ClientError
 from mystic_shared.progression import public_progress
+from mystic_shared.usernames import change_status, public_rules
 
 CORS_HEADERS = {
     "Access-Control-Allow-Origin": "*",
@@ -12,6 +14,7 @@ CORS_HEADERS = {
 }
 
 USER_PROGRESS_TABLE = os.environ.get("USER_PROGRESS_TABLE")
+USER_PROFILES_TABLE = os.environ.get("USER_PROFILES_TABLE")
 
 # Criado uma vez por container e reaproveitado entre invocações.
 _client = None
@@ -55,6 +58,11 @@ def lambda_handler(event, context):
             Key={"userId": {"S": user_id}},
             ConsistentRead=True,
         )
+        profile = get_client().get_item(
+            TableName=USER_PROFILES_TABLE,
+            Key={"userId": {"S": user_id}},
+            ConsistentRead=True,
+        ).get("Item", {})
     except ClientError:
         return response(500, {"message": "Could not load your profile."})
 
@@ -65,4 +73,17 @@ def lambda_handler(event, context):
         wins=int(item.get("wins", {}).get("N", "0")),
         losses=int(item.get("losses", {}).get("N", "0")),
     )
-    return response(200, progress)
+
+    # Sem nome definido, o jogador é identificado pelo id do Cognito.
+    username = profile.get("username", {}).get("S")
+    changed_at = profile.get("usernameChangedAt", {}).get("N")
+    return response(
+        200,
+        {
+            **progress,
+            "userId": user_id,
+            "username": username,
+            "usernameChange": change_status(changed_at, time.time()),
+            "usernameRules": public_rules(),
+        },
+    )

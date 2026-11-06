@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import AuthModal from "./components/AuthModal";
 import BattleScreen from "./components/battle/BattleScreen";
 import HomeScreen from "./components/HomeScreen";
+import PlayerProfileModal from "./components/PlayerProfileModal";
 import ShopModal from "./components/ShopModal";
 import SummonPortal from "./components/portal/SummonPortal";
 import SummonSpread from "./components/SummonSpread";
@@ -110,6 +111,8 @@ function App() {
   const [authOpen, setAuthOpen] = useState(false);
   const [collectionOpen, setCollectionOpen] = useState(false);
   const [shopOpen, setShopOpen] = useState(false);
+  // Modal de jogadores: null (fechado), "name" (escolher nome) ou "search".
+  const [playersTab, setPlayersTab] = useState(null);
   // Tela do usuário logado: "home" (início), "summon" (invocação) ou "battle".
   // Sem login a tela de invocação é sempre a exibida.
   const [screen, setScreen] = useState("home");
@@ -408,6 +411,7 @@ function App() {
     setSession(null);
     setCollectionOpen(false);
     setShopOpen(false);
+    setPlayersTab(null);
     setCooldownUntil(null);
     setBalance(null);
     setProgress(null);
@@ -436,6 +440,12 @@ function App() {
 
   const closeCollection = useCallback(() => setCollectionOpen(false), []);
   const closeShop = useCallback(() => setShopOpen(false), []);
+  const closePlayers = useCallback(() => setPlayersTab(null), []);
+
+  // Nome e tempo de espera devolvidos pelo servidor depois de uma troca.
+  const handleProfileChange = useCallback((changes) => {
+    setProgress((current) => (current ? { ...current, ...changes } : current));
+  }, []);
 
   // Saldo devolvido pelo servidor após uma venda; sem ele, consulta de novo.
   const handleBalanceChange = useCallback(
@@ -454,6 +464,7 @@ function App() {
     setSession(null);
     setCollectionOpen(false);
     setShopOpen(false);
+    setPlayersTab(null);
     setAuthOpen(true);
   }, []);
 
@@ -562,6 +573,8 @@ function App() {
           onBattle={() => setScreen("battle")}
           onCollection={() => setCollectionOpen(true)}
           onShop={() => setShopOpen(true)}
+          onProfile={() => setPlayersTab("name")}
+          onPlayers={() => setPlayersTab("search")}
           onSignOut={handleSignOut}
         />
       ) : (
@@ -714,6 +727,18 @@ function App() {
           onClose={closeShop}
           onSessionExpired={handleCollectionSessionExpired}
           onBalanceChange={handleBalanceChange}
+        />
+      )}
+
+      {playersTab && session && (
+        <PlayerProfileModal
+          apiUrl={API_URL}
+          session={session}
+          profile={progress}
+          initialTab={playersTab}
+          onClose={closePlayers}
+          onSessionExpired={handleCollectionSessionExpired}
+          onProfileChange={handleProfileChange}
         />
       )}
 
