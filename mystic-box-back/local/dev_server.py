@@ -156,11 +156,15 @@ def ensure_tables(tables):
     for name, props in tables.items():
         if name in existing:
             continue
+        options = {}
+        if props.get("GlobalSecondaryIndexes"):
+            options["GlobalSecondaryIndexes"] = props["GlobalSecondaryIndexes"]
         client.create_table(
             TableName=name,
             AttributeDefinitions=props["AttributeDefinitions"],
             KeySchema=props["KeySchema"],
             BillingMode=props.get("BillingMode", "PAY_PER_REQUEST"),
+            **options,
         )
         print(f"  tabela criada: {name}")
 

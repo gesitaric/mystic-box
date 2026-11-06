@@ -42,7 +42,8 @@ export function LevelBadge({ progress, compact = false }) {
 }
 
 // Perfil do HUD: anel de nível com a experiência e o nome do jogador.
-function ProfileChip({ email, progress }) {
+// Clicar abre a escolha do nome. Sem nome definido, mostra o identificador de hoje.
+function ProfileChip({ email, progress, onClick }) {
   const level = progress?.level;
   const atMax = Boolean(progress) && progress.nextLevelExperience == null;
   let percent = 0;
@@ -50,16 +51,22 @@ function ProfileChip({ email, progress }) {
   else if (progress) {
     percent = Math.min(100, (progress.levelExperience / progress.nextLevelExperience) * 100);
   }
-  const name = email ? email.split("@")[0] : "Summoner";
+  const username = progress?.username;
+  const name = username || (email ? email.split("@")[0] : "Summoner");
 
   let xpText = "…";
   if (atMax) xpText = "MAX LEVEL";
   else if (progress) xpText = `${progress.levelExperience} / ${progress.nextLevelExperience} XP`;
 
   return (
-    <div
+    <button
+      type="button"
       className="hud-profile"
-      aria-label={progress ? `${name}, level ${level}, ${xpText}` : name}
+      onClick={onClick}
+      aria-label={`${progress ? `${name}, level ${level}, ${xpText}` : name}. ${
+        username ? "Change name" : "Choose a name"
+      }`}
+      title={username ? "Change name" : "Choose a name"}
     >
       <span className="hud-level" style={{ "--xp": `${percent * 3.6}deg` }} aria-hidden="true">
         <span className="hud-level-inner">
@@ -68,15 +75,16 @@ function ProfileChip({ email, progress }) {
         </span>
       </span>
       <span className="hud-profile-info" aria-hidden="true">
-        <span className="hud-name" title={email}>
+        <span className="hud-name">
           {name}
+          {progress && !username && <span className="hud-name-hint">Set name</span>}
         </span>
         <span className="hud-xp-bar">
           <span className="hud-xp-fill" style={{ width: `${percent}%` }} />
         </span>
         <span className="hud-xp-text">{xpText}</span>
       </span>
-    </div>
+    </button>
   );
 }
 
@@ -93,6 +101,8 @@ function HomeScreen({
   onBattle,
   onCollection,
   onShop,
+  onProfile,
+  onPlayers,
   onSignOut,
 }) {
   const wins = progress?.wins ?? 0;
@@ -101,7 +111,7 @@ function HomeScreen({
   return (
     <section className="lobby" aria-label="Home">
       <header className="lobby-hud">
-        <ProfileChip email={email} progress={progress} />
+        <ProfileChip email={email} progress={progress} onClick={onProfile} />
 
         <div className="hud-right">
           <button
@@ -213,6 +223,15 @@ function HomeScreen({
             <path d="M12 12.5l1 2 2.2.3-1.6 1.5.4 2.2-2-1.1-2 1.1.4-2.2-1.6-1.5 2.2-.3z" fill="currentColor" />
           </svg>
           <span>Shop</span>
+        </button>
+        <button type="button" className="dock-button" onClick={onPlayers}>
+          <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true">
+            <circle cx="10" cy="10" r="5.5" fill="none" stroke="currentColor" strokeWidth="1.7" />
+            <path d="M14.2 14.2L20 20" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" />
+            <path d="M7.4 12.4a3 3 0 0 1 5.2 0" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" />
+            <circle cx="10" cy="8.6" r="1.5" fill="currentColor" />
+          </svg>
+          <span>Players</span>
         </button>
         <Grimoire apiUrl={apiUrl} variant="dock" />
       </nav>
