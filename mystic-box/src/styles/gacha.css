@@ -1947,11 +1947,107 @@ h1 {
   border-color: rgba(203, 182, 238, 0.35);
 }
 
-/* Formulário de anúncio (quantidade + preço) dentro do card. */
-.collection-sell-panel {
+/* ---------- Modal de anúncio (quantidade + preço) ---------- */
+
+.auth-modal.listing-modal {
+  width: min(360px, 92vw);
+}
+
+.listing-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  margin-top: 16px;
+}
+
+.listing-card-art {
+  width: 128px;
+  aspect-ratio: 13 / 18;
+}
+
+.listing-card .card-content {
+  border-radius: 12px;
+  box-shadow:
+    0 0 0 1px rgba(255, 255, 255, 0.08) inset,
+    0 0 16px var(--card-rarity-glow),
+    0 10px 24px rgba(0, 0, 0, 0.5);
+}
+
+.listing-card .rarity {
+  margin-top: 6px;
+  font-size: 11px;
+  letter-spacing: 2px;
+}
+
+.listing-card .name {
+  margin-top: 6px;
+  font-size: 13px;
+  letter-spacing: 1px;
+}
+
+.listing-owned {
+  margin: 0;
+  color: #9d88c4;
+  font-size: 12px;
+  letter-spacing: 1px;
+}
+
+.listing-form {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  margin-top: 18px;
+}
+
+.listing-field {
   display: flex;
   flex-direction: column;
   gap: 6px;
+}
+
+.listing-label {
+  color: #cbb6ee;
+  font-size: 12px;
+  letter-spacing: 1px;
+}
+
+.listing-form .collection-sell-step {
+  flex-basis: 40px;
+  padding: 8px 0;
+  font-size: 16px;
+}
+
+.listing-form .collection-sell-input {
+  padding: 8px 10px;
+  font-size: 16px;
+}
+
+.listing-form .collection-price-hint {
+  font-size: 11px;
+}
+
+.listing-form .collection-sell-summary {
+  font-size: 16px;
+}
+
+.listing-form .collection-sell-keeps {
+  font-size: 11px;
+}
+
+.listing-form .auth-error {
+  margin: 0;
+}
+
+.listing-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.listing-actions .collection-sell-button {
+  flex: 1 1 0;
+  padding: 10px 12px;
+  font-size: 13px;
 }
 
 .collection-sell-stepper {
@@ -2003,16 +2099,7 @@ h1 {
   outline-offset: 1px;
 }
 
-.collection-price-field {
-  display: flex;
-  flex-direction: column;
-  gap: 3px;
-  color: #cbb6ee;
-  font-size: 11px;
-  letter-spacing: 1px;
-}
-
-.collection-price-input[aria-invalid="true"] {
+.listing-price-input[aria-invalid="true"] {
   border-color: #ff8f8f;
 }
 
