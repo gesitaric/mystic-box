@@ -244,6 +244,8 @@ function BattleScreen({
   const enteringDuel = useRef(false);
   // Consultas seguidas sem novidade (para o intervalo crescente).
   const idlePolls = useRef(0);
+  // Duelo na tela: as consultas vão direto a ele (uma leitura no servidor).
+  const battleIdRef = useRef(null);
   // Aba visível: com a aba escondida o duelo não é consultado.
   const [pageVisible, setPageVisible] = useState(() => document.visibilityState !== "hidden");
   const busyRef = useRef(false);
@@ -258,6 +260,7 @@ function BattleScreen({
   useEffect(() => {
     callbacks.current = { onProgressChange, onBalanceChange };
     autoRef.current = autoMode;
+    battleIdRef.current = view?.battleId ?? null;
   });
 
   useEffect(() => {
@@ -561,8 +564,21 @@ function BattleScreen({
 
   // Busca o que mudou no duelo desde o último lote recebido.
   const syncDuel = useCallback(async () => {
-    const { ok, data } = await request(`/pvp/battle?since=${seqRef.current}`);
+    const battleId = battleIdRef.current;
+    const { ok, data } = await request(
+      `/pvp/battle?since=${seqRef.current}${battleId ? `&battleId=${encodeURIComponent(battleId)}` : ""}`
+    );
     if (!ok || !data.battle) return;
+    if (data.unchanged) {
+      // Nada novo: só atualiza o tempo de turno.
+      idlePolls.current += 1;
+      setView((current) =>
+        current
+          ? { ...current, turnSecondsLeft: data.battle.turnSecondsLeft, receivedAt: Date.now() }
+          : current
+      );
+      return;
+    }
     const changed = data.battle.seq !== seqRef.current;
     seqRef.current = data.battle.seq;
     idlePolls.current = changed ? 0 : idlePolls.current + 1;

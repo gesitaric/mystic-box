@@ -1,8 +1,11 @@
 """Duelo online em andamento.
 
 Rotas:
-- GET /pvp/battle?since=N: duelo do jogador (ativo ou o último que acabou),
-  visto do lado dele, com os eventos depois do lote N para animar.
+- GET /pvp/battle?since=N&battleId=X: duelo do jogador (ativo ou o último
+  que acabou), visto do lado dele, com os eventos depois do lote N para
+  animar. Com `battleId` lê só o duelo (confere se o jogador é um dos dois);
+  sem ele, acha o duelo pelo ponteiro do jogador. Se nada mudou desde o lote
+  N, devolve só `unchanged` com o tempo de turno.
 - POST /pvp/battle/actions: {"battleId", "type": "skill"|"auto"|"forfeit",
   "skill"?, "target"?, "since"?} joga a vez da carta do jogador.
 
@@ -160,7 +163,16 @@ class Duel:
         }
 
 
-def load_duel(user_id):
+def load_duel(user_id, battle_id=None):
+    """Duelo do jogador. Com `battle_id`, uma leitura só (sem o ponteiro)."""
+    if battle_id is not None:
+        item = get_item(PVP_BATTLES_TABLE, {"battleId": {"S": battle_id}})
+        if not item:
+            return None
+        players = json.loads(item["players"]["S"])
+        side = next((s for s in SIDES if players[s]["userId"] == user_id), None)
+        return Duel(side, item) if side else None
+
     pointer = get_item(PVP_PLAYERS_TABLE, {"userId": {"S": user_id}})
     if not pointer:
         return None
@@ -348,11 +360,34 @@ def duel_response(status_code, duel, since):
     )
 
 
+def unchanged_response(duel):
+    """Nada mudou desde o lote que o cliente tem: só o tempo de turno."""
+    now = int(time.time())
+    return response(
+        200,
+        {
+            "unchanged": True,
+            "battle": {
+                "battleId": duel.battle_id,
+                "seq": duel.state["seq"],
+                "status": duel.state["status"],
+                "turnSecondsLeft": pvp.turn_seconds_left(duel.state, now),
+            },
+        },
+    )
+
+
 def current(user_id, event):
-    since = parse_since((event.get("queryStringParameters") or {}).get("since"))
+    params = event.get("queryStringParameters") or {}
+    since = parse_since(params.get("since"))
+    battle_id = params.get("battleId")
+    if battle_id is not None and not is_short_string(battle_id):
+        return response(400, {"message": "Invalid duel."})
     try:
-        duel = load_duel(user_id)
+        duel = load_duel(user_id, battle_id)
         if duel is None:
+            if battle_id is not None:
+                return response(404, {"message": "Duel not found."})
             return response(200, {"battle": None, "events": [], "complete": True, "result": None})
         if duel.state["status"] == "active" and pvp.resolve_timeouts(
             duel.state, int(time.time()), new_rng()
@@ -361,9 +396,11 @@ def current(user_id, event):
                 store(duel)
             except BattleChanged:
                 # Outra requisição gravou antes: mostra o que está salvo.
-                duel = load_duel(user_id)
+                duel = load_duel(user_id, battle_id)
     except ClientError:
         return response(500, {"message": "Could not load the duel."})
+    if since is not None and since == duel.state["seq"]:
+        return unchanged_response(duel)
     return duel_response(200, duel, since)
 
 
@@ -380,7 +417,7 @@ def act(user_id, event):
     since = parse_since(body.get("since"))
 
     try:
-        duel = load_duel(user_id)
+        duel = load_duel(user_id, battle_id)
     except ClientError:
         return response(500, {"message": "Could not play the turn."})
     if duel is None or duel.battle_id != battle_id:

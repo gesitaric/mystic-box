@@ -111,9 +111,14 @@ def accept(authenticated_event, user, challenge_id, team):
     )
 
 
-def current(authenticated_event, user, since=None):
-    query = {"since": str(since)} if since is not None else None
-    return call(pvp_battle, request(authenticated_event, user, "GET", "/pvp/battle", query=query))
+def current(authenticated_event, user, since=None, battle_id=None):
+    query = {}
+    if since is not None:
+        query["since"] = str(since)
+    if battle_id is not None:
+        query["battleId"] = battle_id
+    return call(pvp_battle, request(authenticated_event, user, "GET", "/pvp/battle",
+                                    query=query or None))
 
 
 def act(authenticated_event, user, body):
@@ -611,8 +616,8 @@ def test_concurrent_change_is_detected(authenticated_event, db, monkeypatch):
     user, _ = whose_turn(authenticated_event)
     original = pvp_battle.load_duel
 
-    def stale_load(user_id):
-        duel = original(user_id)
+    def stale_load(user_id, battle_id=None):
+        duel = original(user_id, battle_id)
         item = db.tables["battles"][(battle_id, None)]
         item["version"] = {"N": str(int(item["version"]["N"]) + 1)}
         return duel
@@ -644,3 +649,45 @@ def test_full_duel_with_auto_actions(authenticated_event, db):
         assert not end or end[0]["reason"] == expected
     assert alice["result"]["experienceGained"] > 0
     assert bob["result"]["experienceGained"] > 0
+
+
+def test_current_by_battle_id_skips_the_pointer(authenticated_event, db):
+    battle_id = start_duel(authenticated_event)
+    db.calls.clear()
+    status, body = current(authenticated_event, BOB, since=0, battle_id=battle_id)
+    assert status == 200
+    assert body["battle"]["battleId"] == battle_id
+    assert sorted(u["fileName"] for u in body["battle"]["units"] if u["side"] == "player") == sorted(BOB_TEAM)
+    assert [table for op, table in db.calls if op == "get_item"] == ["battles"]
+
+
+def test_current_by_battle_id_only_for_its_players(authenticated_event, db):
+    battle_id = start_duel(authenticated_event)
+    assert current(authenticated_event, CAROL, battle_id=battle_id)[0] == 404
+    assert current(authenticated_event, ALICE, battle_id="missing")[0] == 404
+    status, _ = act(authenticated_event, CAROL, {"battleId": battle_id, "type": "forfeit"})
+    assert status == 404
+
+
+def test_current_unchanged_is_a_short_answer(authenticated_event, db, clock):
+    battle_id = start_duel(authenticated_event)
+    _, full = current(authenticated_event, ALICE, battle_id=battle_id)
+    seq = full["battle"]["seq"]
+    clock["value"] += 10
+    status, body = current(authenticated_event, ALICE, since=seq, battle_id=battle_id)
+    assert status == 200
+    assert body == {
+        "unchanged": True,
+        "battle": {
+            "battleId": battle_id,
+            "seq": seq,
+            "status": "active",
+            "turnSecondsLeft": pvp.TURN_SECONDS - 10,
+        },
+    }
+    # Quando a vez esgota, a resposta volta completa com os eventos novos.
+    clock["value"] += pvp.TURN_SECONDS
+    _, body = current(authenticated_event, ALICE, since=seq, battle_id=battle_id)
+    assert "unchanged" not in body
+    assert body["battle"]["seq"] == seq + 1
+    assert body["events"][0]["type"] == "timeout"
