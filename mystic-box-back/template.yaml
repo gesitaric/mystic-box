@@ -13,11 +13,13 @@ Globals:
       Variables:
         SUMMON_COOLDOWN_SECONDS: "3600"
 
-    Tracing: Active
+    # X-Ray desligado: quase não é usado e cobra por rastro (o duelo online
+    # faz muitas consultas). Para investigar algo, volte para Active.
+    Tracing: PassThrough
     LoggingConfig:
       LogFormat: JSON
   Api:
-    TracingEnabled: true
+    TracingEnabled: false
 Resources:
   MysticBoxApi:
     Type: AWS::Serverless::Api
