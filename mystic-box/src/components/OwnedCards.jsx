@@ -16,25 +16,20 @@ function copiesLabel(count) {
   return `${count} ${count === 1 ? "copy" : "copies"}`;
 }
 
-// Escolha de quantas cópias vender. O limite (`maxSellQuantity`) e o preço
-// por cópia (`sellPrice`) vêm do servidor; o total final é o que a venda
-// devolver.
-function SellQuantityPicker({ card, selling, onConfirm, onCancel }) {
-  const max = card.maxSellQuantity;
-  // Com repetidas, o padrão é vender as extras e ficar com uma.
-  const [quantity, setQuantity] = useState(
-    card.quantity > 1 ? Math.min(card.quantity - 1, max) : 1
-  );
+// Anúncio no mercado: quantas cópias e o preço pedido por cópia. O limite de
+// cópias (`maxListingQuantity`) e a faixa de preço (`listingPriceRange`) vêm
+// do servidor, que valida tudo de novo ao criar o anúncio.
+function ListingPicker({ card, listing, onConfirm, onCancel }) {
+  const max = card.maxListingQuantity;
+  const range = card.listingPriceRange;
+  const [quantity, setQuantity] = useState(1);
+  const [priceText, setPriceText] = useState(String(range.min));
 
   const clamp = (value) => Math.min(max, Math.max(1, value));
+  const price = Number(priceText);
+  const priceValid =
+    /^\d+$/.test(priceText) && price >= range.min && price <= range.max;
   const keepsCount = card.quantity - quantity;
-  const shortcuts = [];
-  if (card.quantity > 1 && card.quantity - 1 <= max) {
-    shortcuts.push({ label: "Duplicates", value: card.quantity - 1 });
-  }
-  if (max > 1) {
-    shortcuts.push({ label: max === card.quantity ? "All" : "Max", value: max });
-  }
 
   return (
     <div
@@ -43,65 +38,64 @@ function SellQuantityPicker({ card, selling, onConfirm, onCancel }) {
       aria-label={`Sell ${card.name}`}
     >
       {max > 1 && (
-        <>
-          <div className="collection-sell-stepper">
-            <button
-              type="button"
-              className="collection-sell-step"
-              disabled={selling || quantity <= 1}
-              onClick={() => setQuantity((value) => clamp(value - 1))}
-              aria-label="Sell one fewer copy"
-            >
-              −
-            </button>
-            <input
-              type="number"
-              className="collection-sell-input"
-              min={1}
-              max={max}
-              value={quantity}
-              disabled={selling}
-              onChange={(event) => {
-                const value = Number.parseInt(event.target.value, 10);
-                setQuantity(Number.isNaN(value) ? 1 : clamp(value));
-              }}
-              onFocus={(event) => event.target.select()}
-              aria-label={`Quantity to sell, from 1 to ${max}`}
-            />
-            <button
-              type="button"
-              className="collection-sell-step"
-              disabled={selling || quantity >= max}
-              onClick={() => setQuantity((value) => clamp(value + 1))}
-              aria-label="Sell one more copy"
-            >
-              +
-            </button>
-          </div>
-
-          {shortcuts.length > 0 && (
-            <div className="collection-sell-shortcuts">
-              {shortcuts.map((shortcut) => (
-                <button
-                  key={shortcut.label}
-                  type="button"
-                  className={`collection-sell-chip${
-                    quantity === shortcut.value ? " is-active" : ""
-                  }`}
-                  disabled={selling}
-                  aria-pressed={quantity === shortcut.value}
-                  onClick={() => setQuantity(shortcut.value)}
-                >
-                  {shortcut.label}
-                </button>
-              ))}
-            </div>
-          )}
-        </>
+        <div className="collection-sell-stepper">
+          <button
+            type="button"
+            className="collection-sell-step"
+            disabled={listing || quantity <= 1}
+            onClick={() => setQuantity((value) => clamp(value - 1))}
+            aria-label="List one fewer copy"
+          >
+            −
+          </button>
+          <input
+            type="number"
+            className="collection-sell-input"
+            min={1}
+            max={max}
+            value={quantity}
+            disabled={listing}
+            onChange={(event) => {
+              const value = Number.parseInt(event.target.value, 10);
+              setQuantity(Number.isNaN(value) ? 1 : clamp(value));
+            }}
+            onFocus={(event) => event.target.select()}
+            aria-label={`Copies to list, from 1 to ${max}`}
+          />
+          <button
+            type="button"
+            className="collection-sell-step"
+            disabled={listing || quantity >= max}
+            onClick={() => setQuantity((value) => clamp(value + 1))}
+            aria-label="List one more copy"
+          >
+            +
+          </button>
+        </div>
       )}
 
+      <label className="collection-price-field">
+        <span>Price each ✧</span>
+        <input
+          type="number"
+          inputMode="numeric"
+          className="collection-sell-input collection-price-input"
+          min={range.min}
+          max={range.max}
+          step={1}
+          value={priceText}
+          disabled={listing}
+          aria-invalid={!priceValid}
+          onChange={(event) => setPriceText(event.target.value.trim())}
+          onFocus={(event) => event.target.select()}
+        />
+      </label>
+      <p className={`collection-price-hint${priceValid ? "" : " is-invalid"}`}>
+        From ✧ {range.min} to ✧ {range.max}
+      </p>
+
       <p className="collection-sell-summary" aria-live="polite">
-        {quantity}× ✧ {card.sellPrice}
+        {quantity}× ✧ {priceValid ? price : "—"}
         <span className="collection-sell-keeps">
           {keepsCount > 0 ? `You keep ${keepsCount}` : "Leaves your collection"}
         </span>
@@ -111,15 +105,15 @@ function SellQuantityPicker({ card, selling, onConfirm, onCancel }) {
         <button
           type="button"
           className="collection-sell-button is-confirm"
-          disabled={selling}
-          onClick={() => onConfirm(quantity)}
+          disabled={listing || !priceValid}
+          onClick={() => onConfirm(quantity, price)}
         >
-          {selling ? "Selling..." : "Confirm"}
+          {listing ? "Listing..." : "Put on sale"}
         </button>
         <button
           type="button"
           className="collection-sell-button is-cancel"
-          disabled={selling}
+          disabled={listing}
           onClick={onCancel}
         >
           Cancel
@@ -129,9 +123,9 @@ function SellQuantityPicker({ card, selling, onConfirm, onCancel }) {
   );
 }
 
-// Cartas do usuário, agrupadas por personagem, com ordenação e venda. Usado
-// na coleção e na aba "Vender" da loja.
-function OwnedCards({ apiUrl, session, onSessionExpired, onBalanceChange }) {
+// Cartas do usuário, agrupadas por personagem, com ordenação e anúncio no
+// mercado. Usado na coleção e na aba "Sell" da loja.
+function OwnedCards({ apiUrl, session, onSessionExpired, onListed }) {
   const [cards, setCards] = useState([]);
   const [totalCards, setTotalCards] = useState(0);
   const [loading, setLoading] = useState(true);
@@ -139,23 +133,23 @@ function OwnedCards({ apiUrl, session, onSessionExpired, onBalanceChange }) {
   const [reloadKey, setReloadKey] = useState(0);
   const [sortField, setSortField] = useState("rarity");
   const [sortDirection, setSortDirection] = useState("desc");
-  // Venda: carta aguardando confirmação, carta sendo vendida e resultado.
+  // Anúncio: carta com o formulário aberto, carta sendo anunciada e resultado.
   const [confirmingKey, setConfirmingKey] = useState(null);
-  const [sellingKey, setSellingKey] = useState(null);
-  const [sellFeedback, setSellFeedback] = useState(null);
+  const [listingKey, setListingKey] = useState(null);
+  const [listFeedback, setListFeedback] = useState(null);
 
-  // Só pedimos a venda (qual carta e quantas cópias); quais cópias saem,
-  // o preço e o crédito são decididos pelo servidor.
-  async function sellCards(card, quantity) {
-    setSellingKey(cardKey(card));
-    setSellFeedback(null);
+  // Pedimos o anúncio (qual carta, quantas cópias e o preço). Quais cópias
+  // saem e se o preço é aceito são decididos pelo servidor.
+  async function listCards(card, quantity, price) {
+    setListingKey(cardKey(card));
+    setListFeedback(null);
 
     try {
       const token = session.session.getIdToken().getJwtToken();
-      const response = await fetch(`${apiUrl}/users/me/cards/sell`, {
+      const response = await fetch(`${apiUrl}/shop/listings`, {
         method: "POST",
         headers: { Authorization: token, "Content-Type": "application/json" },
-        body: JSON.stringify({ fileName: card.file_name, quantity }),
+        body: JSON.stringify({ fileName: card.file_name, quantity, price }),
       });
 
       if (response.status === 401) {
@@ -165,8 +159,8 @@ function OwnedCards({ apiUrl, session, onSessionExpired, onBalanceChange }) {
 
       const data = await response.json().catch(() => ({}));
 
-      if (response.status === 404 || response.status === 409) {
-        setSellFeedback({
+      if ([400, 404, 409].includes(response.status)) {
+        setListFeedback({
           type: "error",
           text: data.message ?? "Your collection has changed. Check it and try again.",
         });
@@ -176,23 +170,23 @@ function OwnedCards({ apiUrl, session, onSessionExpired, onBalanceChange }) {
       }
 
       if (!response.ok) {
-        throw new Error(data.message ?? `Failed to sell (${response.status}).`);
+        throw new Error(data.message ?? `Failed to list (${response.status}).`);
       }
 
-      onBalanceChange?.(data.balance);
-      setSellFeedback({
+      setListFeedback({
         type: "success",
-        text: `Sold ${copiesLabel(data.soldQuantity)} of ${data.name ?? card.name} for ✧ ${data.price}.`,
+        text: `${copiesLabel(data.listedQuantity)} of ${data.name ?? card.name} put on sale for ✧ ${data.price} each.`,
       });
       setReloadKey((key) => key + 1);
-    } catch (sellError) {
-      console.error(sellError);
-      setSellFeedback({
+      onListed?.();
+    } catch (listError) {
+      console.error(listError);
+      setListFeedback({
         type: "error",
-        text: sellError.message ?? "Could not sell the card.",
+        text: listError.message ?? "Could not list the card.",
       });
     } finally {
-      setSellingKey(null);
+      setListingKey(null);
       setConfirmingKey(null);
     }
   }
@@ -318,12 +312,12 @@ function OwnedCards({ apiUrl, session, onSessionExpired, onBalanceChange }) {
         </div>
       )}
 
-      {sellFeedback && (
+      {listFeedback && (
         <p
-          className={sellFeedback.type === "error" ? "auth-error" : "auth-info"}
+          className={listFeedback.type === "error" ? "auth-error" : "auth-info"}
           role="status"
         >
-          {sellFeedback.text}
+          {listFeedback.text}
         </p>
       )}
 
@@ -336,10 +330,10 @@ function OwnedCards({ apiUrl, session, onSessionExpired, onBalanceChange }) {
             const key = cardKey(card);
             const rarity = Number(card.rarity) || 0;
             const quantity = Number(card.quantity) || 1;
-            const canSell =
-              typeof card.sellPrice === "number" && card.maxSellQuantity > 0;
+            const canList =
+              card.listingPriceRange != null && card.maxListingQuantity > 0;
             const confirming = confirmingKey === key;
-            const selling = sellingKey === key;
+            const listing = listingKey === key;
             return (
               <li key={key} className="collection-card" data-rarity={rarity}>
                 <div className="collection-card-art">
@@ -358,27 +352,26 @@ function OwnedCards({ apiUrl, session, onSessionExpired, onBalanceChange }) {
                   )}
                 </div>
 
-                {canSell && !confirming && (
+                {canList && !confirming && (
                   <button
                     type="button"
                     className="collection-sell-button"
-                    disabled={Boolean(sellingKey) || loading}
+                    disabled={Boolean(listingKey) || loading}
                     onClick={() => {
-                      setSellFeedback(null);
+                      setListFeedback(null);
                       setConfirmingKey(key);
                     }}
-                    aria-label={`Sell ${card.name}, ${card.sellPrice} Arcane Shards per copy`}
+                    aria-label={`Put ${card.name} on sale in the shop`}
                   >
-                    Sell ✧ {card.sellPrice}
-                    {quantity > 1 && <span className="collection-sell-each"> each</span>}
+                    Sell
                   </button>
                 )}
 
-                {canSell && confirming && (
-                  <SellQuantityPicker
+                {canList && confirming && (
+                  <ListingPicker
                     card={{ ...card, quantity }}
-                    selling={selling}
-                    onConfirm={(amount) => sellCards(card, amount)}
+                    listing={listing}
+                    onConfirm={(amount, price) => listCards(card, amount, price)}
                     onCancel={() => setConfirmingKey(null)}
                   />
                 )}

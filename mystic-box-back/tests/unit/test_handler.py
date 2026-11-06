@@ -68,9 +68,9 @@ def test_get_user_cards_groups_repeated_cards(authenticated_event, monkeypatch):
             "quantity": 3,
             "firstObtainedAt": "2026-01-01T00:00:00+00:00",
             "lastObtainedAt": "2026-01-03T00:00:00+00:00",
-            # Preço de venda vem das definições do servidor.
-            "sellPrice": 250,
-            "maxSellQuantity": 3,
+            # Faixa de preço do anúncio vem das definições do servidor.
+            "listingPriceRange": cards.LISTING_PRICE_LIMITS[5],
+            "maxListingQuantity": 3,
             "battle": {
                 **public_battle_profile(cards.get_character("astra.jfif")),
                 "skills": public_skills(cards.get_character("astra.jfif")),
@@ -83,8 +83,8 @@ def test_get_user_cards_groups_repeated_cards(authenticated_event, monkeypatch):
             "quantity": 1,
             "firstObtainedAt": "2026-01-01T00:00:00+00:00",
             "lastObtainedAt": "2026-01-01T00:00:00+00:00",
-            "sellPrice": 10,
-            "maxSellQuantity": 1,
+            "listingPriceRange": cards.LISTING_PRICE_LIMITS[3],
+            "maxListingQuantity": 1,
             "battle": {
                 **public_battle_profile(cards.get_character("rowan.jfif")),
                 "skills": public_skills(cards.get_character("rowan.jfif")),
@@ -94,7 +94,7 @@ def test_get_user_cards_groups_repeated_cards(authenticated_event, monkeypatch):
     table.query.assert_called_once()
 
 
-def test_get_user_cards_unknown_card_cannot_be_sold(authenticated_event, monkeypatch):
+def test_get_user_cards_unknown_card_cannot_be_listed(authenticated_event, monkeypatch):
     table = MagicMock()
     table.query.return_value = {
         "Items": [
@@ -105,8 +105,8 @@ def test_get_user_cards_unknown_card_cannot_be_sold(authenticated_event, monkeyp
 
     data = json.loads(get_user_cards.lambda_handler(authenticated_event(), "")["body"])
 
-    assert data["cards"][0]["sellPrice"] is None
-    assert data["cards"][0]["maxSellQuantity"] == 0
+    assert data["cards"][0]["listingPriceRange"] is None
+    assert data["cards"][0]["maxListingQuantity"] == 0
     assert data["cards"][0]["lastObtainedAt"] is None
     assert data["cards"][0]["battle"] is None
 

@@ -125,10 +125,10 @@ function StartChapter({ rules, go }) {
   const { summon, battle } = rules;
   const loop = [
     { icon: "🌀", title: "Summon", text: `${summon.cardsPerSummon} free cards every ${formatDuration(summon.cooldownSeconds)}.`, to: "summon" },
-    { icon: "🗂️", title: "Collect", text: "Keep, sell or buy cards to shape your roster.", to: "shop" },
+    { icon: "🗂️", title: "Collect", text: "Keep your pulls, or trade them with other players in the shop.", to: "shop" },
     { icon: "⚔️", title: "Battle", text: `Pick ${battle.teamSize} cards and fight the computer.`, to: "battle" },
     { icon: "⬆️", title: "Level up", text: "Experience raises your level, stats and rewards.", to: "progression" },
-    { icon: "✧", title: "Earn Shards", text: "Arcane Shards from level-ups and sales buy new cards.", to: "shop" },
+    { icon: "✧", title: "Earn Shards", text: "Level up and sell cards to other players to earn Arcane Shards.", to: "shop" },
   ];
 
   return (
@@ -216,29 +216,30 @@ function ShopChapter({ rules }) {
   return (
     <>
       <p className="gr-lead">
-        <b>Arcane Shards</b> <Shards /> are the currency. You earn them by selling cards and
-        leveling up, and spend them in the shop.
+        <b>Arcane Shards</b> <Shards /> are the currency. You earn them by leveling up and by
+        selling cards to other players, and spend them buying cards other players put on sale.
+      </p>
+
+      <p className="gr-lead">
+        New cards only come from <b>summons</b>. The shop is a market between players: a card
+        is only for sale if someone listed it, and it goes to the first player who buys it.
       </p>
 
       <table className="gr-table">
         <thead>
           <tr>
             <th scope="col">Rarity</th>
-            <th scope="col">Buy</th>
-            <th scope="col">Sell (each)</th>
+            <th scope="col">Listing price (each)</th>
           </tr>
         </thead>
         <tbody>
-          {shop.prices.map((row) => (
+          {shop.listingPrices.map((row) => (
             <tr key={row.rarity}>
               <td>
                 <Stars count={row.rarity} />
               </td>
               <td>
-                <Shards>{formatPrice(row.buyPrice)}</Shards>
-              </td>
-              <td>
-                <Shards>{formatPrice(row.sellPrice)}</Shards>
+                <Shards>{formatPrice(row)}</Shards>
               </td>
             </tr>
           ))}
@@ -247,11 +248,17 @@ function ShopChapter({ rules }) {
 
       <h3 className="gr-heading">Good to know</h3>
       <ul className="gr-list">
-        <li>Duplicates stack in your collection; sell the copies you don&apos;t need.</li>
+        <li>You choose the price of each card you sell, within the range for its rarity.</li>
         <li>
-          Up to <b>{shop.maxSellQuantity}</b> copies can be sold at once; the newest copies
-          go first.
+          Up to <b>{shop.maxListingQuantity}</b> copies can be listed at once, and you can have
+          up to <b>{shop.maxActiveListings}</b> cards on sale at the same time.
         </li>
+        <li>
+          A card on sale leaves your collection until it is sold or you cancel the sale; you
+          cannot battle with it meanwhile.
+        </li>
+        <li>When a card is sold, its full price goes to your balance.</li>
+        <li>The shop always offers the cheapest copy of each card first.</li>
         <li>You can only buy a card if your balance covers its price.</li>
       </ul>
     </>

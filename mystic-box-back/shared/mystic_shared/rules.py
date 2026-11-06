@@ -2,7 +2,7 @@
 
 Monta, a partir das constantes de `cards.py`, `stats.py`, `battle.py` e
 `progression.py`, tudo que a tela de regras mostra: chances do sorteio,
-preços, curva de nível e as regras da batalha. Nada aqui é copiado: mudar uma
+limites do mercado, curva de nível e as regras da batalha. Nada aqui é copiado: mudar uma
 regra nesses módulos muda o que o jogador lê.
 """
 
@@ -31,20 +31,12 @@ def rarity_chances(weights_by_card):
     ]
 
 
-def _price_range(rarity, price_of):
-    prices = [price_of(c) for c in cards.CHARACTERS if c["rarity"] == rarity]
-    return {"min": min(prices), "max": max(prices)}
-
-
 def _shop_rules():
     return {
-        "maxSellQuantity": cards.MAX_SELL_QUANTITY,
-        "prices": [
-            {
-                "rarity": rarity,
-                "buyPrice": _price_range(rarity, cards.buy_price),
-                "sellPrice": _price_range(rarity, cards.sell_price),
-            }
+        "maxListingQuantity": cards.MAX_LISTING_QUANTITY,
+        "maxActiveListings": cards.MAX_ACTIVE_LISTINGS,
+        "listingPrices": [
+            {"rarity": rarity, **cards.LISTING_PRICE_LIMITS[rarity]}
             for rarity in RARITIES
         ],
     }

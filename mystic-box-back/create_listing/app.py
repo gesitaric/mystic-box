@@ -1,23 +1,28 @@
 import json
 import os
+import time
+import uuid
+from datetime import datetime, timezone
 
 import boto3
 from botocore.exceptions import ClientError
 from mystic_shared.cards import (
-    MAX_SELL_QUANTITY,
+    MAX_ACTIVE_LISTINGS,
+    MAX_LISTING_QUANTITY,
     get_character,
-    sell_price,
-    sell_total,
+    is_valid_listing_price,
+    listing_price_range,
 )
 
 CORS_HEADERS = {
     "Access-Control-Allow-Origin": "*",
     "Access-Control-Allow-Headers": "Content-Type,Authorization",
-    "Access-Control-Allow-Methods": "POST,OPTIONS",
+    "Access-Control-Allow-Methods": "GET,POST,OPTIONS",
 }
 
 USER_CARDS_TABLE = os.environ.get("USER_CARDS_TABLE")
 USER_WALLET_TABLE = os.environ.get("USER_WALLET_TABLE")
+SHOP_LISTINGS_TABLE = os.environ.get("SHOP_LISTINGS_TABLE")
 
 MAX_FILE_NAME_LENGTH = 64
 
@@ -50,10 +55,10 @@ def get_user_id(event):
 
 
 def parse_request(event):
-    """(file_name, quantity) pedidos pelo cliente. Lança ValueError se inválidos.
+    """(file_name, quantity, price) pedidos pelo cliente. Lança ValueError se inválidos.
 
-    O cliente só diz QUAL carta e QUANTAS cópias quer vender; preço e quais
-    cópias saem da coleção são decididos aqui.
+    O cliente diz QUAL carta, QUANTAS cópias e o preço que quer pedir; se o
+    preço é aceito e quais cópias saem da coleção é decidido aqui.
     """
     try:
         body = json.loads(event.get("body") or "")
@@ -74,13 +79,17 @@ def parse_request(event):
     if (
         not isinstance(quantity, int)
         or isinstance(quantity, bool)
-        or not 1 <= quantity <= MAX_SELL_QUANTITY
+        or not 1 <= quantity <= MAX_LISTING_QUANTITY
     ):
         raise ValueError(
-            f"Invalid quantity. Choose from 1 to {MAX_SELL_QUANTITY} copies."
+            f"Invalid quantity. Choose from 1 to {MAX_LISTING_QUANTITY} copies."
         )
 
-    return file_name, quantity
+    price = body.get("price")
+    if not isinstance(price, int) or isinstance(price, bool):
+        raise ValueError("Invalid price.")
+
+    return file_name, quantity, price
 
 
 def get_owned_copies(user_id, file_name):
@@ -117,21 +126,17 @@ def get_owned_copies(user_id, file_name):
     return copies
 
 
-def is_collection_changed(error):
+def get_failed_conditions(error):
+    """Índices dos itens da transação cuja condição falhou."""
     if error.response.get("Error", {}).get("Code") != "TransactionCanceledException":
-        return False
+        return set()
 
     reasons = error.response.get("CancellationReasons") or []
-    return any(reason.get("Code") == "ConditionalCheckFailed" for reason in reasons)
-
-
-def get_balance(user_id):
-    result = get_client().get_item(
-        TableName=USER_WALLET_TABLE,
-        Key={"userId": {"S": user_id}},
-        ConsistentRead=True,
-    )
-    return int(result.get("Item", {}).get("balance", {}).get("N", "0"))
+    return {
+        index
+        for index, reason in enumerate(reasons)
+        if reason.get("Code") == "ConditionalCheckFailed"
+    }
 
 
 def lambda_handler(event, context):
@@ -143,22 +148,35 @@ def lambda_handler(event, context):
         return response(401, {"message": "User is not authenticated."})
 
     try:
-        file_name, quantity = parse_request(event)
+        file_name, quantity, price = parse_request(event)
     except ValueError as error:
         return response(400, {"message": str(error)})
+
+    # Nome e raridade vêm SEMPRE das definições do servidor.
+    character = get_character(file_name)
+    if not character:
+        return response(409, {"message": "This card cannot be listed."})
+
+    if not is_valid_listing_price(character, price):
+        price_range = listing_price_range(character)
+        return response(
+            400,
+            {
+                "message": (
+                    f"Price must be between {price_range['min']} and "
+                    f"{price_range['max']} Arcane Shards for this card."
+                ),
+                "priceRange": price_range,
+            },
+        )
 
     try:
         copies = get_owned_copies(user_id, file_name)
     except ClientError:
-        return response(500, {"message": "Could not sell the card."})
+        return response(500, {"message": "Could not list the card."})
 
     if not copies:
         return response(404, {"message": "Card not found in your collection."})
-
-    # O preço vem SEMPRE das definições do servidor.
-    character = get_character(file_name)
-    if not character:
-        return response(409, {"message": "This card cannot be sold."})
 
     if quantity > len(copies):
         return response(
@@ -169,13 +187,17 @@ def lambda_handler(event, context):
             },
         )
 
-    # Vende as cópias mais recentes e mantém as mais antigas na coleção.
-    sold_ids = [copy["ownedCardId"] for copy in copies[:quantity]]
-    total = sell_total(character, quantity)
+    # Anuncia as cópias mais recentes e mantém as mais antigas na coleção.
+    listed_copies = copies[:quantity]
+    listed_at = datetime.fromtimestamp(int(time.time()), timezone.utc).isoformat()
+    listings = [
+        {"listingId": str(uuid.uuid4()), **copy} for copy in listed_copies
+    ]
 
     try:
-        # Remover as cartas e creditar o valor é atômico. A condição em cada
-        # Delete impede que a mesma carta seja vendida duas vezes.
+        # A cópia sai da coleção e entra no mercado na mesma transação: ela
+        # não pode ser anunciada duas vezes nem usada enquanto está à venda.
+        # O contador na carteira limita os anúncios ativos do jogador.
         get_client().transact_write_items(
             TransactItems=[
                 *(
@@ -184,7 +206,7 @@ def lambda_handler(event, context):
                             "TableName": USER_CARDS_TABLE,
                             "Key": {
                                 "userId": {"S": user_id},
-                                "ownedCardId": {"S": owned_card_id},
+                                "ownedCardId": {"S": listing["ownedCardId"]},
                             },
                             "ConditionExpression": (
                                 "attribute_exists(ownedCardId) AND file_name = :fileName"
@@ -194,47 +216,78 @@ def lambda_handler(event, context):
                             },
                         }
                     }
-                    for owned_card_id in sold_ids
+                    for listing in listings
+                ),
+                *(
+                    {
+                        "Put": {
+                            "TableName": SHOP_LISTINGS_TABLE,
+                            "Item": {
+                                "listingId": {"S": listing["listingId"]},
+                                "sellerId": {"S": user_id},
+                                "ownedCardId": {"S": listing["ownedCardId"]},
+                                "obtainedAt": {"S": listing["obtainedAt"]},
+                                "name": {"S": character["name"]},
+                                "rarity": {"N": str(character["rarity"])},
+                                "file_name": {"S": file_name},
+                                "price": {"N": str(price)},
+                                "listedAt": {"S": listed_at},
+                            },
+                            "ConditionExpression": "attribute_not_exists(listingId)",
+                        }
+                    }
+                    for listing in listings
                 ),
                 {
                     "Update": {
                         "TableName": USER_WALLET_TABLE,
                         "Key": {"userId": {"S": user_id}},
-                        "UpdateExpression": "ADD balance :price",
-                        "ExpressionAttributeValues": {":price": {"N": str(total)}},
+                        "UpdateExpression": "ADD activeListings :quantity",
+                        "ConditionExpression": (
+                            "attribute_not_exists(activeListings) "
+                            "OR activeListings <= :limit"
+                        ),
+                        "ExpressionAttributeValues": {
+                            ":quantity": {"N": str(quantity)},
+                            ":limit": {"N": str(MAX_ACTIVE_LISTINGS - quantity)},
+                        },
                     }
                 },
             ]
         )
     except ClientError as error:
-        if is_collection_changed(error):
+        failed = get_failed_conditions(error)
+        if 2 * quantity in failed:
             return response(
                 409,
                 {
                     "message": (
-                        "Your collection changed during the sale. Nothing was sold; "
+                        f"You can have at most {MAX_ACTIVE_LISTINGS} cards for sale "
+                        "at the same time."
+                    ),
+                    "maxActiveListings": MAX_ACTIVE_LISTINGS,
+                },
+            )
+        if failed:
+            return response(
+                409,
+                {
+                    "message": (
+                        "Your collection changed while listing. Nothing was listed; "
                         "please try again."
                     )
                 },
             )
-        return response(500, {"message": "Could not sell the card."})
-
-    try:
-        balance = get_balance(user_id)
-    except ClientError:
-        # A venda já aconteceu; o cliente consulta o saldo depois.
-        balance = None
+        return response(500, {"message": "Could not list the card."})
 
     return response(
-        200,
+        201,
         {
             "fileName": file_name,
             "name": character["name"],
-            "soldQuantity": quantity,
-            "soldOwnedCardIds": sold_ids,
+            "listedQuantity": quantity,
+            "listingIds": [listing["listingId"] for listing in listings],
             "remainingQuantity": len(copies) - quantity,
-            "unitPrice": sell_price(character),
-            "price": total,
-            "balance": balance,
+            "price": price,
         },
     )

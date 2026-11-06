@@ -76,6 +76,20 @@ Resources:
       - AttributeName: userId
         KeyType: HASH
 
+  # Mercado entre jogadores: cada item é uma cópia anunciada por um jogador,
+  # com o preço que ele escolheu. Enquanto está aqui, a carta não está na
+  # coleção do vendedor. Vendidos e cancelados saem da tabela.
+  ShopListingsTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+      - AttributeName: listingId
+        AttributeType: S
+      KeySchema:
+      - AttributeName: listingId
+        KeyType: HASH
+
   # Experiência acumulada (o nível é calculado dela), vitórias e derrotas.
   UserProgressTable:
     Type: AWS::DynamoDB::Table
@@ -330,10 +344,10 @@ Resources:
             Path: /users/me/wallet
             Method: options
 
-  SellUserCardFunction:
+  GetShopListingsFunction:
     Type: AWS::Serverless::Function
     Properties:
-      CodeUri: sell_user_card/
+      CodeUri: shop_listings/
       Handler: app.lambda_handler
       Runtime: python3.14
       Architectures:
@@ -342,33 +356,65 @@ Resources:
       - !Ref SharedLayer
       Environment:
         Variables:
+          SHOP_LISTINGS_TABLE: !Ref ShopListingsTable
+          USER_WALLET_TABLE: !Ref UserWalletTable
+      Policies:
+      - DynamoDBReadPolicy:
+          TableName: !Ref ShopListingsTable
+      - DynamoDBReadPolicy:
+          TableName: !Ref UserWalletTable
+      Events:
+        GetShopListings:
+          Type: Api
+          Properties:
+            RestApiId: !Ref MysticBoxApi
+            Path: /shop/listings
+            Method: get
+            Auth:
+              Authorizer: CognitoAuthorizer
+        GetShopListingsOptions:
+          Type: Api
+          Properties:
+            RestApiId: !Ref MysticBoxApi
+            Path: /shop/listings
+            Method: options
+
+  CreateListingFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: create_listing/
+      Handler: app.lambda_handler
+      Runtime: python3.14
+      Architectures:
+      - x86_64
+      Layers:
+      - !Ref SharedLayer
+      Environment:
+        Variables:
+          SHOP_LISTINGS_TABLE: !Ref ShopListingsTable
           USER_CARDS_TABLE: !Ref UserCardsTable
           USER_WALLET_TABLE: !Ref UserWalletTable
       Policies:
+      - DynamoDBCrudPolicy:
+          TableName: !Ref ShopListingsTable
       - DynamoDBCrudPolicy:
           TableName: !Ref UserCardsTable
       - DynamoDBCrudPolicy:
           TableName: !Ref UserWalletTable
       Events:
-        SellUserCard:
+        CreateListing:
           Type: Api
           Properties:
             RestApiId: !Ref MysticBoxApi
-            Path: /users/me/cards/sell
+            Path: /shop/listings
             Method: post
             Auth:
               Authorizer: CognitoAuthorizer
-        SellUserCardOptions:
-          Type: Api
-          Properties:
-            RestApiId: !Ref MysticBoxApi
-            Path: /users/me/cards/sell
-            Method: options
 
-  GetShopCardsFunction:
+  BuyListingFunction:
     Type: AWS::Serverless::Function
     Properties:
-      CodeUri: get_shop_cards/
+      CodeUri: buy_listing/
       Handler: app.lambda_handler
       Runtime: python3.14
       Architectures:
@@ -377,59 +423,68 @@ Resources:
       - !Ref SharedLayer
       Environment:
         Variables:
-          USER_WALLET_TABLE: !Ref UserWalletTable
-      Policies:
-      - DynamoDBReadPolicy:
-          TableName: !Ref UserWalletTable
-      Events:
-        GetShopCards:
-          Type: Api
-          Properties:
-            RestApiId: !Ref MysticBoxApi
-            Path: /shop/cards
-            Method: get
-            Auth:
-              Authorizer: CognitoAuthorizer
-        GetShopCardsOptions:
-          Type: Api
-          Properties:
-            RestApiId: !Ref MysticBoxApi
-            Path: /shop/cards
-            Method: options
-
-  BuyCardFunction:
-    Type: AWS::Serverless::Function
-    Properties:
-      CodeUri: buy_card/
-      Handler: app.lambda_handler
-      Runtime: python3.14
-      Architectures:
-      - x86_64
-      Layers:
-      - !Ref SharedLayer
-      Environment:
-        Variables:
+          SHOP_LISTINGS_TABLE: !Ref ShopListingsTable
           USER_CARDS_TABLE: !Ref UserCardsTable
           USER_WALLET_TABLE: !Ref UserWalletTable
       Policies:
+      - DynamoDBCrudPolicy:
+          TableName: !Ref ShopListingsTable
       - DynamoDBWritePolicy:
           TableName: !Ref UserCardsTable
       - DynamoDBCrudPolicy:
           TableName: !Ref UserWalletTable
       Events:
-        BuyCard:
+        BuyListing:
           Type: Api
           Properties:
             RestApiId: !Ref MysticBoxApi
-            Path: /shop/cards/{fileName}/buy
+            Path: /shop/listings/{listingId}/buy
             Method: post
             Auth:
               Authorizer: CognitoAuthorizer
-        BuyCardOptions:
+        BuyListingOptions:
           Type: Api
           Properties:
             RestApiId: !Ref MysticBoxApi
-            Path: /shop/cards/{fileName}/buy
+            Path: /shop/listings/{listingId}/buy
+            Method: options
+
+  CancelListingFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: cancel_listing/
+      Handler: app.lambda_handler
+      Runtime: python3.14
+      Architectures:
+      - x86_64
+      Layers:
+      - !Ref SharedLayer
+      Environment:
+        Variables:
+          SHOP_LISTINGS_TABLE: !Ref ShopListingsTable
+          USER_CARDS_TABLE: !Ref UserCardsTable
+          USER_WALLET_TABLE: !Ref UserWalletTable
+      Policies:
+      - DynamoDBCrudPolicy:
+          TableName: !Ref ShopListingsTable
+      - DynamoDBWritePolicy:
+          TableName: !Ref UserCardsTable
+      - DynamoDBCrudPolicy:
+          TableName: !Ref UserWalletTable
+      Events:
+        CancelListing:
+          Type: Api
+          Properties:
+            RestApiId: !Ref MysticBoxApi
+            Path: /shop/listings/{listingId}/cancel
+            Method: post
+            Auth:
+              Authorizer: CognitoAuthorizer
+        CancelListingOptions:
+          Type: Api
+          Properties:
+            RestApiId: !Ref MysticBoxApi
+            Path: /shop/listings/{listingId}/cancel
             Method: options
 
   GetProfileFunction:
@@ -629,23 +684,20 @@ Outputs:
     Description: API Gateway endpoint URL for the user's wallet (Fragmentos Arcanos)
     Value: !Sub "https://${MysticBoxApi}.execute-api.${AWS::Region}.${AWS::URLSuffix}/Prod/users/me/wallet"
   UserWalletTable:
-    Description: DynamoDB table that stores each user's Fragmentos Arcanos balance
+    Description: DynamoDB table that stores each user's Fragmentos Arcanos balance and active listing count
     Value: !Ref UserWalletTable
-  SellUserCardApi:
-    Description: API Gateway endpoint URL to sell one or more copies of a card from the user collection
-    Value: !Sub "https://${MysticBoxApi}.execute-api.${AWS::Region}.${AWS::URLSuffix}/Prod/users/me/cards/sell"
-  SellUserCardFunction:
-    Description: Sell User Card Lambda Function ARN
-    Value: !GetAtt SellUserCardFunction.Arn
-  GetShopCardsApi:
-    Description: API Gateway endpoint URL for the shop catalog
-    Value: !Sub "https://${MysticBoxApi}.execute-api.${AWS::Region}.${AWS::URLSuffix}/Prod/shop/cards"
-  BuyCardApi:
-    Description: API Gateway endpoint URL to buy a card in the shop
-    Value: !Sub "https://${MysticBoxApi}.execute-api.${AWS::Region}.${AWS::URLSuffix}/Prod/shop/cards/{fileName}/buy"
-  BuyCardFunction:
-    Description: Buy Card Lambda Function ARN
-    Value: !GetAtt BuyCardFunction.Arn
+  ShopListingsApi:
+    Description: API Gateway endpoint URL to browse (GET) and create (POST) shop listings
+    Value: !Sub "https://${MysticBoxApi}.execute-api.${AWS::Region}.${AWS::URLSuffix}/Prod/shop/listings"
+  BuyListingApi:
+    Description: API Gateway endpoint URL to buy a card listed by another player
+    Value: !Sub "https://${MysticBoxApi}.execute-api.${AWS::Region}.${AWS::URLSuffix}/Prod/shop/listings/{listingId}/buy"
+  CancelListingApi:
+    Description: API Gateway endpoint URL to cancel one of your listings
+    Value: !Sub "https://${MysticBoxApi}.execute-api.${AWS::Region}.${AWS::URLSuffix}/Prod/shop/listings/{listingId}/cancel"
+  ShopListingsTable:
+    Description: DynamoDB table that stores the cards players put up for sale
+    Value: !Ref ShopListingsTable
   GetProfileApi:
     Description: API Gateway endpoint URL for the player's level and experience
     Value: !Sub "https://${MysticBoxApi}.execute-api.${AWS::Region}.${AWS::URLSuffix}/Prod/users/me/profile"
