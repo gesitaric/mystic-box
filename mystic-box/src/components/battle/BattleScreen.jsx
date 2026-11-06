@@ -246,6 +246,8 @@ function BattleScreen({
   const idlePolls = useRef(0);
   // Duelo na tela: as consultas vão direto a ele (uma leitura no servidor).
   const battleIdRef = useRef(null);
+  // Coleção usada na escolha do time: buscada uma vez por visita à arena.
+  const [rosterCards, setRosterCards] = useState(null);
   // Aba visível: com a aba escondida o duelo não é consultado.
   const [pageVisible, setPageVisible] = useState(() => document.visibilityState !== "hidden");
   const busyRef = useRef(false);
@@ -285,16 +287,19 @@ function BattleScreen({
     setPhase("loading");
     setError("");
     try {
-      const [current, duel] = await Promise.all([
-        request("/battles/current"),
-        request("/pvp/battle"),
-      ]);
-      const { ok, status, data } = current;
+      const { ok, status, data } = await request("/battles/current");
       if (!ok) throw new Error(data.message ?? `Failed to load (${status}).`);
       setSetup({ teamSize: data.teamSize, difficulties: data.difficulties });
       if (data.progress) callbacks.current.onProgressChange?.(data.progress);
+      // O servidor avisa se há duelo ativo; só então busca o duelo.
+      let activeDuel = null;
+      if (data.pvpBattleId) {
+        const duel = await request(
+          `/pvp/battle?battleId=${encodeURIComponent(data.pvpBattleId)}`
+        );
+        if (duel.ok && duel.data.battle?.status === "active") activeDuel = duel.data.battle;
+      }
       // Um duelo em andamento tem prioridade: o tempo de turno está correndo.
-      const activeDuel = duel.ok && duel.data.battle?.status === "active" ? duel.data.battle : null;
       if (activeDuel) {
         seqRef.current = activeDuel.seq;
         setArena("pvp");
@@ -806,6 +811,8 @@ function BattleScreen({
               request={request}
               initialTeam={lastTeam}
               initialChallenge={duelIntent?.challenge}
+              cachedCards={rosterCards}
+              onCardsLoaded={setRosterCards}
               onTeamChosen={setLastTeam}
               onEnterDuel={enterDuel}
               onSessionExpired={onSessionExpired}
@@ -821,6 +828,8 @@ function BattleScreen({
             startError={startError}
             onStart={startBattle}
             onSessionExpired={onSessionExpired}
+            cachedCards={rosterCards}
+            onCardsLoaded={setRosterCards}
           />
         )}
       </section>

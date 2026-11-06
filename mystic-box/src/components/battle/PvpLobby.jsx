@@ -116,6 +116,8 @@ function PvpLobby({
   request,
   initialTeam,
   initialChallenge,
+  cachedCards,
+  onCardsLoaded,
   onTeamChosen,
   onEnterDuel,
   onSessionExpired,
@@ -263,6 +265,8 @@ function PvpLobby({
         startLabel={accepting ? "Accept duel" : "Send challenge"}
         startingLabel={accepting ? "Entering the duel..." : "Sending..."}
         canStart={accepting || Boolean(view.opponent)}
+        cachedCards={cachedCards}
+        onCardsLoaded={onCardsLoaded}
       >
         <div className="pvp-back">
           <button type="button" className="session-button" onClick={() => openView({ name: "list" })}>

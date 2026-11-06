@@ -711,11 +711,14 @@ Resources:
         Variables:
           BATTLES_TABLE: !Ref BattlesTable
           USER_PROGRESS_TABLE: !Ref UserProgressTable
+          PVP_PLAYERS_TABLE: !Ref PvpPlayersTable
       Policies:
       - DynamoDBReadPolicy:
           TableName: !Ref BattlesTable
       - DynamoDBReadPolicy:
           TableName: !Ref UserProgressTable
+      - DynamoDBReadPolicy:
+          TableName: !Ref PvpPlayersTable
       Events:
         GetBattle:
           Type: Api

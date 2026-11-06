@@ -56,13 +56,22 @@ function TeamSetup({
   startLabel = "Begin battle",
   startingLabel = "Opening the arena...",
   canStart = true,
+  // Coleção já carregada nesta visita à arena (evita buscar de novo).
+  cachedCards = null,
+  onCardsLoaded,
   children,
 }) {
   const teamSize = setup?.teamSize ?? 3;
-  const [cards, setCards] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [loadedCards, setLoadedCards] = useState(null);
   const [error, setError] = useState("");
-  const [team, setTeam] = useState(initialTeam ?? []);
+  const cards = cachedCards ?? loadedCards ?? [];
+  const loading = !cachedCards && !loadedCards && !error;
+  // Cartas que o jogador não tem mais saem do time sugerido.
+  const [team, setTeam] = useState(() =>
+    (initialTeam ?? []).filter(
+      (name) => !cachedCards || cachedCards.some((card) => card.file_name === name)
+    )
+  );
   const [inspected, setInspected] = useState(initialTeam?.[0] ?? null);
   const unlockedDifficulties = (setup?.difficulties ?? []).filter((d) => d.unlocked);
   const [difficulty, setDifficulty] = useState(
@@ -70,6 +79,7 @@ function TeamSetup({
   );
 
   useEffect(() => {
+    if (cachedCards) return undefined;
     let cancelled = false;
 
     async function load() {
@@ -86,7 +96,8 @@ function TeamSetup({
         const data = await response.json();
         if (cancelled) return;
         const usable = (data.cards ?? []).filter((card) => card.battle && card.file_name);
-        setCards(usable);
+        setLoadedCards(usable);
+        onCardsLoaded?.(usable);
         // Cartas que o jogador não tem mais saem do time sugerido.
         setTeam((current) =>
           current.filter((name) => usable.some((card) => card.file_name === name))
@@ -94,8 +105,6 @@ function TeamSetup({
       } catch (loadError) {
         console.error(loadError);
         if (!cancelled) setError("Could not load your cards.");
-      } finally {
-        if (!cancelled) setLoading(false);
       }
     }
 
@@ -103,7 +112,7 @@ function TeamSetup({
     return () => {
       cancelled = true;
     };
-  }, [apiUrl, session, onSessionExpired]);
+  }, [apiUrl, session, onSessionExpired, cachedCards, onCardsLoaded]);
 
   function toggle(fileName) {
     setInspected(fileName);
