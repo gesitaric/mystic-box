@@ -1947,6 +1947,189 @@ h1 {
   border-color: rgba(203, 182, 238, 0.35);
 }
 
+/* ---------- Modal de anúncio (quantidade + preço) ---------- */
+
+.auth-modal.listing-modal {
+  width: min(360px, 92vw);
+}
+
+.listing-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  margin-top: 16px;
+}
+
+.listing-card-art {
+  width: 128px;
+  aspect-ratio: 13 / 18;
+}
+
+.listing-card .card-content {
+  border-radius: 12px;
+  box-shadow:
+    0 0 0 1px rgba(255, 255, 255, 0.08) inset,
+    0 0 16px var(--card-rarity-glow),
+    0 10px 24px rgba(0, 0, 0, 0.5);
+}
+
+.listing-card .rarity {
+  margin-top: 6px;
+  font-size: 11px;
+  letter-spacing: 2px;
+}
+
+.listing-card .name {
+  margin-top: 6px;
+  font-size: 13px;
+  letter-spacing: 1px;
+}
+
+.listing-owned {
+  margin: 0;
+  color: #9d88c4;
+  font-size: 12px;
+  letter-spacing: 1px;
+}
+
+.listing-form {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  margin-top: 18px;
+}
+
+.listing-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.listing-label {
+  color: #cbb6ee;
+  font-size: 12px;
+  letter-spacing: 1px;
+}
+
+.listing-form .collection-sell-step {
+  flex-basis: 40px;
+  padding: 8px 0;
+  font-size: 16px;
+}
+
+.listing-form .collection-sell-input {
+  padding: 8px 10px;
+  font-size: 16px;
+}
+
+.listing-form .collection-price-hint {
+  font-size: 11px;
+}
+
+.listing-form .collection-sell-summary {
+  font-size: 16px;
+}
+
+.listing-form .collection-sell-keeps {
+  font-size: 11px;
+}
+
+.listing-form .auth-error {
+  margin: 0;
+}
+
+.listing-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.listing-actions .collection-sell-button {
+  flex: 1 1 0;
+  padding: 10px 12px;
+  font-size: 13px;
+}
+
+.collection-sell-stepper {
+  display: flex;
+  gap: 4px;
+}
+
+.collection-sell-step {
+  flex: 0 0 28px;
+  padding: 4px 0;
+  border: 1px solid rgba(255, 220, 142, 0.35);
+  border-radius: 8px;
+  background: rgba(20, 10, 40, 0.7);
+  color: #ffdc8e;
+  font: inherit;
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.collection-sell-step:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.collection-sell-input {
+  flex: 1 1 auto;
+  min-width: 0;
+  width: 100%;
+  padding: 4px 6px;
+  border: 1px solid rgba(255, 220, 142, 0.35);
+  border-radius: 8px;
+  background: rgba(10, 4, 24, 0.85);
+  color: #fff3d6;
+  font: inherit;
+  font-size: 13px;
+  text-align: center;
+  -moz-appearance: textfield;
+  appearance: textfield;
+}
+
+.collection-sell-input::-webkit-inner-spin-button,
+.collection-sell-input::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+.collection-sell-input:focus-visible {
+  outline: 2px solid #ffdc8e;
+  outline-offset: 1px;
+}
+
+.listing-price-input[aria-invalid="true"] {
+  border-color: #ff8f8f;
+}
+
+.collection-price-hint {
+  margin: 0;
+  color: #9d88c4;
+  font-size: 10px;
+  text-align: center;
+}
+
+.collection-price-hint.is-invalid {
+  color: #ff8f8f;
+}
+
+.collection-sell-summary {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin: 0;
+  color: #ffdc8e;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.collection-sell-keeps {
+  color: #9d88c4;
+  font-size: 10px;
+  font-weight: 400;
+}
+
 .collection-card .card-content {
   border-radius: 12px;
   box-shadow:
@@ -1999,13 +2182,14 @@ h1 {
 
 .shop-tabs {
   display: flex;
+  flex-wrap: wrap;
   justify-content: center;
   gap: 8px;
   margin: 20px 0 0;
 }
 
 .shop-tab {
-  min-width: 120px;
+  min-width: 110px;
   padding: 8px 18px;
   border: 1px solid rgba(255, 220, 142, 0.35);
   border-radius: 999px;

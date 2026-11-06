@@ -5,7 +5,7 @@ import unicodedata
 import boto3
 from boto3.dynamodb.conditions import Key
 from botocore.exceptions import ClientError
-from mystic_shared.cards import get_character, max_sell_quantity, sell_price
+from mystic_shared.cards import get_character, listing_price_range, max_listing_quantity
 from mystic_shared.battle import public_skills
 from mystic_shared.stats import public_battle_profile
 
@@ -127,10 +127,11 @@ def group_cards(items):
                 **group,
                 "firstObtainedAt": min(obtained_at, default=None),
                 "lastObtainedAt": max(obtained_at, default=None),
-                # Preço por cópia definido no servidor; None = não pode ser vendida.
-                "sellPrice": sell_price(character) if character else None,
-                # Quantas cópias podem ser vendidas de uma vez.
-                "maxSellQuantity": max_sell_quantity(character, group["quantity"]),
+                # Faixa de preço (por cópia) aceita ao anunciar no mercado;
+                # None = não pode ser anunciada.
+                "listingPriceRange": listing_price_range(character),
+                # Quantas cópias podem ser anunciadas de uma vez.
+                "maxListingQuantity": max_listing_quantity(character, group["quantity"]),
                 "battle": battle_profile(character) if character else None,
             }
         )

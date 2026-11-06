@@ -19,7 +19,11 @@ def test_get_rules_is_public_and_uses_server_constants(apigw_event):
     assert ret["statusCode"] == 200
     assert data["summon"]["cardsPerSummon"] == cards.SUMMON_SIZE
     assert data["summon"]["cooldownSeconds"] == get_rules.SUMMON_COOLDOWN_SECONDS
-    assert data["shop"]["maxSellQuantity"] == cards.MAX_SELL_QUANTITY
+    assert data["shop"]["maxListingQuantity"] == cards.MAX_LISTING_QUANTITY
+    assert data["shop"]["maxActiveListings"] == cards.MAX_ACTIVE_LISTINGS
+    assert data["shop"]["listingPrices"] == [
+        {"rarity": r, **cards.LISTING_PRICE_LIMITS[r]} for r in (5, 4, 3)
+    ]
     assert data["progression"]["maxLevel"] == progression.MAX_LEVEL
     assert data["battle"]["teamSize"] == battle.TEAM_SIZE
     assert data["battle"]["aether"]["max"] == battle.MAX_AETHER

@@ -6,7 +6,7 @@ from datetime import datetime, timezone
 
 import boto3
 from botocore.exceptions import ClientError
-from mystic_shared.cards import buy_price, get_character, sell_price, shop_catalog
+from mystic_shared.cards import get_character
 
 CORS_HEADERS = {
     "Access-Control-Allow-Origin": "*",
@@ -16,11 +16,13 @@ CORS_HEADERS = {
 
 USER_CARDS_TABLE = os.environ.get("USER_CARDS_TABLE")
 USER_WALLET_TABLE = os.environ.get("USER_WALLET_TABLE")
+SHOP_LISTINGS_TABLE = os.environ.get("SHOP_LISTINGS_TABLE")
 
-MAX_FILE_NAME_LENGTH = 64
+MAX_LISTING_ID_LENGTH = 64
 
 # Posições na transação.
-WALLET_ITEM = 0
+LISTING_ITEM = 0
+BUYER_WALLET_ITEM = 1
 
 # Criado uma vez por container e reaproveitado entre invocações.
 _client = None
@@ -50,20 +52,32 @@ def get_user_id(event):
     return claims.get("sub")
 
 
-def get_shop_character(event):
-    """Carta da loja indicada no caminho, ou None se não estiver à venda."""
-    file_name = (event.get("pathParameters") or {}).get("fileName")
+def get_listing_id(event):
+    listing_id = (event.get("pathParameters") or {}).get("listingId")
     if (
-        not isinstance(file_name, str)
-        or not file_name
-        or len(file_name) > MAX_FILE_NAME_LENGTH
+        not isinstance(listing_id, str)
+        or not listing_id
+        or len(listing_id) > MAX_LISTING_ID_LENGTH
     ):
         return None
+    return listing_id
 
-    character = get_character(file_name)
-    if character is None or character not in shop_catalog():
+
+def get_listing(listing_id):
+    result = get_client().get_item(
+        TableName=SHOP_LISTINGS_TABLE,
+        Key={"listingId": {"S": listing_id}},
+        ConsistentRead=True,
+    )
+    item = result.get("Item")
+    if not item:
         return None
-    return character
+    return {
+        "listingId": item["listingId"]["S"],
+        "sellerId": item["sellerId"]["S"],
+        "file_name": item["file_name"]["S"],
+        "price": int(item["price"]["N"]),
+    }
 
 
 def get_failed_conditions(error):
@@ -88,6 +102,12 @@ def get_balance(user_id):
     return int(result.get("Item", {}).get("balance", {}).get("N", "0"))
 
 
+def sold_out():
+    return response(
+        409, {"message": "This card was already sold or is no longer for sale."}
+    )
+
+
 def lambda_handler(event, context):
     if event.get("httpMethod") == "OPTIONS":
         return response(200, {})
@@ -96,13 +116,28 @@ def lambda_handler(event, context):
     if not user_id:
         return response(401, {"message": "User is not authenticated."})
 
-    # Só o identificador da carta vem do cliente; nome, raridade e preço são
-    # lidos das definições do servidor. Qualquer outro campo é ignorado.
-    character = get_shop_character(event)
-    if not character:
-        return response(404, {"message": "This card is not for sale."})
+    # Só o identificador do anúncio vem do cliente; preço, carta e vendedor são
+    # lidos do anúncio gravado no servidor. Qualquer outro campo é ignorado.
+    listing_id = get_listing_id(event)
+    if not listing_id:
+        return response(404, {"message": "Listing not found."})
 
-    price = buy_price(character)
+    try:
+        listing = get_listing(listing_id)
+    except ClientError:
+        return response(500, {"message": "Could not buy the card."})
+
+    if listing is None:
+        return sold_out()
+
+    character = get_character(listing["file_name"])
+    if character is None:
+        return response(409, {"message": "This card cannot be bought."})
+
+    if listing["sellerId"] == user_id:
+        return response(409, {"message": "You cannot buy your own listing."})
+
+    price = listing["price"]
     now = int(time.time())
     card = {
         "ownedCardId": str(uuid.uuid4()),
@@ -113,10 +148,25 @@ def lambda_handler(event, context):
     }
 
     try:
-        # Debitar e entregar a carta é atômico. A condição no saldo impede
-        # gastar mais do que se tem, mesmo com compras simultâneas.
+        # Tudo ou nada: o anúncio sai do mercado (só se ainda existir com o
+        # mesmo preço e vendedor), o comprador paga (só se o saldo cobrir), o
+        # vendedor recebe e a carta entra na coleção do comprador.
         get_client().transact_write_items(
             TransactItems=[
+                {
+                    "Delete": {
+                        "TableName": SHOP_LISTINGS_TABLE,
+                        "Key": {"listingId": {"S": listing_id}},
+                        "ConditionExpression": (
+                            "attribute_exists(listingId) AND sellerId = :seller "
+                            "AND price = :price"
+                        ),
+                        "ExpressionAttributeValues": {
+                            ":seller": {"S": listing["sellerId"]},
+                            ":price": {"N": str(price)},
+                        },
+                    }
+                },
                 {
                     "Update": {
                         "TableName": USER_WALLET_TABLE,
@@ -124,6 +174,19 @@ def lambda_handler(event, context):
                         "UpdateExpression": "SET balance = balance - :price",
                         "ConditionExpression": "balance >= :price",
                         "ExpressionAttributeValues": {":price": {"N": str(price)}},
+                    }
+                },
+                {
+                    "Update": {
+                        "TableName": USER_WALLET_TABLE,
+                        "Key": {"userId": {"S": listing["sellerId"]}},
+                        "UpdateExpression": (
+                            "ADD balance :price, activeListings :minusOne"
+                        ),
+                        "ExpressionAttributeValues": {
+                            ":price": {"N": str(price)},
+                            ":minusOne": {"N": "-1"},
+                        },
                     }
                 },
                 {
@@ -143,7 +206,10 @@ def lambda_handler(event, context):
             ]
         )
     except ClientError as error:
-        if WALLET_ITEM in get_failed_conditions(error):
+        failed = get_failed_conditions(error)
+        if LISTING_ITEM in failed:
+            return sold_out()
+        if BUYER_WALLET_ITEM in failed:
             try:
                 balance = get_balance(user_id)
             except ClientError:
@@ -164,11 +230,4 @@ def lambda_handler(event, context):
         # A compra já aconteceu; o cliente consulta o saldo depois.
         balance = None
 
-    return response(
-        201,
-        {
-            "card": {**card, "sellPrice": sell_price(character)},
-            "price": price,
-            "balance": balance,
-        },
-    )
+    return response(201, {"card": card, "price": price, "balance": balance})
