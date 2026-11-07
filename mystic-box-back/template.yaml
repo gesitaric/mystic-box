@@ -29,6 +29,23 @@ Resources:
         Authorizers:
           CognitoAuthorizer:
             UserPoolArn: !GetAtt UserPool.Arn
+      # Limite de requisições da busca de jogadores, somando todos os jogadores
+      # (token bucket do API Gateway: média por segundo e pico). Acima disso o
+      # API Gateway responde 429 sem chamar a Lambda.
+      MethodSettings:
+      - ResourcePath: "/~1users~1search"
+        HttpMethod: GET
+        ThrottlingRateLimit: 5
+        ThrottlingBurstLimit: 10
+      # Sem os cabeçalhos CORS o navegador não deixa o frontend ler o 429.
+      GatewayResponses:
+        THROTTLED:
+          ResponseParameters:
+            Headers:
+              Access-Control-Allow-Origin: "'*'"
+              Access-Control-Allow-Headers: "'Content-Type,Authorization'"
+          ResponseTemplates:
+            application/json: '{"message": "Too many requests. Please wait a moment and try again."}'
 
   CardsTable:
     Type: AWS::DynamoDB::Table
@@ -143,22 +160,6 @@ Resources:
       KeySchema:
       - AttributeName: usernameLower
         KeyType: HASH
-
-  # Limite de buscas de jogadores: quantas buscas cada jogador fez na janela
-  # atual (ver SEARCH_RATE_LIMIT_* em usernames.py). Somem pelo TTL.
-  SearchRateLimitTable:
-    Type: AWS::DynamoDB::Table
-    Properties:
-      BillingMode: PAY_PER_REQUEST
-      AttributeDefinitions:
-      - AttributeName: userId
-        AttributeType: S
-      KeySchema:
-      - AttributeName: userId
-        KeyType: HASH
-      TimeToLiveSpecification:
-        AttributeName: expiresAt
-        Enabled: true
 
   # Batalha de cada jogador contra o computador (uma por vez). O estado fica
   # em JSON e some sozinho pelo TTL um dia depois da última ação.
@@ -692,14 +693,11 @@ Resources:
         Variables:
           USER_PROFILES_TABLE: !Ref UserProfilesTable
           USER_PROGRESS_TABLE: !Ref UserProgressTable
-          SEARCH_RATE_LIMIT_TABLE: !Ref SearchRateLimitTable
       Policies:
       - DynamoDBReadPolicy:
           TableName: !Ref UserProfilesTable
       - DynamoDBReadPolicy:
           TableName: !Ref UserProgressTable
-      - DynamoDBCrudPolicy:
-          TableName: !Ref SearchRateLimitTable
       Events:
         SearchUsers:
           Type: Api

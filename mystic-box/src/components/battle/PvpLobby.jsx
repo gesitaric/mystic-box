@@ -20,12 +20,10 @@ function OpponentSearch({ request, selected, onSelect }) {
   const [error, setError] = useState("");
   // Nome da última busca feita: buscar de novo o mesmo nome não chama a API.
   const [lastSearched, setLastSearched] = useState(null);
-  // Espera pedida pelo servidor (limite de buscas): { seconds, since }.
-  const [cooldown, setCooldown] = useState(null);
   const mounted = useRef(true);
   const trimmed = query.trim();
   const sameAsLast = lastSearched !== null && trimmed.toLowerCase() === lastSearched;
-  const canSearch = Boolean(trimmed) && !loading && !cooldown && !sameAsLast;
+  const canSearch = Boolean(trimmed) && !loading && !sameAsLast;
 
   useEffect(() => {
     mounted.current = true;
@@ -41,11 +39,8 @@ function OpponentSearch({ request, selected, onSelect }) {
     setLoading(true);
     setError("");
     try {
-      const { ok, status, data } = await request(`/users/search?q=${encodeURIComponent(trimmed)}`);
+      const { ok, data } = await request(`/users/search?q=${encodeURIComponent(trimmed)}`);
       if (!mounted.current) return;
-      if (status === 429 && data.retryAfterSeconds) {
-        setCooldown({ seconds: data.retryAfterSeconds, since: Date.now() });
-      }
       if (!ok) {
         setResult(null);
         setLastSearched(null);
@@ -91,18 +86,7 @@ function OpponentSearch({ request, selected, onSelect }) {
               />
             </label>
             <button type="submit" className="auth-submit" disabled={!canSearch}>
-              {cooldown ? (
-                <Countdown
-                  seconds={cooldown.seconds}
-                  since={cooldown.since}
-                  prefix="Wait "
-                  onExpire={() => setCooldown(null)}
-                />
-              ) : loading ? (
-                "Searching..."
-              ) : (
-                "Search"
-              )}
+              {loading ? "Searching..." : "Search"}
             </button>
           </form>
           {error && <p className="auth-error">{error}</p>}

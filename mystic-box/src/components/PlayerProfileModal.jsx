@@ -1,6 +1,5 @@
 import { useEffect, useRef, useState } from "react";
 import Modal from "./Modal";
-import Countdown from "./Countdown";
 
 const TABS = [
   { value: "name", label: "Your name" },
@@ -195,8 +194,6 @@ function PlayerSearch({ apiUrl, session, minLength, canChallenge, onSessionExpir
   const [error, setError] = useState("");
   // Nome da última busca feita: buscar de novo o mesmo nome não chama a API.
   const [lastSearched, setLastSearched] = useState(null);
-  // Espera pedida pelo servidor (limite de buscas): { seconds, since }.
-  const [cooldown, setCooldown] = useState(null);
   const mounted = useRef(true);
 
   useEffect(() => {
@@ -209,7 +206,7 @@ function PlayerSearch({ apiUrl, session, minLength, canChallenge, onSessionExpir
   const trimmed = query.trim();
   const ready = trimmed.length >= (minLength ?? 1);
   const sameAsLast = lastSearched !== null && trimmed.toLowerCase() === lastSearched;
-  const canSearch = ready && !loading && !cooldown && !sameAsLast;
+  const canSearch = ready && !loading && !sameAsLast;
 
   // A busca só chama a API quando o jogador pede (botão ou Enter), não a cada tecla.
   const handleSearch = async (event) => {
@@ -233,10 +230,6 @@ function PlayerSearch({ apiUrl, session, minLength, canChallenge, onSessionExpir
 
       const data = await response.json().catch(() => ({}));
       if (!mounted.current) return;
-
-      if (response.status === 429 && data.retryAfterSeconds) {
-        setCooldown({ seconds: data.retryAfterSeconds, since: Date.now() });
-      }
 
       if (!response.ok) {
         setResult(null);
@@ -272,18 +265,7 @@ function PlayerSearch({ apiUrl, session, minLength, canChallenge, onSessionExpir
           />
         </label>
         <button type="submit" className="auth-submit" disabled={!canSearch}>
-          {cooldown ? (
-            <Countdown
-              seconds={cooldown.seconds}
-              since={cooldown.since}
-              prefix="Wait "
-              onExpire={() => setCooldown(null)}
-            />
-          ) : loading ? (
-            "Searching..."
-          ) : (
-            "Search"
-          )}
+          {loading ? "Searching..." : "Search"}
         </button>
       </form>
 

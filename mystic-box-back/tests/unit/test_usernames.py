@@ -8,7 +8,6 @@ from mystic_shared import usernames
 from get_profile import app as get_profile
 from search_users import app as search_users
 from set_username import app as set_username
-from tests.unit.fake_dynamo import FakeDynamo
 
 NOW = 1_800_000_000
 DAY = 24 * 60 * 60
@@ -297,82 +296,3 @@ def test_search_without_results(authenticated_event, search_client):
 
     assert data["players"] == []
     search_client.batch_get_item.assert_not_called()
-
-
-# ---------- limite de buscas ----------
-
-
-def test_search_window():
-    window = usernames.SEARCH_RATE_LIMIT_WINDOW_SECONDS
-    assert usernames.search_window(10 * window) == (10 * window, window)
-    assert usernames.search_window(10 * window + 15) == (10 * window, window - 15)
-
-
-@pytest.fixture()
-def rate_limited_search(monkeypatch):
-    """Busca com o limite numa DynamoDB em memória e o relógio controlado."""
-    fake = FakeDynamo({"limits": ("userId", None)})
-    monkeypatch.setattr(search_users, "SEARCH_RATE_LIMIT_TABLE", "limits")
-    clock = {"now": 1_000_000 * usernames.SEARCH_RATE_LIMIT_WINDOW_SECONDS}
-    monkeypatch.setattr(search_users.time, "time", lambda: clock["now"])
-    return fake, clock
-
-
-def with_fake_limits(search_client, fake):
-    search_client.update_item.side_effect = fake.update_item
-
-
-def test_search_rate_limit(authenticated_event, search_client, rate_limited_search):
-    fake, clock = rate_limited_search
-    with_fake_limits(search_client, fake)
-    limit = usernames.SEARCH_RATE_LIMIT_MAX
-
-    for _ in range(limit):
-        assert search(authenticated_event, "lyr")["statusCode"] == 200
-
-    clock["now"] += 20
-    ret = search(authenticated_event, "lyr")
-    data = json.loads(ret["body"])
-    assert ret["statusCode"] == 429
-    assert data["retryAfterSeconds"] == usernames.SEARCH_RATE_LIMIT_WINDOW_SECONDS - 20
-    # A busca bloqueada não chega a consultar o índice.
-    assert search_client.query.call_count == limit
-
-
-def test_search_rate_limit_resets_next_window(
-    authenticated_event, search_client, rate_limited_search
-):
-    fake, clock = rate_limited_search
-    with_fake_limits(search_client, fake)
-    for _ in range(usernames.SEARCH_RATE_LIMIT_MAX):
-        search(authenticated_event, "lyr")
-    assert search(authenticated_event, "lyr")["statusCode"] == 429
-
-    clock["now"] += usernames.SEARCH_RATE_LIMIT_WINDOW_SECONDS
-    assert search(authenticated_event, "lyr")["statusCode"] == 200
-    item = fake.tables["limits"][("user-123", None)]
-    assert item["searches"] == {"N": "1"}
-
-
-def test_search_rate_limit_is_per_user(
-    authenticated_event, search_client, rate_limited_search
-):
-    fake, _ = rate_limited_search
-    with_fake_limits(search_client, fake)
-    for _ in range(usernames.SEARCH_RATE_LIMIT_MAX):
-        search(authenticated_event, "lyr")
-    assert search(authenticated_event, "lyr")["statusCode"] == 429
-
-    other = authenticated_event(
-        sub="user-456", httpMethod="GET", queryStringParameters={"q": "lyr"}
-    )
-    assert search_users.lambda_handler(other, "")["statusCode"] == 200
-
-
-def test_search_rejected_query_does_not_count(
-    authenticated_event, search_client, rate_limited_search
-):
-    fake, _ = rate_limited_search
-    with_fake_limits(search_client, fake)
-    search(authenticated_event, "a")
-    search_client.update_item.assert_not_called()
