@@ -282,6 +282,7 @@ def test_aether_siphon_steals_aether():
 def test_call_companion_summons_monster_that_strikes_each_turn():
     state, _ = new_battle(player=("liesel.jfif", "rowan.jfif", "brina.jfif"))
     summoner = unit(state, "p0")
+    summoner["hp"] = summoner["maxHp"]
     state["aether"]["player"] = 5
     state["acting"] = "p0"
     events = []

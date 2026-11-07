@@ -19,6 +19,8 @@ Tudo aqui é regra do jogo e fica SÓ no backend.
 
 import hashlib
 
+from .ascension import stat_multiplier
+
 STAT_KEYS = ("vitality", "might", "arcana", "bulwark", "resolve", "celerity", "fate")
 
 STAT_LABELS = {
@@ -72,7 +74,7 @@ ARCHETYPES = {
     "arcanist": {
         "label": "Arcanist",
         "description": "Wielder of raw elements, fragile but devastating.",
-        "base": {"vitality": 86, "might": 8, "arcana": 33, "bulwark": 10,
+        "base": {"vitality": 92, "might": 8, "arcana": 33, "bulwark": 12,
                  "resolve": 19, "celerity": 12, "fate": 9},
     },
     "mystic": {
@@ -84,14 +86,14 @@ ARCHETYPES = {
     "trickster": {
         "label": "Trickster",
         "description": "Cunning schemer who curses foes and steals Aether.",
-        "base": {"vitality": 92, "might": 20, "arcana": 20, "bulwark": 12,
+        "base": {"vitality": 92, "might": 25, "arcana": 25, "bulwark": 12,
                  "resolve": 14, "celerity": 18, "fate": 12},
     },
     "summoner": {
         "label": "Summoner",
         "description": "Fights beside a bonded monster that keeps striking foes.",
-        "base": {"vitality": 100, "might": 18, "arcana": 22, "bulwark": 13,
-                 "resolve": 16, "celerity": 13, "fate": 9},
+        "base": {"vitality": 100, "might": 24, "arcana": 27, "bulwark": 15,
+                 "resolve": 18, "celerity": 13, "fate": 9},
     },
 }
 
@@ -123,11 +125,11 @@ def level_multiplier(level):
     return 1 + LEVEL_STAT_BONUS * (max(1, int(level)) - 1)
 
 
-def battle_stats(character, level=1):
-    """Atributos de batalha da carta para um combatente no nível `level`."""
+def battle_stats(character, level=1, ascension=0):
+    """Atributos de batalha da carta no nível `level` e na ascensão `ascension`."""
     archetype = ARCHETYPES[character["archetype"]]
     rarity = character["rarity"]
-    scale = RARITY_SCALE[rarity] * level_multiplier(level)
+    scale = RARITY_SCALE[rarity] * level_multiplier(level) * stat_multiplier(ascension)
     stats = {}
 
     for stat in STAT_KEYS:
@@ -153,7 +155,7 @@ def element_multiplier(attacker_element, defender_element):
     return 1.0
 
 
-def public_battle_profile(character, level=1):
+def public_battle_profile(character, level=1, ascension=0):
     """Elemento, arquétipo e atributos da carta, para exibir ao jogador."""
     element = ELEMENTS[character["element"]]
     archetype = ARCHETYPES[character["archetype"]]
@@ -164,5 +166,5 @@ def public_battle_profile(character, level=1):
         "archetype": character["archetype"],
         "archetypeLabel": archetype["label"],
         "archetypeDescription": archetype["description"],
-        "stats": battle_stats(character, level),
+        "stats": battle_stats(character, level, ascension),
     }

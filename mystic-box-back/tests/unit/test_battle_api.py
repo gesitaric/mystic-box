@@ -17,7 +17,7 @@ class FakeDynamo:
 
     def __init__(self):
         self.tables = {"battles": {}, "cards": [], "progress": {}, "wallet": {},
-                       "pvp_players": {}}
+                       "pvp_players": {}, "ascensions": []}
         self.fail_progress_condition = 0
 
     # --- leitura
@@ -27,6 +27,12 @@ class FakeDynamo:
 
     def query(self, TableName, ExpressionAttributeValues, **_):
         user_id = ExpressionAttributeValues[":userId"]["S"]
+        if TableName == "ascensions":
+            return {"Items": [
+                {"file_name": {"S": row["file_name"]}, "ascension": {"N": str(row["ascension"])}}
+                for row in self.tables["ascensions"]
+                if row["userId"] == user_id
+            ]}
         items = [
             {"file_name": {"S": card["file_name"]}}
             for card in self.tables[TableName]
@@ -99,6 +105,7 @@ def db(monkeypatch):
     monkeypatch.setattr(get_battle, "PVP_PLAYERS_TABLE", "pvp_players")
     monkeypatch.setattr(play_battle, "USER_CARDS_TABLE", "cards")
     monkeypatch.setattr(play_battle, "USER_WALLET_TABLE", "wallet")
+    monkeypatch.setattr(play_battle, "CARD_ASCENSIONS_TABLE", "ascensions")
     monkeypatch.setattr(play_battle, "new_rng", lambda: random.Random(42))
     return fake
 
@@ -157,6 +164,20 @@ def test_start_battle(authenticated_event, db):
     assert data["events"] and data["result"] is None
     assert db.tables["battles"][USER]["version"]["N"] == "1"
     assert stored_state(db)["battleId"] == view["battleId"]
+
+
+def test_start_battle_uses_server_ascension(authenticated_event, db):
+    db.tables["ascensions"] = [{"userId": USER, "file_name": TEAM[0], "ascension": 3}]
+    body = {"team": TEAM, "difficulty": "novice", "ascension": {TEAM[1]: 3}}
+    status, data = call(play_battle, start_event(authenticated_event, body))
+
+    assert status == 201
+    player = {u["fileName"]: u for u in data["battle"]["units"] if u["side"] == "player"}
+    assert player[TEAM[0]]["ascension"] == 3
+    # Ascensão enviada pelo cliente é ignorada.
+    assert player[TEAM[1]]["ascension"] == 0
+    # Rowan (3★) na ascensão máxima aprende a segunda habilidade do arquétipo.
+    assert [s["id"] for s in player[TEAM[0]]["skills"]][-1] == "tremor_slam"
 
 
 def test_start_battle_ignores_client_stats(authenticated_event, db):

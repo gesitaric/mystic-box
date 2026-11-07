@@ -138,7 +138,10 @@ function BattleUnit({ unit, hp, alive, active, acting, targetable, inspected, fl
         <span className="battle-unit-element" title={unit.elementLabel}>
           {element?.icon}
         </span>
-        <span className="battle-unit-level">Lv {unit.level}</span>
+        <span className="battle-unit-level">
+          Lv {unit.level}
+          {unit.ascension > 0 && ` ${"✴".repeat(unit.ascension)}`}
+        </span>
       </div>
       <div className="battle-unit-body">
         <span className="battle-unit-name">{unit.name}</span>
@@ -1069,6 +1072,7 @@ function BattleScreen({
             <span className="battle-inspect-sub">
               {ELEMENT_STYLE[inspectedUnit.element]?.icon} {inspectedUnit.elementLabel} ·{" "}
               {inspectedUnit.archetypeLabel} · Lv {inspectedUnit.level}
+              {inspectedUnit.ascension > 0 && ` · Ascension ${inspectedUnit.ascension}`}
             </span>
           </h2>
           {view.elementRiders?.[inspectedUnit.element] && (

@@ -1,12 +1,12 @@
 """Regras do jogo explicadas ao jogador (tela de ajuda / Grimório).
 
 Monta, a partir das constantes de `cards.py`, `stats.py`, `battle.py`,
-`pvp.py` e `progression.py`, tudo que a tela de regras mostra: chances do sorteio,
+`pvp.py`, `progression.py` e `ascension.py`, tudo que a tela de regras mostra: chances do sorteio,
 limites do mercado, curva de nível e as regras da batalha. Nada aqui é copiado: mudar uma
 regra nesses módulos muda o que o jogador lê.
 """
 
-from . import battle, cards, progression, pvp, stats
+from . import ascension, battle, cards, progression, pvp, stats
 
 RARITIES = (5, 4, 3)
 
@@ -125,6 +125,7 @@ def _battle_rules():
             "defenseConstant": battle.DEFENSE_CONSTANT,
             "variancePercent": _percent(battle.DAMAGE_VARIANCE),
             "criticalMultiplier": battle.CRIT_MULTIPLIER,
+            "hybridPowerPercent": _percent(battle.HYBRID_POWER_RATIO),
             "maxFate": stats.MAX_FATE,
         },
         "stats": [
@@ -174,6 +175,31 @@ def _battle_rules():
     }
 
 
+def _ascension_rules():
+    return {
+        "maxLevel": ascension.MAX_ASCENSION,
+        "statBonusPercent": _percent(ascension.ASCENSION_STAT_BONUS),
+        "skillUnlockLevel": ascension.SKILL_UNLOCK_ASCENSION,
+        "levels": [
+            {
+                "level": level,
+                "copies": cost,
+                "statBonusPercent": _percent(ascension.ASCENSION_STAT_BONUS * level),
+                "unlocksSkill": level == ascension.SKILL_UNLOCK_ASCENSION,
+            }
+            for level, cost in sorted(ascension.ASCENSION_COSTS.items())
+        ],
+        "skillsByRarity": [
+            {
+                "rarity": rarity,
+                "base": battle.archetype_skill_count(rarity),
+                "ascended": battle.archetype_skill_count(rarity, ascension.MAX_ASCENSION),
+            }
+            for rarity in RARITIES
+        ],
+    }
+
+
 def public_rules(cooldown_seconds, token_ttl_seconds):
     """Todas as regras que o jogador pode consultar, com os valores atuais."""
     return {
@@ -188,5 +214,6 @@ def public_rules(cooldown_seconds, token_ttl_seconds):
         "shop": _shop_rules(),
         "progression": _progression_rules(),
         "battle": _battle_rules(),
+        "ascension": _ascension_rules(),
         "pvp": pvp.public_rules(),
     }
