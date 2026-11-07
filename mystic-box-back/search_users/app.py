@@ -1,5 +1,6 @@
 import json
 import os
+import time
 
 import boto3
 from botocore.exceptions import ClientError
@@ -8,7 +9,10 @@ from mystic_shared.usernames import (
     SEARCH_MAX_RESULTS,
     SEARCH_MIN_LENGTH,
     SEARCH_PARTITION,
+    SEARCH_RATE_LIMIT_MAX,
+    SEARCH_RATE_LIMIT_WINDOW_SECONDS,
     normalize_search,
+    search_window,
 )
 
 CORS_HEADERS = {
@@ -19,6 +23,7 @@ CORS_HEADERS = {
 
 USER_PROFILES_TABLE = os.environ.get("USER_PROFILES_TABLE")
 USER_PROGRESS_TABLE = os.environ.get("USER_PROGRESS_TABLE")
+SEARCH_RATE_LIMIT_TABLE = os.environ.get("SEARCH_RATE_LIMIT_TABLE")
 USERNAME_SEARCH_INDEX = "UsernameSearchIndex"
 
 # Criado uma vez por container e reaproveitado entre invocações.
@@ -47,6 +52,61 @@ def get_user_id(event):
         .get("claims", {})
     )
     return claims.get("sub")
+
+
+def _is_condition_failure(error):
+    return error.response.get("Error", {}).get("Code") == "ConditionalCheckFailedException"
+
+
+def consume_search(user_id, now):
+    """Conta uma busca na janela atual do jogador.
+
+    Devolve 0 se a busca pode seguir ou os segundos até a próxima janela se o
+    limite foi atingido. Cada passo é uma gravação condicional, então buscas
+    simultâneas não passam do limite.
+    """
+    window_start, retry_after = search_window(now)
+    key = {"userId": {"S": user_id}}
+    names = {"#searches": "searches"}
+    values = {":window": {"N": str(window_start)}, ":one": {"N": "1"}}
+
+    def increment():
+        get_client().update_item(
+            TableName=SEARCH_RATE_LIMIT_TABLE,
+            Key=key,
+            UpdateExpression="ADD #searches :one",
+            ConditionExpression="windowStart = :window AND #searches < :max",
+            ExpressionAttributeNames=names,
+            ExpressionAttributeValues={
+                **values,
+                ":max": {"N": str(SEARCH_RATE_LIMIT_MAX)},
+            },
+        )
+
+    def start_window():
+        get_client().update_item(
+            TableName=SEARCH_RATE_LIMIT_TABLE,
+            Key=key,
+            UpdateExpression="SET windowStart = :window, #searches = :one, expiresAt = :expires",
+            ConditionExpression="attribute_not_exists(userId) OR windowStart < :window",
+            ExpressionAttributeNames=names,
+            ExpressionAttributeValues={
+                **values,
+                ":expires": {"N": str(window_start + 2 * SEARCH_RATE_LIMIT_WINDOW_SECONDS)},
+            },
+        )
+
+    # Janela atual com espaço -> conta; janela vencida ou sem registro -> abre
+    # uma nova; se outra busca abriu a janela no meio do caminho, tenta contar
+    # de novo. Se nada deu certo, o limite da janela foi atingido.
+    for step in (increment, start_window, increment):
+        try:
+            step()
+            return 0
+        except ClientError as error:
+            if not _is_condition_failure(error):
+                raise
+    return retry_after
 
 
 def get_levels(user_ids):
@@ -89,6 +149,23 @@ def lambda_handler(event, context):
                     f"Type at least {SEARCH_MIN_LENGTH} characters "
                     "(letters, numbers or _) to search."
                 )
+            },
+        )
+
+    try:
+        retry_after = consume_search(user_id, time.time())
+    except ClientError:
+        return response(500, {"message": "Could not search for players."})
+    if retry_after:
+        return response(
+            429,
+            {
+                "message": (
+                    f"Too many searches. You can search {SEARCH_RATE_LIMIT_MAX} times "
+                    f"every {SEARCH_RATE_LIMIT_WINDOW_SECONDS} seconds. "
+                    f"Try again in {retry_after} seconds."
+                ),
+                "retryAfterSeconds": retry_after,
             },
         )
 

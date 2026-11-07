@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import Modal from "./Modal";
+import Countdown from "./Countdown";
 
 const TABS = [
   { value: "name", label: "Your name" },
@@ -192,6 +193,10 @@ function PlayerSearch({ apiUrl, session, minLength, canChallenge, onSessionExpir
   const [result, setResult] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  // Nome da última busca feita: buscar de novo o mesmo nome não chama a API.
+  const [lastSearched, setLastSearched] = useState(null);
+  // Espera pedida pelo servidor (limite de buscas): { seconds, since }.
+  const [cooldown, setCooldown] = useState(null);
   const mounted = useRef(true);
 
   useEffect(() => {
@@ -203,11 +208,13 @@ function PlayerSearch({ apiUrl, session, minLength, canChallenge, onSessionExpir
 
   const trimmed = query.trim();
   const ready = trimmed.length >= (minLength ?? 1);
+  const sameAsLast = lastSearched !== null && trimmed.toLowerCase() === lastSearched;
+  const canSearch = ready && !loading && !cooldown && !sameAsLast;
 
   // A busca só chama a API quando o jogador pede (botão ou Enter), não a cada tecla.
   const handleSearch = async (event) => {
     event.preventDefault();
-    if (!ready || loading) return;
+    if (!canSearch) return;
 
     setLoading(true);
     setError("");
@@ -227,13 +234,19 @@ function PlayerSearch({ apiUrl, session, minLength, canChallenge, onSessionExpir
       const data = await response.json().catch(() => ({}));
       if (!mounted.current) return;
 
+      if (response.status === 429 && data.retryAfterSeconds) {
+        setCooldown({ seconds: data.retryAfterSeconds, since: Date.now() });
+      }
+
       if (!response.ok) {
         setResult(null);
+        setLastSearched(null);
         setError(data.message ?? "Could not search for players.");
         return;
       }
 
       setResult(data);
+      setLastSearched(trimmed.toLowerCase());
     } catch (searchError) {
       console.error(searchError);
       if (mounted.current) setError("Could not search for players.");
@@ -258,8 +271,19 @@ function PlayerSearch({ apiUrl, session, minLength, canChallenge, onSessionExpir
             spellCheck={false}
           />
         </label>
-        <button type="submit" className="auth-submit" disabled={!ready || loading}>
-          {loading ? "Searching..." : "Search"}
+        <button type="submit" className="auth-submit" disabled={!canSearch}>
+          {cooldown ? (
+            <Countdown
+              seconds={cooldown.seconds}
+              since={cooldown.since}
+              prefix="Wait "
+              onExpire={() => setCooldown(null)}
+            />
+          ) : loading ? (
+            "Searching..."
+          ) : (
+            "Search"
+          )}
         </button>
       </form>
 

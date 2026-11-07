@@ -144,6 +144,22 @@ Resources:
       - AttributeName: usernameLower
         KeyType: HASH
 
+  # Limite de buscas de jogadores: quantas buscas cada jogador fez na janela
+  # atual (ver SEARCH_RATE_LIMIT_* em usernames.py). Somem pelo TTL.
+  SearchRateLimitTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+      - AttributeName: userId
+        AttributeType: S
+      KeySchema:
+      - AttributeName: userId
+        KeyType: HASH
+      TimeToLiveSpecification:
+        AttributeName: expiresAt
+        Enabled: true
+
   # Batalha de cada jogador contra o computador (uma por vez). O estado fica
   # em JSON e some sozinho pelo TTL um dia depois da última ação.
   BattlesTable:
@@ -676,11 +692,14 @@ Resources:
         Variables:
           USER_PROFILES_TABLE: !Ref UserProfilesTable
           USER_PROGRESS_TABLE: !Ref UserProgressTable
+          SEARCH_RATE_LIMIT_TABLE: !Ref SearchRateLimitTable
       Policies:
       - DynamoDBReadPolicy:
           TableName: !Ref UserProfilesTable
       - DynamoDBReadPolicy:
           TableName: !Ref UserProgressTable
+      - DynamoDBCrudPolicy:
+          TableName: !Ref SearchRateLimitTable
       Events:
         SearchUsers:
           Type: Api

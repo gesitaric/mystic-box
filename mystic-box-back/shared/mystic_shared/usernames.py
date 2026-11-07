@@ -23,6 +23,11 @@ USERNAME_CHANGE_COOLDOWN_SECONDS = USERNAME_CHANGE_COOLDOWN_DAYS * 24 * 60 * 60
 SEARCH_MIN_LENGTH = 2
 SEARCH_MAX_RESULTS = 20
 
+# Limite de buscas por jogador: no máximo SEARCH_RATE_LIMIT_MAX buscas em
+# cada janela fixa de SEARCH_RATE_LIMIT_WINDOW_SECONDS segundos.
+SEARCH_RATE_LIMIT_MAX = 10
+SEARCH_RATE_LIMIT_WINDOW_SECONDS = 60
+
 # Chave de partição fixa do índice de busca (todos os nomes no mesmo índice,
 # ordenados pelo nome em minúsculas).
 SEARCH_PARTITION = "USERNAME"
@@ -60,6 +65,13 @@ def normalize_search(value):
     return normalize(query)
 
 
+def search_window(now):
+    """Início da janela de limite de buscas e segundos até a próxima."""
+    now = int(now)
+    start = now - now % SEARCH_RATE_LIMIT_WINDOW_SECONDS
+    return start, start + SEARCH_RATE_LIMIT_WINDOW_SECONDS - now
+
+
 def change_status(changed_at, now):
     """Se o nome pode ser trocado agora e quanto falta, a partir da última troca."""
     if changed_at is None:
@@ -81,4 +93,8 @@ def public_rules():
         "allowed": USERNAME_ALLOWED_DESCRIPTION,
         "changeCooldownDays": USERNAME_CHANGE_COOLDOWN_DAYS,
         "searchMinLength": SEARCH_MIN_LENGTH,
+        "searchRateLimit": {
+            "maxSearches": SEARCH_RATE_LIMIT_MAX,
+            "windowSeconds": SEARCH_RATE_LIMIT_WINDOW_SECONDS,
+        },
     }
