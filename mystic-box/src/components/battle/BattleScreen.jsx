@@ -382,6 +382,9 @@ function BattleScreen({
         case "aether":
           sfx.siphon();
           break;
+        case "companion":
+          sfx.cast(unitsById[event.actor]?.element, true);
+          break;
         case "turn":
           actorSide = null;
           break;
@@ -450,6 +453,10 @@ function BattleScreen({
           break;
         case "stunned":
           addFloat(event.target, "Stunned", "status");
+          break;
+        case "companion":
+          setActingId(event.actor);
+          addFloat(event.actor, STATUS_ICON.companion, "skill");
           break;
         case "status":
           addFloat(event.target, STATUS_ICON[event.status] ?? "•", "status");

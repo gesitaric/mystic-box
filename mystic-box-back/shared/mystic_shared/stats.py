@@ -42,11 +42,12 @@ STAT_DESCRIPTIONS = {
 }
 
 # Ciclo de afinidades: cada elemento domina o seguinte
-# (ember > gale > terra > tide > ember). Lumen e umbra dominam um ao outro.
+# (ember > gale > terra > volt > tide > ember). Lumen e umbra dominam um ao outro.
 ELEMENTS = {
     "ember": {"label": "Ember", "strong_against": ("gale",)},
     "gale": {"label": "Gale", "strong_against": ("terra",)},
-    "terra": {"label": "Terra", "strong_against": ("tide",)},
+    "terra": {"label": "Terra", "strong_against": ("volt",)},
+    "volt": {"label": "Volt", "strong_against": ("tide",)},
     "tide": {"label": "Tide", "strong_against": ("ember",)},
     "lumen": {"label": "Lumen", "strong_against": ("umbra",)},
     "umbra": {"label": "Umbra", "strong_against": ("lumen",)},
@@ -85,6 +86,12 @@ ARCHETYPES = {
         "description": "Cunning schemer who curses foes and steals Aether.",
         "base": {"vitality": 92, "might": 20, "arcana": 20, "bulwark": 12,
                  "resolve": 14, "celerity": 18, "fate": 12},
+    },
+    "summoner": {
+        "label": "Summoner",
+        "description": "Fights beside a bonded monster that keeps striking foes.",
+        "base": {"vitality": 100, "might": 18, "arcana": 22, "bulwark": 13,
+                 "resolve": 16, "celerity": 13, "fate": 9},
     },
 }
 

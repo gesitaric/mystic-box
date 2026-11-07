@@ -28,6 +28,10 @@ CHARACTERS = [
     {"name": "Uriel", "rarity": 5, "file_name": "uriel.jfif", "element": "lumen", "archetype": "vanguard"},
     {"name": "Celestine", "rarity": 5, "file_name": "celestine.png", "element": "tide", "archetype": "arcanist"},
     {"name": "Lyra", "rarity": 5, "file_name": "lyra.png", "element": "gale", "archetype": "trickster"},
+    {"name": "Zarathor", "rarity": 5, "file_name": "zarathor.jfif", "element": "umbra", "archetype": "summoner"},
+    {"name": "Vaelora", "rarity": 5, "file_name": "vaelora.jfif", "element": "gale", "archetype": "summoner"},
+    {"name": "Draemir", "rarity": 5, "file_name": "draemir.jfif", "element": "lumen", "archetype": "duelist"},
+    {"name": "Kyrielle", "rarity": 5, "file_name": "kyrielle.jfif", "element": "volt", "archetype": "summoner"},
     {"name": "Kaito", "rarity": 4, "file_name": "kaito.jfif", "element": "gale", "archetype": "duelist"},
     {"name": "Solara", "rarity": 4, "file_name": "solara.jfif", "element": "ember", "archetype": "arcanist"},
     {"name": "Aurelius", "rarity": 4, "file_name": "aurelius.jfif", "element": "lumen", "archetype": "vanguard"},
@@ -54,6 +58,13 @@ CHARACTERS = [
     {"name": "Eldric", "rarity": 4, "file_name": "eldric.png", "element": "terra", "archetype": "arcanist"},
     {"name": "Ravenna", "rarity": 4, "file_name": "ravenna.png", "element": "umbra", "archetype": "trickster"},
     {"name": "Cassius", "rarity": 4, "file_name": "cassius.png", "element": "terra", "archetype": "vanguard"},
+    {"name": "Nyra", "rarity": 4, "file_name": "nyra.jfif", "element": "umbra", "archetype": "duelist"},
+    {"name": "Dorian", "rarity": 4, "file_name": "dorian.jfif", "element": "volt", "archetype": "vanguard"},
+    {"name": "Grizelda", "rarity": 4, "file_name": "grizelda.jfif", "element": "terra", "archetype": "summoner"},
+    {"name": "Ophira", "rarity": 4, "file_name": "ophira.jfif", "element": "volt", "archetype": "arcanist"},
+    {"name": "Verdana", "rarity": 4, "file_name": "verdana.jfif", "element": "terra", "archetype": "mystic"},
+    {"name": "Tavik", "rarity": 4, "file_name": "tavik.jfif", "element": "volt", "archetype": "summoner"},
+    {"name": "Lucan", "rarity": 4, "file_name": "lucan.jfif", "element": "umbra", "archetype": "trickster"},
     {"name": "Rowan", "rarity": 3, "file_name": "rowan.jfif", "element": "terra", "archetype": "vanguard"},
     {"name": "Corvus", "rarity": 3, "file_name": "corvus.jfif", "element": "umbra", "archetype": "trickster"},
     {"name": "Tobin", "rarity": 3, "file_name": "tobin.jfif", "element": "terra", "archetype": "duelist"},
@@ -66,6 +77,11 @@ CHARACTERS = [
     {"name": "Kael", "rarity": 3, "file_name": "kael.jfif", "element": "ember", "archetype": "duelist"},
     {"name": "Vexa", "rarity": 3, "file_name": "vexa.jfif", "element": "gale", "archetype": "trickster"},
     {"name": "Torvin", "rarity": 3, "file_name": "torvin.jfif", "element": "terra", "archetype": "vanguard"},
+    {"name": "Annelise", "rarity": 3, "file_name": "annelise.jfif", "element": "lumen", "archetype": "mystic"},
+    {"name": "Brannoc", "rarity": 3, "file_name": "brannoc.jfif", "element": "terra", "archetype": "vanguard"},
+    {"name": "Ryuji", "rarity": 3, "file_name": "ryuji.jfif", "element": "gale", "archetype": "duelist"},
+    {"name": "Liesel", "rarity": 3, "file_name": "liesel.jfif", "element": "ember", "archetype": "summoner"},
+    {"name": "Wren", "rarity": 3, "file_name": "wren.jfif", "element": "tide", "archetype": "summoner"},
 ]
 
 _BY_FILE_NAME = {character["file_name"]: character for character in CHARACTERS}
@@ -89,12 +105,13 @@ MAX_LISTING_QUANTITY = 10
 MAX_ACTIVE_LISTINGS = 30
 
 # Pesos por carta: ao mudar a quantidade de cartas de cada raridade, revise-os
-# para manter a chance total de cada raridade (hoje ~4,5% 5★, ~44% 4★, ~51% 3★).
-RARITY_WEIGHTS = {5: 3, 4: 16, 3: 40}
+# para manter a chance total de cada raridade (hoje ~4,5% 5★, ~44% 4★, ~51% 3★,
+# com 18 cartas 5★, 33 4★ e 17 3★).
+RARITY_WEIGHTS = {5: 7, 4: 38, 3: 85}
 
 # A última carta da invocação tem chances um pouco maiores de ser rara
 # (~8,5% 5★, ~50% 4★, ~42% 3★).
-LAST_CARD_RARITY_WEIGHTS = {5: 7, 4: 22, 3: 40}
+LAST_CARD_RARITY_WEIGHTS = {5: 16, 4: 51, 3: 83}
 
 
 def get_character(file_name):
