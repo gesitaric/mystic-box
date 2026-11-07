@@ -1,12 +1,10 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Modal from "./Modal";
 
 const TABS = [
   { value: "name", label: "Your name" },
   { value: "search", label: "Find players" },
 ];
-
-const SEARCH_DEBOUNCE_MS = 350;
 
 function formatDate(epochSeconds) {
   return new Date(epochSeconds * 1000).toLocaleDateString(undefined, {
@@ -194,83 +192,90 @@ function PlayerSearch({ apiUrl, session, minLength, canChallenge, onSessionExpir
   const [result, setResult] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  // Nome da última busca feita: buscar de novo o mesmo nome não chama a API.
+  const [lastSearched, setLastSearched] = useState(null);
+  const mounted = useRef(true);
+
+  useEffect(() => {
+    mounted.current = true;
+    return () => {
+      mounted.current = false;
+    };
+  }, []);
 
   const trimmed = query.trim();
   const ready = trimmed.length >= (minLength ?? 1);
+  const sameAsLast = lastSearched !== null && trimmed.toLowerCase() === lastSearched;
+  const canSearch = ready && !loading && !sameAsLast;
 
-  useEffect(() => {
-    if (!ready) return undefined;
+  // A busca só chama a API quando o jogador pede (botão ou Enter), não a cada tecla.
+  const handleSearch = async (event) => {
+    event.preventDefault();
+    if (!canSearch) return;
 
-    let cancelled = false;
-    const timer = setTimeout(async () => {
-      setLoading(true);
-      setError("");
+    setLoading(true);
+    setError("");
 
-      try {
-        const token = session.session.getIdToken().getJwtToken();
-        const response = await fetch(
-          `${apiUrl}/users/search?q=${encodeURIComponent(trimmed)}`,
-          { headers: { Authorization: token } }
-        );
+    try {
+      const token = session.session.getIdToken().getJwtToken();
+      const response = await fetch(
+        `${apiUrl}/users/search?q=${encodeURIComponent(trimmed)}`,
+        { headers: { Authorization: token } }
+      );
 
-        if (response.status === 401) {
-          onSessionExpired();
-          return;
-        }
-
-        const data = await response.json().catch(() => ({}));
-        if (cancelled) return;
-
-        if (!response.ok) {
-          setResult(null);
-          setError(data.message ?? "Could not search for players.");
-          return;
-        }
-
-        setResult(data);
-      } catch (searchError) {
-        console.error(searchError);
-        if (!cancelled) setError("Could not search for players.");
-      } finally {
-        if (!cancelled) setLoading(false);
+      if (response.status === 401) {
+        onSessionExpired();
+        return;
       }
-    }, SEARCH_DEBOUNCE_MS);
 
-    return () => {
-      cancelled = true;
-      clearTimeout(timer);
-    };
-  }, [apiUrl, session, onSessionExpired, trimmed, ready]);
+      const data = await response.json().catch(() => ({}));
+      if (!mounted.current) return;
 
-  const players = ready ? result?.players ?? [] : [];
+      if (!response.ok) {
+        setResult(null);
+        setLastSearched(null);
+        setError(data.message ?? "Could not search for players.");
+        return;
+      }
+
+      setResult(data);
+      setLastSearched(trimmed.toLowerCase());
+    } catch (searchError) {
+      console.error(searchError);
+      if (mounted.current) setError("Could not search for players.");
+    } finally {
+      if (mounted.current) setLoading(false);
+    }
+  };
+
+  const players = result?.players ?? [];
 
   return (
     <div className="player-search">
-      <label className="auth-field">
-        <span>Player name</span>
-        <input
-          type="search"
-          value={query}
-          onChange={(event) => setQuery(event.target.value)}
-          placeholder="Start typing a name..."
-          autoComplete="off"
-          spellCheck={false}
-        />
-      </label>
+      <form className="player-search-form" onSubmit={handleSearch}>
+        <label className="auth-field">
+          <span>Player name</span>
+          <input
+            type="search"
+            value={query}
+            onChange={(event) => setQuery(event.target.value)}
+            placeholder="Type a name..."
+            autoComplete="off"
+            spellCheck={false}
+          />
+        </label>
+        <button type="submit" className="auth-submit" disabled={!canSearch}>
+          {loading ? "Searching..." : "Search"}
+        </button>
+      </form>
 
       {!ready && minLength && (
         <p className="auth-hint">Type at least {minLength} characters.</p>
       )}
 
-      {ready && error && <p className="auth-error">{error}</p>}
+      {error && <p className="auth-error">{error}</p>}
 
-      {ready && !error && loading && players.length === 0 && (
-        <p className="collection-status" role="status">
-          Searching...
-        </p>
-      )}
-
-      {ready && !error && !loading && result && players.length === 0 && (
+      {!error && !loading && result && players.length === 0 && (
         <p className="collection-status" role="status">
           No players found.
         </p>

@@ -1,9 +1,7 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import TeamSetup from "./TeamSetup";
 import { SessionExpired } from "./arenaApi";
 import Countdown from "../Countdown";
-
-const SEARCH_DEBOUNCE_MS = 350;
 
 function LevelTag({ level }) {
   return (
@@ -20,38 +18,47 @@ function OpponentSearch({ request, selected, onSelect }) {
   const [result, setResult] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  // Nome da última busca feita: buscar de novo o mesmo nome não chama a API.
+  const [lastSearched, setLastSearched] = useState(null);
+  const mounted = useRef(true);
   const trimmed = query.trim();
+  const sameAsLast = lastSearched !== null && trimmed.toLowerCase() === lastSearched;
+  const canSearch = Boolean(trimmed) && !loading && !sameAsLast;
 
   useEffect(() => {
-    if (!trimmed) return undefined;
-    let cancelled = false;
-    const timer = setTimeout(async () => {
-      setLoading(true);
-      setError("");
-      try {
-        const { ok, data } = await request(`/users/search?q=${encodeURIComponent(trimmed)}`);
-        if (cancelled) return;
-        if (!ok) {
-          setResult(null);
-          setError(data.message ?? "Could not search for players.");
-          return;
-        }
-        setResult(data);
-      } catch (searchError) {
-        if (searchError instanceof SessionExpired || cancelled) return;
-        console.error(searchError);
-        setError("Could not search for players.");
-      } finally {
-        if (!cancelled) setLoading(false);
-      }
-    }, SEARCH_DEBOUNCE_MS);
+    mounted.current = true;
     return () => {
-      cancelled = true;
-      clearTimeout(timer);
+      mounted.current = false;
     };
-  }, [request, trimmed]);
+  }, []);
 
-  const players = trimmed ? (result?.players ?? []).filter((player) => !player.isYou) : [];
+  // A busca só chama a API quando o jogador pede (botão ou Enter), não a cada tecla.
+  const handleSearch = async (event) => {
+    event.preventDefault();
+    if (!canSearch) return;
+    setLoading(true);
+    setError("");
+    try {
+      const { ok, data } = await request(`/users/search?q=${encodeURIComponent(trimmed)}`);
+      if (!mounted.current) return;
+      if (!ok) {
+        setResult(null);
+        setLastSearched(null);
+        setError(data.message ?? "Could not search for players.");
+        return;
+      }
+      setResult(data);
+      setLastSearched(trimmed.toLowerCase());
+    } catch (searchError) {
+      if (searchError instanceof SessionExpired || !mounted.current) return;
+      console.error(searchError);
+      setError("Could not search for players.");
+    } finally {
+      if (mounted.current) setLoading(false);
+    }
+  };
+
+  const players = (result?.players ?? []).filter((player) => !player.isYou);
 
   return (
     <section className="battle-panel" aria-label="Opponent">
@@ -66,19 +73,24 @@ function OpponentSearch({ request, selected, onSelect }) {
         </div>
       ) : (
         <>
-          <label className="auth-field">
-            <span>Player name</span>
-            <input
-              type="search"
-              value={query}
-              onChange={(event) => setQuery(event.target.value)}
-              placeholder="Start typing a name..."
-              autoComplete="off"
-              spellCheck={false}
-            />
-          </label>
-          {trimmed && error && <p className="auth-error">{error}</p>}
-          {trimmed && !error && !loading && result && players.length === 0 && (
+          <form className="player-search-form" onSubmit={handleSearch}>
+            <label className="auth-field">
+              <span>Player name</span>
+              <input
+                type="search"
+                value={query}
+                onChange={(event) => setQuery(event.target.value)}
+                placeholder="Type a name..."
+                autoComplete="off"
+                spellCheck={false}
+              />
+            </label>
+            <button type="submit" className="auth-submit" disabled={!canSearch}>
+              {loading ? "Searching..." : "Search"}
+            </button>
+          </form>
+          {error && <p className="auth-error">{error}</p>}
+          {!error && !loading && result && players.length === 0 && (
             <p className="collection-status">No players found.</p>
           )}
           {players.length > 0 && (

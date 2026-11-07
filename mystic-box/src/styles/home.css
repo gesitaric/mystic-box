@@ -626,6 +626,27 @@
   gap: 10px;
 }
 
+.player-search-form {
+  display: flex;
+  align-items: flex-end;
+  gap: 10px;
+}
+
+.player-search-form .auth-field {
+  flex: 1;
+  min-width: 0;
+}
+
+.player-search-form .auth-submit {
+  flex-shrink: 0;
+  margin-top: 0;
+  padding: 12px 20px;
+}
+
+.player-search-form .auth-submit:disabled {
+  cursor: not-allowed;
+}
+
 .player-results {
   display: flex;
   flex-direction: column;

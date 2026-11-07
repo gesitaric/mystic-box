@@ -29,6 +29,23 @@ Resources:
         Authorizers:
           CognitoAuthorizer:
             UserPoolArn: !GetAtt UserPool.Arn
+      # Limite de requisições da busca de jogadores, somando todos os jogadores
+      # (token bucket do API Gateway: média por segundo e pico). Acima disso o
+      # API Gateway responde 429 sem chamar a Lambda.
+      MethodSettings:
+      - ResourcePath: "/~1users~1search"
+        HttpMethod: GET
+        ThrottlingRateLimit: 5
+        ThrottlingBurstLimit: 10
+      # Sem os cabeçalhos CORS o navegador não deixa o frontend ler o 429.
+      GatewayResponses:
+        THROTTLED:
+          ResponseParameters:
+            Headers:
+              Access-Control-Allow-Origin: "'*'"
+              Access-Control-Allow-Headers: "'Content-Type,Authorization'"
+          ResponseTemplates:
+            application/json: '{"message": "Too many requests. Please wait a moment and try again."}'
 
   CardsTable:
     Type: AWS::DynamoDB::Table
