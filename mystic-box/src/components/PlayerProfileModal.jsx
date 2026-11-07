@@ -187,7 +187,9 @@ function UsernameForm({ apiUrl, session, profile, onSessionExpired, onProfileCha
 }
 
 // Busca de jogadores pelo começo do nome. Validação e resultados são do servidor.
-function PlayerSearch({ apiUrl, session, minLength, onSessionExpired }) {
+// "Challenge" só abre a arena com o adversário escolhido; quem pode desafiar
+// quem (nome definido, limite de desafios etc.) é validado no servidor.
+function PlayerSearch({ apiUrl, session, minLength, canChallenge, onSessionExpired, onChallenge }) {
   const [query, setQuery] = useState("");
   const [result, setResult] = useState(null);
   const [loading, setLoading] = useState(false);
@@ -274,6 +276,10 @@ function PlayerSearch({ apiUrl, session, minLength, onSessionExpired }) {
         </p>
       )}
 
+      {players.length > 0 && onChallenge && !canChallenge && (
+        <p className="auth-hint">Choose a username (Your name tab) to challenge players.</p>
+      )}
+
       {players.length > 0 && (
         <ul className={`player-results${loading ? " is-loading" : ""}`} aria-busy={loading}>
           {players.map((player) => (
@@ -283,7 +289,20 @@ function PlayerSearch({ apiUrl, session, minLength, onSessionExpired }) {
                 {player.level}
               </span>
               <span className="player-result-name">{player.username}</span>
-              {player.isYou && <span className="player-result-you">You</span>}
+              {player.isYou ? (
+                <span className="player-result-you">You</span>
+              ) : (
+                onChallenge && (
+                  <button
+                    type="button"
+                    className="collection-sell-button is-confirm"
+                    disabled={!canChallenge}
+                    onClick={() => onChallenge(player)}
+                  >
+                    Challenge
+                  </button>
+                )
+              )}
             </li>
           ))}
         </ul>
@@ -300,6 +319,7 @@ function PlayerProfileModal({
   onClose,
   onSessionExpired,
   onProfileChange,
+  onChallenge,
 }) {
   const [tab, setTab] = useState(initialTab);
 
@@ -343,7 +363,9 @@ function PlayerProfileModal({
             apiUrl={apiUrl}
             session={session}
             minLength={profile?.usernameRules?.searchMinLength}
+            canChallenge={Boolean(profile?.username)}
             onSessionExpired={onSessionExpired}
+            onChallenge={onChallenge}
           />
         )}
       </div>

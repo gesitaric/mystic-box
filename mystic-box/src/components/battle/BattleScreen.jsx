@@ -813,6 +813,7 @@ function BattleScreen({
               initialChallenge={duelIntent?.challenge}
               cachedCards={rosterCards}
               onCardsLoaded={setRosterCards}
+              initialOpponent={duelIntent?.opponent}
               onTeamChosen={setLastTeam}
               onEnterDuel={enterDuel}
               onSessionExpired={onSessionExpired}

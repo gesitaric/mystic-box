@@ -118,6 +118,7 @@ function PvpLobby({
   initialChallenge,
   cachedCards,
   onCardsLoaded,
+  initialOpponent,
   onTeamChosen,
   onEnterDuel,
   onSessionExpired,
@@ -126,9 +127,11 @@ function PvpLobby({
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
   // list | challenge | accept
-  const [view, setView] = useState(
-    initialChallenge ? { name: "accept", challenge: initialChallenge } : { name: "list" }
-  );
+  const [view, setView] = useState(() => {
+    if (initialChallenge) return { name: "accept", challenge: initialChallenge };
+    if (initialOpponent) return { name: "challenge", opponent: initialOpponent };
+    return { name: "list" };
+  });
   const [refreshing, setRefreshing] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState("");

@@ -330,7 +330,8 @@ function App() {
   // tela inicial e quando o jogador abre/atualiza o sininho.
   const [duels, setDuels] = useState(null);
   const [duelsLoading, setDuelsLoading] = useState(false);
-  // Como a arena abre: null (normal) ou { challenge } vindo do sininho.
+  // Como a arena abre: null (normal), { challenge } vindo do sininho ou
+  // { opponent } vindo da busca de jogadores.
   const [duelIntent, setDuelIntent] = useState(null);
 
   const fetchDuels = useCallback(async (activeSession) => {
@@ -487,6 +488,11 @@ function App() {
   const closeCollection = useCallback(() => setCollectionOpen(false), []);
   const closeShop = useCallback(() => setShopOpen(false), []);
   const closePlayers = useCallback(() => setPlayersTab(null), []);
+  const challengePlayer = useCallback((opponent) => {
+    setPlayersTab(null);
+    setDuelIntent({ opponent: { username: opponent.username, level: opponent.level } });
+    setScreen("battle");
+  }, []);
 
   // Nome e tempo de espera devolvidos pelo servidor depois de uma troca.
   const handleProfileChange = useCallback((changes) => {
@@ -800,6 +806,7 @@ function App() {
           onClose={closePlayers}
           onSessionExpired={handleCollectionSessionExpired}
           onProfileChange={handleProfileChange}
+          onChallenge={challengePlayer}
         />
       )}
 
