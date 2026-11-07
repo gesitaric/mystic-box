@@ -341,7 +341,8 @@ function App() {
       const token = activeSession.session.getIdToken().getJwtToken();
       const response = await fetch(`${API_URL}/pvp`, { headers: { Authorization: token } });
       if (!response.ok) throw new Error(`Failed to fetch the duels (${response.status}).`);
-      setDuels(await response.json());
+      // receivedAt: base da contagem regressiva dos prazos devolvidos.
+      setDuels({ ...(await response.json()), receivedAt: Date.now() });
     } catch (duelsError) {
       console.error(duelsError);
     } finally {

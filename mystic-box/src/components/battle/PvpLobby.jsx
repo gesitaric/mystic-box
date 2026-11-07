@@ -1,13 +1,9 @@
 import { useCallback, useEffect, useState } from "react";
 import TeamSetup from "./TeamSetup";
 import { SessionExpired } from "./arenaApi";
+import Countdown from "../Countdown";
 
 const SEARCH_DEBOUNCE_MS = 350;
-
-function formatClock(seconds) {
-  const minutes = Math.floor(seconds / 60);
-  return `${minutes}:${String(seconds % 60).padStart(2, "0")}`;
-}
 
 function LevelTag({ level }) {
   return (
@@ -145,7 +141,8 @@ function PvpLobby({
         return;
       }
       setError("");
-      setLobby(data);
+      // receivedAt: base da contagem regressiva dos prazos devolvidos.
+      setLobby({ ...data, receivedAt: Date.now() });
       if (data.battle) onEnterDuel();
     } catch (loadError) {
       if (loadError instanceof SessionExpired) return;
@@ -183,7 +180,7 @@ function PvpLobby({
         return;
       }
       setNotice(
-        `Challenge sent to ${data.challenge.username}. Press Refresh to see if they accepted.`
+        `Challenge sent to ${data.challenge.username}. Press Refresh to see if they accepted before time runs out.`
       );
       setView({ name: "list" });
       void refresh();
@@ -338,7 +335,13 @@ function PvpLobby({
               <li key={entry.challengeId} className="player-result">
                 <LevelTag level={entry.level} />
                 <span className="player-result-name">{entry.username}</span>
-                <span className="pvp-expires">{formatClock(entry.expiresInSeconds)}</span>
+                <span className="pvp-expires">
+                  <Countdown
+                    seconds={entry.expiresInSeconds}
+                    since={lobby.receivedAt}
+                    onExpire={refresh}
+                  />
+                </span>
                 <span className="pvp-challenge-actions">
                   <button
                     type="button"
@@ -377,7 +380,12 @@ function PvpLobby({
                 <LevelTag level={entry.level} />
                 <span className="player-result-name">{entry.username}</span>
                 <span className="pvp-expires">
-                  Waiting · {formatClock(entry.expiresInSeconds)}
+                  <Countdown
+                    seconds={entry.expiresInSeconds}
+                    since={lobby.receivedAt}
+                    onExpire={refresh}
+                    prefix="Waiting · "
+                  />
                 </span>
                 <span className="pvp-challenge-actions">
                   <button

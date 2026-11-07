@@ -1,9 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-
-function formatClock(seconds) {
-  const minutes = Math.floor(seconds / 60);
-  return `${minutes}:${String(seconds % 60).padStart(2, "0")}`;
-}
+import Countdown from "./Countdown";
 
 // Sininho de desafios de duelo. Não consulta sozinho: a lista vem de quando a
 // tela inicial abriu e é atualizada ao abrir o sininho (onRefresh).
@@ -102,7 +98,13 @@ function DuelBell({ duels, loading, onRefresh, onAnswer, onDecline, onOpenDuel }
             <div key={challenge.challengeId} className="duel-bell-item">
               <span className="duel-bell-text">
                 <strong>{challenge.username}</strong> (LV {challenge.level}) challenges you
-                <span className="duel-bell-expires">{formatClock(challenge.expiresInSeconds)}</span>
+                <span className="duel-bell-expires">
+                  <Countdown
+                    seconds={challenge.expiresInSeconds}
+                    since={duels.receivedAt}
+                    onExpire={onRefresh}
+                  />
+                </span>
               </span>
               <span className="duel-bell-actions">
                 <button
