@@ -1,0 +1,464 @@
+/* Cerimônia de ascensão (AscensionCeremony.jsx). Só apresentação. */
+
+.ascension-ceremony {
+  --asc-gold: #ffc478;
+  --asc-glow: rgba(255, 170, 80, 0.75);
+  position: fixed;
+  inset: 0;
+  z-index: 2100;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  padding: 16px;
+  background: radial-gradient(circle at center, rgba(40, 16, 64, 0.94), rgba(3, 2, 10, 0.98));
+  cursor: pointer;
+  animation: ascFadeIn 0.35s ease both;
+}
+
+.ascension-stage {
+  position: relative;
+  z-index: 8;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+  width: min(420px, 100%);
+  max-height: 100%;
+}
+
+/* ---------------------------------------------------------- raios e flash */
+
+.ascension-rays {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 180vmax;
+  height: 180vmax;
+  margin: -90vmax 0 0 -90vmax;
+  background: repeating-conic-gradient(
+    from 0deg,
+    rgba(255, 196, 120, 0.16) 0deg 6deg,
+    transparent 6deg 18deg
+  );
+  mask-image: radial-gradient(circle, #000 0%, transparent 55%);
+  opacity: 0;
+  transform: scale(0.4);
+  transition:
+    opacity 0.6s ease,
+    transform 1.2s cubic-bezier(0.2, 0.8, 0.2, 1);
+  animation: ascSpin 28s linear infinite;
+  pointer-events: none;
+}
+
+.ascension-ceremony:not(.is-phase-0) .ascension-rays {
+  opacity: 1;
+  transform: scale(1);
+}
+
+.ascension-flash {
+  position: absolute;
+  inset: 0;
+  z-index: 9;
+  background: radial-gradient(circle at center, #fff 0%, rgba(255, 220, 160, 0.85) 30%, transparent 70%);
+  opacity: 0;
+  pointer-events: none;
+}
+
+.ascension-ceremony.is-phase-1 .ascension-flash {
+  animation: ascFlash 0.9s ease-out both;
+}
+
+/* ------------------------------------------------------------------ carta */
+
+.ascension-card-wrap {
+  position: relative;
+  width: min(210px, 52vw);
+  aspect-ratio: 13 / 18;
+}
+
+.ascension-card {
+  position: relative;
+  z-index: 2;
+  width: 100%;
+  height: 100%;
+  animation: ascCharge 1.9s ease-in both;
+}
+
+.ascension-ceremony:not(.is-phase-0) .ascension-card {
+  animation: ascBurst 0.7s cubic-bezier(0.2, 1.6, 0.4, 1) both;
+}
+
+.ascension-ceremony:not(.is-phase-0) .ascension-card .card-content {
+  box-shadow:
+    0 0 0 2px var(--asc-gold),
+    0 0 28px 6px var(--asc-glow),
+    0 0 90px 20px rgba(255, 140, 60, 0.35);
+}
+
+.ascension-aura {
+  position: absolute;
+  inset: -18%;
+  z-index: 1;
+  border-radius: 50%;
+  background: radial-gradient(circle, var(--asc-glow) 0%, rgba(185, 139, 255, 0.35) 40%, transparent 70%);
+  opacity: 0.25;
+  filter: blur(6px);
+  animation: ascAuraCharge 1.9s ease-in both;
+  pointer-events: none;
+}
+
+.ascension-ceremony:not(.is-phase-0) .ascension-aura {
+  opacity: 1;
+  animation: ascPulse 2.4s ease-in-out infinite;
+}
+
+/* Cópias consumidas voando para dentro da carta. */
+.ascension-ghost {
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  border-radius: 12px;
+  overflow: hidden;
+  opacity: 0;
+  animation: ascGhost 1.15s cubic-bezier(0.55, 0, 0.8, 0.4) var(--delay) both;
+  pointer-events: none;
+}
+
+.ascension-ghost img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  filter: brightness(1.6) saturate(0.4) sepia(0.6) hue-rotate(-15deg);
+}
+
+/* ---------------------------------------------------------------- marcas */
+
+.ascension-marks {
+  display: flex;
+  gap: 14px;
+  min-height: 44px;
+}
+
+.ascension-mark {
+  color: rgba(255, 255, 255, 0.12);
+  font-size: 34px;
+  line-height: 1;
+  transition: color 0.3s ease;
+}
+
+.ascension-ceremony.is-phase-0 .ascension-mark,
+.ascension-ceremony.is-phase-1 .ascension-mark {
+  opacity: 0;
+}
+
+.ascension-mark.is-lit {
+  color: var(--asc-gold);
+  text-shadow:
+    0 0 10px var(--asc-glow),
+    0 0 26px rgba(255, 120, 60, 0.6);
+}
+
+.ascension-mark.is-new {
+  animation: ascStamp 0.5s cubic-bezier(0.2, 1.8, 0.4, 1) both;
+}
+
+/* ---------------------------------------------------------------- resumo */
+
+.ascension-summary {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  text-align: center;
+  visibility: hidden;
+  opacity: 0;
+  transform: translateY(12px);
+  transition:
+    opacity 0.5s ease,
+    transform 0.5s ease;
+}
+
+.ascension-ceremony.is-phase-3 .ascension-summary {
+  visibility: visible;
+  opacity: 1;
+  transform: none;
+}
+
+.ascension-kicker {
+  margin: 0;
+  color: #cdb4ff;
+  font-size: 12px;
+  letter-spacing: 4px;
+  text-transform: uppercase;
+}
+
+.ascension-title {
+  margin: 0;
+  background: linear-gradient(180deg, #fff6dc 0%, #ffc478 55%, #e87b2c 100%);
+  background-clip: text;
+  color: transparent;
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: clamp(28px, 8vw, 40px);
+  letter-spacing: 2px;
+  filter: drop-shadow(0 0 14px rgba(255, 170, 80, 0.55));
+}
+
+.ascension-bonus {
+  margin: 0;
+  color: #ddd3f5;
+  font-size: 14px;
+}
+
+.ascension-bonus b {
+  color: var(--asc-gold);
+}
+
+.ascension-stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(110px, 1fr));
+  gap: 6px;
+  width: 100%;
+  margin: 4px 0 0;
+}
+
+.ascension-stats > div {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 5px 10px;
+  border: 1px solid rgba(255, 196, 120, 0.2);
+  border-radius: 8px;
+  background: rgba(20, 10, 40, 0.7);
+  font-size: 12px;
+}
+
+.ascension-ceremony.is-phase-3 .ascension-stats > div {
+  animation: ascRise 0.4s ease both;
+  animation-delay: calc(0.15s + var(--i) * 0.07s);
+}
+
+.ascension-stats dt {
+  color: #9d88c4;
+}
+
+.ascension-stats dd {
+  margin: 0;
+  color: #ddd3f5;
+}
+
+.ascension-stats dd b {
+  color: #8ff0bd;
+}
+
+.ascension-skill {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid var(--asc-gold);
+  border-radius: 10px;
+  background: linear-gradient(180deg, rgba(255, 196, 120, 0.16), rgba(20, 10, 40, 0.8));
+  box-shadow: 0 0 22px rgba(255, 170, 80, 0.3);
+  font-size: 12px;
+  color: #ddd3f5;
+}
+
+.ascension-ceremony.is-phase-3 .ascension-skill {
+  animation: ascStamp 0.6s cubic-bezier(0.2, 1.6, 0.4, 1) 0.55s both;
+}
+
+.ascension-skill b {
+  color: var(--asc-gold);
+  font-size: 15px;
+}
+
+.ascension-skill-tag {
+  color: #8ff0bd;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+}
+
+.ascension-continue {
+  margin-top: 6px;
+  padding: 10px 34px;
+  border: 0;
+  border-radius: 999px;
+  background: linear-gradient(180deg, #ffe7a6 0%, #eda53c 100%);
+  color: #2a1600;
+  font: inherit;
+  font-size: 14px;
+  font-weight: 800;
+  letter-spacing: 2px;
+  cursor: pointer;
+  box-shadow: 0 0 20px rgba(255, 170, 80, 0.45);
+}
+
+.ascension-continue:focus-visible {
+  outline: 2px solid #fff;
+  outline-offset: 3px;
+}
+
+.ascension-skip {
+  position: absolute;
+  bottom: 18px;
+  left: 0;
+  right: 0;
+  z-index: 8;
+  margin: 0;
+  color: rgba(221, 211, 245, 0.45);
+  font-size: 11px;
+  letter-spacing: 2px;
+  text-align: center;
+  text-transform: uppercase;
+}
+
+/* Telas baixas: a carta encolhe para caber o resumo. */
+@media (max-height: 700px) {
+  .ascension-card-wrap {
+    width: min(150px, 40vw);
+  }
+}
+
+/* ----------------------------------------------------------------- frames */
+
+@keyframes ascFadeIn {
+  from {
+    opacity: 0;
+  }
+}
+
+@keyframes ascSpin {
+  to {
+    rotate: 360deg;
+  }
+}
+
+@keyframes ascFlash {
+  0% {
+    opacity: 0;
+  }
+  12% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+
+@keyframes ascCharge {
+  0% {
+    transform: scale(0.85);
+    filter: brightness(0.6) saturate(0.6);
+  }
+  70% {
+    transform: scale(0.95) translateX(0);
+    filter: brightness(1.1);
+  }
+  80% {
+    transform: scale(0.96) translateX(-3px);
+  }
+  85% {
+    transform: scale(0.97) translateX(3px);
+  }
+  90% {
+    transform: scale(0.98) translateX(-4px);
+  }
+  95% {
+    transform: scale(0.99) translateX(4px);
+    filter: brightness(1.8) saturate(1.3);
+  }
+  100% {
+    transform: scale(1) translateX(0);
+    filter: brightness(2.4);
+  }
+}
+
+@keyframes ascBurst {
+  0% {
+    transform: scale(1.25);
+    filter: brightness(2.6);
+  }
+  100% {
+    transform: scale(1);
+    filter: brightness(1);
+  }
+}
+
+@keyframes ascAuraCharge {
+  from {
+    opacity: 0;
+    transform: scale(0.6);
+  }
+  to {
+    opacity: 0.9;
+    transform: scale(1.05);
+  }
+}
+
+@keyframes ascPulse {
+  0%,
+  100% {
+    transform: scale(1);
+    opacity: 0.85;
+  }
+  50% {
+    transform: scale(1.08);
+    opacity: 1;
+  }
+}
+
+@keyframes ascGhost {
+  0% {
+    opacity: 0;
+    transform: rotate(var(--angle)) translateX(min(48vw, 260px)) rotate(calc(-1 * var(--angle)))
+      scale(0.75);
+  }
+  20% {
+    opacity: 0.9;
+  }
+  100% {
+    opacity: 0;
+    transform: rotate(var(--angle)) translateX(0) rotate(calc(-1 * var(--angle))) scale(0.9);
+  }
+}
+
+@keyframes ascStamp {
+  0% {
+    opacity: 0;
+    transform: scale(2.4);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes ascRise {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ascension-ceremony,
+  .ascension-ceremony *,
+  .ascension-rays {
+    animation: none !important;
+    transition: none !important;
+  }
+}
+
+/* Partículas (RevealFx) por cima da carta. */
+.ascension-ceremony .reveal-fx {
+  position: absolute;
+  inset: 0;
+  z-index: 10;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}

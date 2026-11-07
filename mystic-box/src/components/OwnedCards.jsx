@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { getCharacterImage } from "../characterImages";
+import AscensionCeremony from "./AscensionCeremony";
 import { CardFace } from "./GachaCard";
 import Modal from "./Modal";
 
@@ -275,6 +276,8 @@ function OwnedCards({ apiUrl, session, onSessionExpired, onListed, allowAscend =
   const [ascendingCard, setAscendingCard] = useState(null);
   const [ascending, setAscending] = useState(false);
   const [ascendError, setAscendError] = useState("");
+  // Cerimônia mostrada depois que a ascensão deu certo: carta antes + resposta.
+  const [ceremony, setCeremony] = useState(null);
 
   function openAscend(card) {
     setListFeedback(null);
@@ -318,6 +321,7 @@ function OwnedCards({ apiUrl, session, onSessionExpired, onListed, allowAscend =
       }
 
       setAscendingCard(null);
+      setCeremony({ card, result: data });
       setListFeedback({
         type: "success",
         text: `${data.name ?? card.name} reached ascension ${ascensionMarks(data.ascension.level)} (+${data.ascension.statBonusPercent}% stats).`,
@@ -614,6 +618,14 @@ function OwnedCards({ apiUrl, session, onSessionExpired, onListed, allowAscend =
           error={ascendError}
           onConfirm={() => ascendCard(ascendingCard)}
           onClose={() => setAscendingCard(null)}
+        />
+      )}
+
+      {ceremony && (
+        <AscensionCeremony
+          card={ceremony.card}
+          result={ceremony.result}
+          onClose={() => setCeremony(null)}
         />
       )}
     </>
