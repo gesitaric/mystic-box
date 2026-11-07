@@ -1,10 +1,12 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
+import worldMapArt from "../assets/world-map.svg";
 import { getCharacterImage } from "../characterImages";
 import Modal from "./Modal";
 import "../styles/lore.css";
 
-// Mapa-múndi. Regiões, posições, textos e quem vem de cada região vêm de
-// `GET /world`; aqui fica só o desenho (cores por terreno, forma das ilhas).
+// Mapa-múndi. Regiões, posições, textos, crônica e quem vem de cada região vêm
+// de `GET /world`; quais cartas o jogador já tem vêm de `GET /users/me/cards`.
+// Aqui fica só a apresentação (a ilustração e onde pôr os rótulos).
 
 let worldRequest = null;
 
@@ -23,196 +25,126 @@ function loadWorld(apiUrl) {
   return worldRequest;
 }
 
-// Visual de cada terreno (apresentação).
-const TERRAIN_COLORS = {
-  rift: { land: "#3a1f5c", edge: "#c08cff" },
-  frost: { land: "#5d7f99", edge: "#dff4ff" },
-  isles: { land: "#5f86a8", edge: "#bfe3ff" },
-  shadow: { land: "#2e2240", edge: "#a77bd6" },
-  sky: { land: "#8f8a6a", edge: "#fff1b8" },
-  meadow: { land: "#5e8a4a", edge: "#c7ec9b" },
-  forest: { land: "#2f5e3a", edge: "#8fd99a" },
-  holy: { land: "#9a7a35", edge: "#ffe08a" },
-  blossom: { land: "#8a5470", edge: "#ffc2df" },
-  city: { land: "#4b4a5e", edge: "#c9c5e8" },
-  mountain: { land: "#6b5a49", edge: "#d9c3a5" },
-  sea: { land: "#2f6c74", edge: "#9ef0f0" },
-  volcano: { land: "#6e2a1c", edge: "#ff9b5e" },
-  steam: { land: "#6b5230", edge: "#f0c27a" },
-};
+// Cartas que o jogador já tem (só para marcar quem foi descoberto).
+function useOwnedCards(apiUrl, session) {
+  const [owned, setOwned] = useState(null);
 
-const MAP_WIDTH = 160;
-const MAP_HEIGHT = 100;
+  useEffect(() => {
+    if (!session) return undefined;
+    let cancelled = false;
+    const token = session.session.getIdToken().getJwtToken();
+    fetch(`${apiUrl}/users/me/cards`, { headers: { Authorization: token } })
+      .then((response) => (response.ok ? response.json() : null))
+      .then((data) => {
+        if (!cancelled && data) setOwned(new Set(data.cards.map((card) => card.file_name)));
+      })
+      .catch((error) => console.error(error));
+    return () => {
+      cancelled = true;
+    };
+  }, [apiUrl, session]);
 
-// Número pseudoaleatório estável a partir de um texto (forma fixa por região).
-function seededRandom(text) {
-  let seed = 0;
-  for (const char of text) seed = (seed * 31 + char.charCodeAt(0)) >>> 0;
-  return () => {
-    seed = (seed * 1664525 + 1013904223) >>> 0;
-    return seed / 4294967296;
+  return owned;
+}
+
+// Rótulo um pouco abaixo do centro da região, para não cobrir o desenho dela.
+function pinStyle(region) {
+  return {
+    left: `${region.x}%`,
+    top: `${Math.min(region.y + 6.5, 94)}%`,
   };
 }
 
-function blobPath(cx, cy, radius, random, points = 11) {
-  const coords = [];
-  for (let i = 0; i < points; i += 1) {
-    const angle = (i / points) * Math.PI * 2;
-    const r = radius * (0.72 + random() * 0.5);
-    coords.push([cx + Math.cos(angle) * r * 1.25, cy + Math.sin(angle) * r]);
-  }
-  // Curvas suaves passando pelos pontos médios.
-  const mid = (a, b) => [(a[0] + b[0]) / 2, (a[1] + b[1]) / 2];
-  const start = mid(coords[coords.length - 1], coords[0]);
-  let path = `M${start[0].toFixed(2)},${start[1].toFixed(2)}`;
-  coords.forEach((point, index) => {
-    const next = mid(point, coords[(index + 1) % coords.length]);
-    path += ` Q${point[0].toFixed(2)},${point[1].toFixed(2)} ${next[0].toFixed(2)},${next[1].toFixed(2)}`;
-  });
-  return `${path} Z`;
-}
-
-function regionShapes(region) {
-  const random = seededRandom(region.id);
-  const cx = (region.x / 100) * MAP_WIDTH;
-  const cy = (region.y / 100) * MAP_HEIGHT;
-  const size = 6 + Math.min(region.characters.length, 9) * 0.45;
-  const shapes = [blobPath(cx, cy, size, random)];
-  const islets = region.terrain === "isles" || region.terrain === "blossom" ? 3 : 1;
-  for (let i = 0; i < islets; i += 1) {
-    const angle = random() * Math.PI * 2;
-    const distance = size * (1.3 + random() * 0.5);
-    shapes.push(
-      blobPath(
-        cx + Math.cos(angle) * distance * 1.25,
-        cy + Math.sin(angle) * distance,
-        size * (0.25 + random() * 0.15),
-        random,
-        7
-      )
-    );
-  }
-  return { cx, cy, shapes };
-}
-
-function MapCanvas({ regions, selectedId, onSelect }) {
-  const drawn = useMemo(
-    () => regions.map((region) => ({ region, ...regionShapes(region) })),
-    [regions]
-  );
-  const center = drawn.find(({ region }) => region.terrain === "rift");
-
+function MapCanvas({ regions, selectedId, owned, onSelect }) {
   return (
     <div className="world-map">
-      <svg
-        className="world-map-svg"
-        viewBox={`0 0 ${MAP_WIDTH} ${MAP_HEIGHT}`}
-        preserveAspectRatio="none"
-        aria-hidden="true"
-      >
-        <defs>
-          <radialGradient id="world-sea" cx="50%" cy="50%" r="70%">
-            <stop offset="0%" stopColor="#1d1840" />
-            <stop offset="100%" stopColor="#070514" />
-          </radialGradient>
-          <radialGradient id="world-rift-glow">
-            <stop offset="0%" stopColor="#e2c6ff" stopOpacity="0.9" />
-            <stop offset="60%" stopColor="#8a4dff" stopOpacity="0.25" />
-            <stop offset="100%" stopColor="#8a4dff" stopOpacity="0" />
-          </radialGradient>
-        </defs>
-        <rect width={MAP_WIDTH} height={MAP_HEIGHT} fill="url(#world-sea)" />
-
-        {center &&
-          drawn
-            .filter(({ region }) => region !== center.region)
-            .map(({ region, cx, cy }) => (
-              <line
-                key={`line-${region.id}`}
-                className="world-ley-line"
-                x1={center.cx}
-                y1={center.cy}
-                x2={cx}
-                y2={cy}
-              />
-            ))}
-
-        {drawn.map(({ region, shapes }) => {
-          const colors = TERRAIN_COLORS[region.terrain] ?? TERRAIN_COLORS.meadow;
-          const selected = region.id === selectedId;
-          return (
-            <g key={region.id} className={`world-land${selected ? " is-selected" : ""}`}>
-              {shapes.map((d, index) => (
-                <path
-                  key={index}
-                  d={d}
-                  fill={colors.land}
-                  stroke={colors.edge}
-                  strokeWidth={selected ? 0.7 : 0.35}
-                />
-              ))}
-            </g>
-          );
-        })}
-
-        {center && (
-          <circle
-            className="world-rift-glow"
-            cx={center.cx}
-            cy={center.cy}
-            r="9"
-            fill="url(#world-rift-glow)"
-          />
-        )}
-      </svg>
-
-      {regions.map((region) => (
-        <button
-          key={region.id}
-          type="button"
-          className={`world-region-pin${region.id === selectedId ? " is-selected" : ""}`}
-          data-terrain={region.terrain}
-          style={{ left: `${region.x}%`, top: `${region.y}%` }}
-          onClick={() => onSelect(region.id)}
-          aria-pressed={region.id === selectedId}
-        >
-          <span className="world-region-pin-name">{region.name}</span>
-          {region.characters.length > 0 && (
-            <span className="world-region-pin-count">{region.characters.length}</span>
-          )}
-        </button>
-      ))}
+      <img
+        className="world-map-art"
+        src={worldMapArt}
+        alt="Illustrated map of the Shattered Realms of Aethra"
+        draggable="false"
+      />
+      {regions.map((region) => {
+        const found = owned
+          ? region.characters.filter((c) => owned.has(c.file_name)).length
+          : null;
+        const selected = region.id === selectedId;
+        return (
+          <button
+            key={region.id}
+            type="button"
+            className={`world-region-pin${selected ? " is-selected" : ""}`}
+            data-element={region.element ?? "rift"}
+            style={pinStyle(region)}
+            onClick={() => onSelect(region.id)}
+            aria-pressed={selected}
+          >
+            <span className="world-region-pin-name">{region.name}</span>
+            {region.characters.length > 0 && (
+              <span className="world-region-pin-count">
+                {found != null ? `${found}/${region.characters.length}` : region.characters.length}
+              </span>
+            )}
+          </button>
+        );
+      })}
     </div>
   );
 }
 
-function RegionPanel({ region }) {
+function RegionPanel({ region, owned }) {
+  const found = owned ? region.characters.filter((c) => owned.has(c.file_name)).length : null;
+
   return (
     <section className="world-region" aria-live="polite">
       <header>
-        <p className="world-region-epithet">{region.epithet}</p>
+        <p className="world-region-epithet">
+          {region.epithet}
+          {region.element && <span className="story-element">{region.element}</span>}
+        </p>
         <h3>{region.name}</h3>
       </header>
       <p className="world-region-description">{region.description}</p>
+      {region.whisper && (
+        <blockquote className="world-whisper">
+          <span>Whispers</span>
+          {region.whisper}
+        </blockquote>
+      )}
 
       {region.characters.length > 0 ? (
         <>
-          <h4>Champions of this land</h4>
+          <h4>
+            Champions of this land
+            {found != null && (
+              <span className="world-found">
+                {found}/{region.characters.length} summoned
+              </span>
+            )}
+          </h4>
           <ul className="world-residents">
-            {region.characters.map((character) => (
-              <li key={character.file_name} data-rarity={character.rarity}>
-                <img src={getCharacterImage(character.file_name)} alt="" loading="lazy" />
-                <div>
-                  <strong>
-                    {character.name} <span>{"✦".repeat(character.rarity)}</span>
-                  </strong>
-                  <em>{character.title}</em>
-                </div>
-              </li>
-            ))}
+            {region.characters.map((character) => {
+              const missing = owned && !owned.has(character.file_name);
+              return (
+                <li
+                  key={character.file_name}
+                  data-rarity={character.rarity}
+                  className={missing ? "is-missing" : undefined}
+                >
+                  <img src={getCharacterImage(character.file_name)} alt="" loading="lazy" />
+                  <div>
+                    <strong>
+                      {character.name} <span>{"✦".repeat(character.rarity)}</span>
+                    </strong>
+                    <em>{character.title}</em>
+                  </div>
+                </li>
+              );
+            })}
           </ul>
           <p className="world-region-hint">
-            Summon a champion to read their full story in your collection.
+            Summon a champion to read their full story, bonds and secret chapter in your
+            collection.
           </p>
         </>
       ) : (
@@ -222,11 +154,33 @@ function RegionPanel({ region }) {
   );
 }
 
-function WorldModal({ apiUrl, onClose }) {
+function Chronicle({ world, chronicle }) {
+  return (
+    <div className="world-chronicle">
+      <div className="story-text world-legend">
+        {world.story.map((paragraph, index) => (
+          <p key={index}>{paragraph}</p>
+        ))}
+      </div>
+      <ol className="world-timeline">
+        {chronicle.map((entry) => (
+          <li key={entry.title}>
+            <span className="world-timeline-era">{entry.era}</span>
+            <strong>{entry.title}</strong>
+            <p>{entry.text}</p>
+          </li>
+        ))}
+      </ol>
+    </div>
+  );
+}
+
+function WorldModal({ apiUrl, session, onClose }) {
   const [state, setState] = useState({ data: null, error: "" });
   const [attempt, setAttempt] = useState(0);
-  const [selectedId, setSelectedId] = useState(null);
-  const [showLegend, setShowLegend] = useState(false);
+  const [selectedId, setSelectedId] = useState("riftheart");
+  const [tab, setTab] = useState("map");
+  const owned = useOwnedCards(apiUrl, session);
 
   useEffect(() => {
     let cancelled = false;
@@ -272,30 +226,37 @@ function WorldModal({ apiUrl, onClose }) {
 
       {data && (
         <>
-          <button
-            type="button"
-            className="world-legend-toggle"
-            aria-expanded={showLegend}
-            onClick={() => setShowLegend((open) => !open)}
-          >
-            {showLegend ? "▾" : "▸"} The legend of {data.world.name}
-          </button>
-          {showLegend && (
-            <div className="story-text world-legend">
-              {data.world.story.map((paragraph, index) => (
-                <p key={index}>{paragraph}</p>
-              ))}
-            </div>
-          )}
-
-          <div className="world-layout">
-            <MapCanvas
-              regions={regions}
-              selectedId={selected?.id}
-              onSelect={setSelectedId}
-            />
-            {selected && <RegionPanel region={selected} />}
+          <div className="world-tabs" role="tablist">
+            {[
+              ["map", "Map"],
+              ["chronicle", "Chronicle"],
+            ].map(([id, label]) => (
+              <button
+                key={id}
+                type="button"
+                role="tab"
+                aria-selected={tab === id}
+                className={tab === id ? "is-active" : undefined}
+                onClick={() => setTab(id)}
+              >
+                {label}
+              </button>
+            ))}
           </div>
+
+          {tab === "map" ? (
+            <div className="world-layout">
+              <MapCanvas
+                regions={regions}
+                selectedId={selected?.id}
+                owned={owned}
+                onSelect={setSelectedId}
+              />
+              {selected && <RegionPanel region={selected} owned={owned} />}
+            </div>
+          ) : (
+            <Chronicle world={data.world} chronicle={data.chronicle ?? []} />
+          )}
         </>
       )}
     </Modal>
@@ -303,7 +264,7 @@ function WorldModal({ apiUrl, onClose }) {
 }
 
 // Atalho da tela inicial que abre o mapa-múndi.
-function WorldMap({ apiUrl }) {
+function WorldMap({ apiUrl, session }) {
   const [open, setOpen] = useState(false);
 
   return (
@@ -322,7 +283,7 @@ function WorldMap({ apiUrl }) {
         </svg>
         <span>World</span>
       </button>
-      {open && <WorldModal apiUrl={apiUrl} onClose={() => setOpen(false)} />}
+      {open && <WorldModal apiUrl={apiUrl} session={session} onClose={() => setOpen(false)} />}
     </>
   );
 }

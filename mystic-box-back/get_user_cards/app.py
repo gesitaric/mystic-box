@@ -115,6 +115,7 @@ def group_cards(items, ascensions=None):
     """
     ascensions = ascensions or {}
     groups = {}
+    owned = {item.get("file_name") for item in items if item.get("file_name")}
 
     for item in items:
         file_name = item.get("file_name")
@@ -155,8 +156,9 @@ def group_cards(items, ascensions=None):
                 # Quantas cópias podem ser anunciadas de uma vez.
                 "maxListingQuantity": max_listing_quantity(character, group["quantity"]),
                 "battle": battle_profile(character, ascension) if character else None,
-                # História da personagem ({title, story: [parágrafos]}) ou None.
-                "lore": public_lore(character),
+                # História, região, laços (com quem o jogador já tem) e o
+                # capítulo secreto (liberado pela ascensão), ou None.
+                "lore": public_lore(character, ascension, owned),
                 # Ascensão (cópias repetidas fortalecem a carta); None = não ascende.
                 "ascension": (
                     public_ascension(

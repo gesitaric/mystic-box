@@ -85,7 +85,7 @@ def test_get_user_cards_groups_repeated_cards(authenticated_event, monkeypatch):
                 **public_battle_profile(cards.get_character("astra.jfif")),
                 "skills": public_skills(cards.get_character("astra.jfif")),
             },
-            "lore": public_lore(cards.get_character("astra.jfif")),
+            "lore": public_lore(cards.get_character("astra.jfif"), 0, {"astra.jfif", "rowan.jfif"}),
             "ascension": public_ascension(0, 3, False),
         },
         {
@@ -101,7 +101,7 @@ def test_get_user_cards_groups_repeated_cards(authenticated_event, monkeypatch):
                 **public_battle_profile(cards.get_character("rowan.jfif")),
                 "skills": public_skills(cards.get_character("rowan.jfif")),
             },
-            "lore": public_lore(cards.get_character("rowan.jfif")),
+            "lore": public_lore(cards.get_character("rowan.jfif"), 0, {"astra.jfif", "rowan.jfif"}),
             "ascension": public_ascension(0, 1, True),
         },
     ]

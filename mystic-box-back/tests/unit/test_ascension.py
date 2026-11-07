@@ -2,6 +2,7 @@ import json
 
 import pytest
 from mystic_shared import ascension, battle, cards, rules
+from mystic_shared.lore import SECRET_UNLOCK_ASCENSION, SECRETS
 
 from ascend_card import app as ascend_card
 from tests.unit.fake_dynamo import FakeDynamo
@@ -166,6 +167,9 @@ def test_ascend_to_max_then_stop(authenticated_event, db):
         status, data = ascend(authenticated_event, {"fileName": "rowan.jfif"})
         assert status == 200
         assert data["ascension"]["level"] == level
+        # O capítulo secreto é anunciado só na ascensão que o libera.
+        unlocks = level == SECRET_UNLOCK_ASCENSION
+        assert data["secretUnlocked"] == (SECRETS["rowan.jfif"][0] if unlocks else None)
 
     assert owned_ids(db, "rowan.jfif") == ["rowan.jfif-0"]
     assert data["battle"]["skills"][-1]["id"] == "tremor_slam"

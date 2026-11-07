@@ -192,10 +192,103 @@
   }
 }
 
+/* Elementos (cores de apresentação) */
+
+.story-element {
+  margin-left: 8px;
+  padding: 1px 8px;
+  border: 1px solid currentColor;
+  border-radius: 999px;
+  color: #cbb6ee;
+  font-size: 10px;
+  font-style: normal;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  vertical-align: middle;
+}
+
+[data-element="ember"] .story-element { color: #ff9b5e; }
+[data-element="gale"] .story-element { color: #9fe6c8; }
+[data-element="terra"] .story-element { color: #d9b77e; }
+[data-element="volt"] .story-element { color: #ffe25a; }
+[data-element="tide"] .story-element { color: #6fd0ff; }
+[data-element="lumen"] .story-element { color: #fff1a8; }
+[data-element="umbra"] .story-element { color: #c7a2ff; }
+
+/* Capítulo secreto */
+
+.story-secret {
+  margin-top: 18px;
+  padding: 14px 16px;
+  border: 1px dashed rgba(199, 162, 255, 0.5);
+  border-radius: 12px;
+  background: rgba(40, 18, 70, 0.55);
+  text-align: left;
+}
+
+.story-secret h3 {
+  margin: 0 0 8px;
+  color: #d9c2ff;
+  font-size: 13px;
+  letter-spacing: 1.5px;
+}
+
+.story-secret p {
+  margin: 0;
+  color: #eadfff;
+  font-size: 14px;
+  font-style: italic;
+  line-height: 1.65;
+}
+
+.story-secret .story-secret-locked {
+  color: #9d88c4;
+}
+
+.story-secret.is-unlocked {
+  border-style: solid;
+  border-color: rgba(255, 196, 120, 0.7);
+  background: linear-gradient(160deg, rgba(70, 36, 20, 0.6), rgba(40, 18, 70, 0.6));
+  box-shadow: 0 0 18px rgba(255, 170, 80, 0.25);
+  animation: secretReveal 0.8s ease;
+}
+
+.story-secret.is-unlocked h3 {
+  color: #ffc478;
+}
+
+@keyframes secretReveal {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+}
+
+/* Personagens que o jogador ainda não invocou */
+
+.story-bonds li.is-missing img,
+.world-residents li.is-missing img {
+  filter: grayscale(1) brightness(0.45);
+}
+
+.story-bonds li.is-missing strong,
+.world-residents li.is-missing strong {
+  color: #a597bf;
+}
+
+.story-bond-missing {
+  margin-left: 8px;
+  color: #8a7aa8;
+  font-size: 10px;
+  font-weight: 400;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+}
+
 /* ---------- Mapa-múndi ---------- */
 
 .auth-modal.world-modal {
-  width: min(1040px, 96vw);
+  width: min(1180px, 96vw);
 }
 
 .world-header p {
@@ -203,28 +296,34 @@
   font-style: italic;
 }
 
-.world-legend-toggle {
-  display: block;
-  margin: 12px auto 0;
-  padding: 6px 14px;
-  border: 1px solid rgba(255, 220, 142, 0.35);
+.world-tabs {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.world-tabs button {
+  padding: 6px 18px;
+  border: 1px solid rgba(255, 220, 142, 0.3);
   border-radius: 999px;
   background: rgba(20, 10, 40, 0.7);
-  color: #ffdc8e;
+  color: #cbb6ee;
   font: inherit;
   font-size: 13px;
-  letter-spacing: 1px;
+  letter-spacing: 1.5px;
   cursor: pointer;
 }
 
-.world-legend {
-  max-width: 720px;
-  margin-inline: auto;
+.world-tabs button.is-active {
+  border-color: #ffdc8e;
+  color: #ffdc8e;
+  box-shadow: 0 0 10px rgba(255, 220, 142, 0.3);
 }
 
 .world-layout {
   display: grid;
-  grid-template-columns: minmax(0, 1.7fr) minmax(260px, 1fr);
+  grid-template-columns: minmax(0, 2fr) minmax(260px, 1fr);
   gap: 18px;
   margin-top: 18px;
   align-items: start;
@@ -234,55 +333,18 @@
   position: relative;
   aspect-ratio: 16 / 10;
   overflow: hidden;
-  border: 1px solid rgba(255, 220, 142, 0.35);
   border-radius: 14px;
-  box-shadow: 0 0 30px rgba(120, 80, 220, 0.3) inset;
+  box-shadow:
+    0 0 0 1px rgba(255, 220, 142, 0.35),
+    0 14px 40px rgba(0, 0, 0, 0.55),
+    0 0 40px rgba(140, 90, 240, 0.25);
 }
 
-.world-map-svg {
-  position: absolute;
-  inset: 0;
+.world-map-art {
+  display: block;
   width: 100%;
   height: 100%;
-}
-
-.world-ley-line {
-  stroke: rgba(192, 140, 255, 0.28);
-  stroke-width: 0.3;
-  stroke-dasharray: 1.2 1.4;
-  animation: worldLeyFlow 6s linear infinite;
-}
-
-@keyframes worldLeyFlow {
-  to {
-    stroke-dashoffset: -26;
-  }
-}
-
-.world-land path {
-  transition: stroke-width 0.2s ease;
-}
-
-.world-land.is-selected path {
-  filter: drop-shadow(0 0 1.5px rgba(255, 255, 255, 0.7));
-}
-
-.world-rift-glow {
-  animation: worldRiftPulse 3.5s ease-in-out infinite;
-  transform-box: fill-box;
-  transform-origin: center;
-}
-
-@keyframes worldRiftPulse {
-  0%,
-  100% {
-    opacity: 0.6;
-    transform: scale(0.9);
-  }
-  50% {
-    opacity: 1;
-    transform: scale(1.12);
-  }
+  user-select: none;
 }
 
 .world-region-pin {
@@ -290,10 +352,10 @@
   display: flex;
   align-items: center;
   gap: 4px;
-  padding: 3px 8px;
-  border: 1px solid rgba(255, 255, 255, 0.25);
+  padding: 3px 9px;
+  border: 1px solid rgba(255, 255, 255, 0.3);
   border-radius: 999px;
-  background: rgba(10, 6, 24, 0.78);
+  background: rgba(10, 6, 24, 0.8);
   color: #f3e9ff;
   font: inherit;
   font-size: 11px;
@@ -301,31 +363,46 @@
   white-space: nowrap;
   cursor: pointer;
   transform: translate(-50%, -50%);
-  transition: background 0.2s ease, border-color 0.2s ease, transform 0.2s ease;
+  transition: background 0.2s ease, border-color 0.2s ease, transform 0.2s ease, box-shadow 0.2s ease;
 }
+
+.world-region-pin::before {
+  content: "";
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--pin-color, #c08cff);
+  box-shadow: 0 0 6px var(--pin-color, #c08cff);
+}
+
+.world-region-pin[data-element="ember"] { --pin-color: #ff7a3a; }
+.world-region-pin[data-element="gale"] { --pin-color: #9fe6c8; }
+.world-region-pin[data-element="terra"] { --pin-color: #c9a066; }
+.world-region-pin[data-element="volt"] { --pin-color: #ffe25a; }
+.world-region-pin[data-element="tide"] { --pin-color: #5ec8ff; }
+.world-region-pin[data-element="lumen"] { --pin-color: #fff1a8; }
+.world-region-pin[data-element="umbra"] { --pin-color: #b48cff; }
 
 .world-region-pin:hover,
 .world-region-pin:focus-visible {
   border-color: #ffdc8e;
   outline: none;
-  transform: translate(-50%, -50%) scale(1.06);
+  transform: translate(-50%, -50%) scale(1.08);
 }
 
 .world-region-pin.is-selected {
   border-color: #ffdc8e;
-  background: rgba(70, 40, 110, 0.92);
+  background: rgba(70, 40, 110, 0.94);
   color: #fff3d6;
-  box-shadow: 0 0 12px rgba(255, 220, 142, 0.5);
+  box-shadow: 0 0 14px rgba(255, 220, 142, 0.6);
 }
 
 .world-region-pin-count {
-  min-width: 16px;
-  padding: 0 4px;
+  padding: 0 5px;
   border-radius: 999px;
   background: rgba(255, 220, 142, 0.2);
   color: #ffdc8e;
   font-size: 10px;
-  text-align: center;
 }
 
 .world-region {
@@ -351,14 +428,42 @@
 }
 
 .world-region-description {
-  margin: 0 0 16px;
+  margin: 0 0 12px;
   color: #e4d8f8;
   font-size: 14px;
   line-height: 1.6;
 }
 
+.world-whisper {
+  margin: 0 0 16px;
+  padding: 8px 12px;
+  border-left: 2px solid rgba(199, 162, 255, 0.6);
+  border-radius: 0 8px 8px 0;
+  background: rgba(60, 30, 100, 0.35);
+  color: #d9c8f5;
+  font-size: 13px;
+  font-style: italic;
+  line-height: 1.5;
+}
+
+.world-whisper span {
+  display: block;
+  margin-bottom: 2px;
+  color: #b48cff;
+  font-size: 10px;
+  font-style: normal;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+}
+
+.world-found {
+  float: right;
+  color: #ffdc8e;
+  letter-spacing: 1px;
+}
+
 .world-residents {
-  max-height: 340px;
+  max-height: 320px;
   overflow-y: auto;
 }
 
@@ -380,7 +485,69 @@
   font-style: italic;
 }
 
-@media (max-width: 760px) {
+/* Crônica */
+
+.world-chronicle {
+  max-width: 760px;
+  margin: 18px auto 0;
+}
+
+.world-timeline {
+  position: relative;
+  margin: 22px 0 0;
+  padding: 0 0 0 26px;
+  list-style: none;
+  text-align: left;
+}
+
+.world-timeline::before {
+  content: "";
+  position: absolute;
+  top: 6px;
+  bottom: 6px;
+  left: 8px;
+  width: 2px;
+  background: linear-gradient(#ffdc8e, #b48cff);
+  opacity: 0.6;
+}
+
+.world-timeline li {
+  position: relative;
+  margin-bottom: 18px;
+}
+
+.world-timeline li::before {
+  content: "✦";
+  position: absolute;
+  top: 0;
+  left: -25px;
+  color: #ffdc8e;
+  font-size: 14px;
+  text-shadow: 0 0 8px rgba(255, 220, 142, 0.8);
+}
+
+.world-timeline-era {
+  display: block;
+  color: #9fd2ff;
+  font-size: 11px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+}
+
+.world-timeline strong {
+  color: #fff3d6;
+  font-size: 16px;
+  letter-spacing: 1px;
+}
+
+.world-timeline p {
+  margin: 4px 0 0;
+  color: #e4d8f8;
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+@media (max-width: 860px) {
   .world-layout {
     grid-template-columns: 1fr;
   }
@@ -390,6 +557,7 @@
     font-size: 8px;
   }
 
+  .world-region-pin::before,
   .world-region-pin-count {
     display: none;
   }

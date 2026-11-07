@@ -1,5 +1,16 @@
 from mystic_shared.cards import CHARACTERS, get_character
-from mystic_shared.lore import BONDS, REGIONS, STORIES, public_lore, public_world
+from mystic_shared.lore import (
+    BONDS,
+    CHRONICLE,
+    REGIONS,
+    SECRET_UNLOCK_ASCENSION,
+    SECRETS,
+    STORIES,
+    public_lore,
+    public_world,
+    unlocked_secret_title,
+)
+from mystic_shared.stats import ELEMENTS
 
 REGION_IDS = {region["id"] for region in REGIONS}
 
@@ -44,7 +55,7 @@ def test_public_lore_shows_both_sides_of_a_bond():
     malachar = public_lore(get_character("malachar.jfif"))
     mortis = public_lore(get_character("mortis.jfif"))
 
-    assert malachar["region"] == {"id": "nocthaven", "name": "Nocthaven"}
+    assert malachar["region"] == {"id": "nocthaven", "name": "Nocthaven", "element": "umbra"}
     to_mortis = next(b for b in malachar["bonds"] if b["file_name"] == "mortis.jfif")
     to_malachar = next(b for b in mortis["bonds"] if b["file_name"] == "malachar.jfif")
     assert to_mortis["name"] == "Mortis"
@@ -81,3 +92,53 @@ def test_get_world_endpoint_is_public():
     ret = get_world.lambda_handler({"httpMethod": "GET"}, "")
     assert ret["statusCode"] == 200
     assert json.loads(ret["body"]) == public_world()
+
+
+def test_every_character_has_a_secret_chapter():
+    assert set(SECRETS) == {c["file_name"] for c in CHARACTERS}
+    for file_name, (title, text) in SECRETS.items():
+        assert title.strip() and text.strip(), file_name
+
+
+def test_secret_text_only_leaves_the_server_after_ascending():
+    character = get_character("ignis.jfif")
+
+    locked = public_lore(character, ascension=SECRET_UNLOCK_ASCENSION - 1)["secret"]
+    assert locked["unlocked"] is False
+    assert locked["text"] is None
+    assert locked["title"] == SECRETS["ignis.jfif"][0]
+    assert locked["unlockAscension"] == SECRET_UNLOCK_ASCENSION
+
+    unlocked = public_lore(character, ascension=SECRET_UNLOCK_ASCENSION)["secret"]
+    assert unlocked["unlocked"] is True
+    assert unlocked["text"] == SECRETS["ignis.jfif"][1]
+
+
+def test_bonds_mark_which_characters_the_player_owns():
+    bonds = public_lore(get_character("malachar.jfif"), owned={"mortis.jfif"})["bonds"]
+    owned = {b["file_name"]: b["owned"] for b in bonds}
+
+    assert owned["mortis.jfif"] is True
+    assert owned["zarathor.jfif"] is False
+    assert all("owned" not in b for b in public_lore(get_character("malachar.jfif"))["bonds"])
+
+
+def test_regions_have_a_valid_element_and_whisper():
+    for region in REGIONS:
+        assert region["element"] is None or region["element"] in ELEMENTS, region["id"]
+        assert region["whisper"].strip(), region["id"]
+
+
+def test_world_has_a_chronicle():
+    world = public_world()
+    assert world["chronicle"] == CHRONICLE
+    assert all(entry["era"] and entry["title"] and entry["text"] for entry in CHRONICLE)
+
+
+def test_unlocked_secret_title_only_on_the_unlocking_ascension():
+    ignis = get_character("ignis.jfif")
+    level = SECRET_UNLOCK_ASCENSION
+
+    assert unlocked_secret_title(ignis, level - 1, level) == SECRETS["ignis.jfif"][0]
+    assert unlocked_secret_title(ignis, level, level + 1) is None
+    assert unlocked_secret_title(None, 0, 1) is None

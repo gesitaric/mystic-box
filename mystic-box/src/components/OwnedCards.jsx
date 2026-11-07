@@ -263,6 +263,7 @@ function StoryModal({ card, onClose }) {
   const rarity = Number(card.rarity) || 0;
   const lore = card.lore;
   const bonds = lore.bonds ?? [];
+  const secret = lore.secret;
 
   return (
     <Modal label={`Story of ${card.name}`} className="story-modal" onClose={onClose}>
@@ -271,7 +272,12 @@ function StoryModal({ card, onClose }) {
           <CardFace card={card} image={getCharacterImage(card.file_name)} rarity={rarity} />
         </div>
         <header className="story-heading">
-          {lore.region && <p className="story-region">✦ {lore.region.name}</p>}
+          {lore.region && (
+            <p className="story-region" data-element={lore.region.element ?? undefined}>
+              ✦ {lore.region.name}
+              {lore.region.element && <span className="story-element">{lore.region.element}</span>}
+            </p>
+          )}
           <h2>{card.name}</h2>
           {lore.title && <p className="story-title">{lore.title}</p>}
         </header>
@@ -283,15 +289,42 @@ function StoryModal({ card, onClose }) {
         ))}
       </div>
 
+      {secret && (
+        <section
+          className={`story-secret${secret.unlocked ? " is-unlocked" : ""}`}
+          aria-label="Secret chapter"
+        >
+          <h3>
+            <span aria-hidden="true">{secret.unlocked ? "✴" : "🔒"}</span> Secret chapter:{" "}
+            {secret.title}
+          </h3>
+          {secret.unlocked ? (
+            <p>{secret.text}</p>
+          ) : (
+            <p className="story-secret-locked">
+              Reach ascension {"✴".repeat(secret.unlockAscension)} with this card to reveal
+              what {card.name} has never told anyone.
+            </p>
+          )}
+        </section>
+      )}
+
       {bonds.length > 0 && (
         <section className="story-bonds" aria-label="Bonds">
           <h3>Bonds</h3>
           <ul>
             {bonds.map((bond) => (
-              <li key={bond.file_name} data-rarity={bond.rarity}>
+              <li
+                key={bond.file_name}
+                data-rarity={bond.rarity}
+                className={bond.owned === false ? "is-missing" : undefined}
+              >
                 <img src={getCharacterImage(bond.file_name)} alt="" loading="lazy" />
                 <div>
-                  <strong>{bond.name}</strong>
+                  <strong>
+                    {bond.name}
+                    {bond.owned === false && <em className="story-bond-missing">Not summoned yet</em>}
+                  </strong>
                   <span>{bond.relation}</span>
                 </div>
               </li>

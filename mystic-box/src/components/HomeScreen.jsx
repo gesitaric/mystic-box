@@ -95,6 +95,7 @@ function ProfileChip({ email, progress, onClick }) {
 // API (saldo, nível, vitórias, tempo de espera).
 function HomeScreen({
   apiUrl,
+  session,
   email,
   balance,
   progress,
@@ -250,7 +251,7 @@ function HomeScreen({
           </svg>
           <span>Players</span>
         </button>
-        <WorldMap apiUrl={apiUrl} />
+        <WorldMap apiUrl={apiUrl} session={session} />
         <Grimoire apiUrl={apiUrl} variant="dock" />
       </nav>
     </section>

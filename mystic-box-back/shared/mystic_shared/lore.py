@@ -1346,8 +1346,531 @@ BONDS = [
 ]
 
 
-def public_lore(character):
-    """Região, título, história e laços da carta, ou None se não tiver história."""
+# Elemento e boato ("whisper") de cada região: o que se ouve por lá hoje.
+REGION_FLAVOR = {
+    "riftheart": (None, "On quiet nights the Box hums a lullaby. Grizelda says she taught it to the Wardens."),
+    "hrimvald": ("tide", "The wind-wolves are howling south again. Boreas has started answering."),
+    "zephyrine": ("gale", "The isles drift a little closer to the Riftheart every year. The empress says it is the wind."),
+    "nocthaven": ("umbra", "A raven of violet fire has been seen perched on Malachar's window, and he has not chased it away."),
+    "skyspire": ("lumen", "Elysia has stopped singing. The astrologers say the stars have started singing instead."),
+    "greenhollow": ("terra", "A candle burns every night in the window of an empty study, waiting for an astrologer to come home."),
+    "sylvaran": ("terra", "The roots beat like a second heart, and the girl the forest gave birth to can feel it."),
+    "aurelian": ("lumen", "A golden knight visits the ruins of Ithrel every month, leaves alms at the door and never gives his name."),
+    "hoshigane": ("gale", "A fugitive of the shadow clan was seen saving the last dragonfly swordsman. Again."),
+    "spirehollow": ("umbra", "The guild's enforcer has been ordered to bring down the rooftop hunter. He keeps losing her trail. On purpose."),
+    "ironfang": ("terra", "The warlord who cannot die has died a fourth time. The clans are counting, and so is his son."),
+    "thalassar": ("tide", "A puppet in Merrow sings hymns no one has sung since the temples drowned."),
+    "cinderpeak": ("ember", "The stones under the volcano are singing a warning: the Everfire is about to change hands."),
+    "cogsreach": ("volt", "The storm tower of Voltaris is failing, and only one archivist is holding it together."),
+}
+
+for _region_entry in REGIONS:
+    _element, _whisper = REGION_FLAVOR[_region_entry["id"]]
+    _region_entry["element"] = _element
+    _region_entry["whisper"] = _whisper
+
+# Crônica: a linha do tempo de Aethra, da mais antiga à mais recente.
+CHRONICLE = [
+    {
+        "era": "Before memory",
+        "title": "The Aetherwell",
+        "text": "Aethra is one land, warmed by the spring of living magic. Uriel stands "
+        "at the Gate of Dawn, and the dragons drink from the Sunwell.",
+    },
+    {
+        "era": "The Age of Wardens",
+        "title": "The forging of the Box",
+        "text": "Seven Wardens forge the Mystic Box to lock away the Hollow. One of them "
+        "walks out before it is finished, calling it a bad idea. Uriel keeps the key.",
+    },
+    {
+        "era": "A generation ago",
+        "title": "The plague of Nocthaven",
+        "text": "A plague sweeps through Nocthaven. Malachar, the last Warden, searches "
+        "every forbidden book for a cure, and every book points to the Box.",
+    },
+    {
+        "era": "The night of the Sundering",
+        "title": "The world breaks",
+        "text": "Malachar opens the Box. The Hollow breathes out and Aethra cracks into "
+        "the Shattered Realms. Ignis swallows the Everfire, Leoric holds the cathedral "
+        "doors, Valeria rides out while Aurelius holds the gate, Vaelora lifts the "
+        "western hills into the sky, and a star falls into a cradle in Greenhollow.",
+    },
+    {
+        "era": "The long night",
+        "title": "Betrayals and vows",
+        "text": "The volcano lords betray the dragon-queen of Cinderpeak, and Draemir "
+        "does not fly south. Zarathor gives his shadow away to save his city. The "
+        "Tonbo castle burns in Hoshigane.",
+    },
+    {
+        "era": "The rebuilding",
+        "title": "What was saved",
+        "text": "Cassius rebuilds the temple of Solmarr, Isolde founds the Tidewatch, "
+        "Seraphiel opens the shelter of Ithrel and the steam cities of Cogsreach rise "
+        "from the ruins.",
+    },
+    {
+        "era": "Now",
+        "title": "The calling",
+        "text": "The Box begins to call champions from every realm and bind them into "
+        "cards for the summoners it chooses. You are one of them.",
+    },
+]
+
+# Capítulo secreto de cada carta: o título aparece sempre; o texto só depois
+# de ascender a carta até SECRET_UNLOCK_ASCENSION.
+SECRET_UNLOCK_ASCENSION = 1
+
+SECRETS = {
+    # 5★
+    "malachar.jfif": (
+        "Lira",
+        "The plague took Malachar's daughter, Lira, first. When he opened the Box, the "
+        "Hollow spoke to him in her voice. Hers was the first soul he bound into the "
+        "tome, and he cannot free the others because he cannot bear to free her. He "
+        "does not know that Lira slipped out of the tome years ago, and now flies at "
+        "Ravenna's side as a raven of violet fire.",
+    ),
+    "boreas.jfif": (
+        "The Face Under the Helm",
+        "There is no face under the helm anymore, only the amber eyes of Hrimfang. "
+        "Boreas is slowly becoming the wolf she saved, and when the change is complete "
+        "the wind will need a new leader. She is not searching for Fenric to rescue "
+        "him. She is searching for him to give him the wind before she disappears.",
+    ),
+    "astra.jfif": (
+        "The Star in the Cradle",
+        "The star that fell into her cradle was a shard of the Mystic Box's lid, "
+        "knocked loose on the night of the Sundering. That is why she can pull stars "
+        "down. The map she is drawing in the sky is the shape of the missing lid, and "
+        "if she ever finishes it, she could close the Box, at the cost of every star "
+        "inside her.",
+    ),
+    "seraphiel.jfif": (
+        "A Piece of the Dawn",
+        "The lightning that struck Seraphiel was a shard of the shattered Gate of Dawn, "
+        "the very thing Uriel has spent a generation searching for. Seraphiel has "
+        "known for years. Returning it would put out his light, and with it the "
+        "shelter of Ithrel. He has not decided whether that makes him selfish.",
+    ),
+    "ignis.jfif": (
+        "The Name Beneath the Flame",
+        "Before the fire, Ignis was Aldren, a human knight who married the dragon-queen "
+        "Ysmera. Drakara believes her father died in the betrayal. He did not. He "
+        "remembers almost nothing of his old life, only the vow and a little girl's "
+        "face in the flames, and he cannot bring himself to tell her what he became.",
+    ),
+    "leoric.jfif": (
+        "The Brother Who Fled",
+        "Not every knight of the Lion Order died at Valdremont. One of them ran, "
+        "carrying his blade, and hid it in a barn in Greenhollow out of shame. That "
+        "knight was Tobin's grandfather. Leoric found out on his second visit, and "
+        "now has to decide whether the boy will pay for the old man's fear, or redeem it.",
+    ),
+    "lunara.jfif": (
+        "The Song That Was Not Hers",
+        "The tide-witches did not drown. Their song carried them into the Box, and "
+        "every full moon they sing to Lunara from inside it, asking her to finish the "
+        "song and join them. Some nights she has walked all the way into the water "
+        "before Isolde found her and brought her back.",
+    ),
+    "mortis.jfif": (
+        "The Joke That Started It All",
+        "Mortis found the tome that pointed Malachar to the Box in the royal vault, and "
+        "gave it to him as a joke: a cure for the plague, guaranteed or your money "
+        "back. He has never told anyone. Every trick, every laugh since then has been "
+        "a way of not hearing the joke land.",
+    ),
+    "drakara.jfif": (
+        "The Egg She Carries",
+        "Under her armor, Drakara carries her mother's last egg, still warm after "
+        "twenty years. The true heir of Cinderpeak has not hatched yet, and only the "
+        "Everfire can wake it. The flame is inside Ignis, and she is beginning to "
+        "suspect the knight knows exactly who she is.",
+    ),
+    "gorvane.jfif": (
+        "What Came Back With Him",
+        "Each time Gorvane returns from death, a little more of the Hollow returns with "
+        "him and a little less of Gorvane. Eldric's notes predict that the fifth "
+        "return will be the Hollow wearing his face. Gorvane read them, and asked his "
+        "son Brannoc to be the one who stops him.",
+    ),
+    "elysia.jfif": (
+        "The Voice That Sings Back",
+        "The voice singing back from the Box is her own, from a time that has not "
+        "happened yet. It sings the hymn that closes the Box, and every night it "
+        "comes closer to the last verse. Elysia is silent because she is learning it, "
+        "and because she suspects whoever sings it will not come back.",
+    ),
+    "uriel.jfif": (
+        "The Keeper of the Key",
+        "Uriel was never one of the Seven Wardens; Uriel was the one who held the key. "
+        "When Malachar came weeping for his dying daughter, the angel gave it to him. "
+        "Uriel's pity for Malachar is the shape of Uriel's own guilt.",
+    ),
+    "celestine.png": (
+        "The Goddess in the Driftwood",
+        "The tide-goddess did not fall silent. She left the drowned altar for a piece "
+        "of driftwood, now a puppet called Colette in the hands of a puppeteer in "
+        "Merrow. She chose an artist who listens over a priestess who stopped "
+        "listening, and Celestine cannot forgive herself for understanding why.",
+    ),
+    "lyra.png": (
+        "The First Arrow",
+        "Lyra fired her first arrow on the night of the Sundering, straight into the "
+        "crack in the sky. It knocked loose a shard of the Box's lid, which fell into a "
+        "cradle in Greenhollow. Every joke she plays on Astra is a way of staying close "
+        "to the girl she accidentally gave a falling star.",
+    ),
+    "zarathor.jfif": (
+        "Edric",
+        "Morwen's betrothed, Edric, was Zarathor's younger brother. When the shadow "
+        "grew too hungry to control, Edric walked into it willingly to keep it from "
+        "devouring the city. Zarathor has spent every year since trying to pull him "
+        "back out, and has never told Morwen: she needs someone to hate, and better "
+        "him than Edric.",
+    ),
+    "vaelora.jfif": (
+        "The Drift",
+        "The Zephyrine Isles are drifting toward the Riftheart, and Vaelora can no "
+        "longer steer them away. Each year she holds the winds a little longer and "
+        "smiles a little wider so her people will not notice. Only Lirien knows how "
+        "tired she is.",
+    ),
+    "draemir.jfif": (
+        "The Sunwell's Price",
+        "The Sunwell keeps Draemir alive by burning a dragon's lifetime every century. "
+        "Ysmera gave him hers, years before the betrayal. When she needed him, he had "
+        "no strength left that was not already hers. Drakara's mother is still alive, "
+        "in a way: in every beat of her uncle's heart.",
+    ),
+    "kyrielle.jfif": (
+        "Aurvex's Dream",
+        "Every night Aurvex dreams of the Box, and Kyrielle shares the dream: a silver "
+        "dragon diving into the Riftheart and the lid closing behind it. She has told "
+        "no one, not even the empress, afraid that saying it aloud will make it true.",
+    ),
+    # 4★
+    "kaito.jfif": (
+        "The Child in the Shadows",
+        "Kaito saw someone else that night: a Kurokage child who found him in the "
+        "well, looked straight at him and walked away without a word. Kaito has been "
+        "searching for that child all these years, not for revenge, but to say thank you.",
+    ),
+    "solara.jfif": (
+        "The Price of Noon",
+        "Every spell burns a little of Solara's sight. She is almost blind now, and "
+        "hides it behind the brightness of her staff. She walks the temple by the "
+        "sound of Cassius's hammer, and he has been hammering a little louder every year.",
+    ),
+    "aurelius.jfif": (
+        "The Child at the Gate",
+        "Among the refugees Aurelius refused to let in was a little girl who looked "
+        "him in the eyes as the gate closed. Years later he recognized her: Annelise, "
+        "the novice of Ithrel. The golden knight who leaves alms at Ithrel's door every "
+        "month and never gives his name is Aurelius.",
+    ),
+    "scarlett.jfif": (
+        "The Baron's Daughter",
+        "The baron Scarlett keeps robbing is her father. Her mother was a foundry "
+        "worker he never acknowledged. Scarlett does not want his money or his name. "
+        "She wants him to know, every time the vault is empty, exactly who emptied it.",
+    ),
+    "sylva.jfif": (
+        "The Second Heart",
+        "The second heart Sylva hears in the roots is Verdana's. Her niece's heartbeat "
+        "is in time with the Riftheart, because the forest made Verdana from the last "
+        "seed of the Aetherwell. Sylva has not told her. She is afraid of what Verdana "
+        "would choose.",
+    ),
+    "rosalind.jfif": (
+        "Lyra's Secret",
+        "The night Lyra left for the sky, she said goodbye to one person: Rosalind. She "
+        "made her promise not to tell Faelyn. Rosalind has kept that promise for twenty "
+        "years and has hated it for every one of them.",
+    ),
+    "thalion.jfif": (
+        "Aldric's Last Arrow",
+        "Aldric died because Thalion hesitated, one breath too long, before firing. "
+        "Thalion has never fired late since, and has never forgiven himself. Watching "
+        "over Rowan is not a favor to an old friend. It is a debt.",
+    ),
+    "vesper.jfif": (
+        "The Shadow's Conscience",
+        "Vesper was born from Zarathor's shadow: the small part of it that remembered "
+        "being a man and was horrified by what it had become. It tore itself free and "
+        "put on a mask. Every tyrant Vesper kills is a message to Zarathor, and when "
+        "Vesper accepted Morwen's contract, for the first time, Zarathor did not try "
+        "to stop it.",
+    ),
+    "pyralis.jfif": (
+        "The Burn Scar",
+        "The burn on Pyralis's chest has the shape of a flame, and it glows when Ignis "
+        "is near. The Everfire marked him the night the knight carried him out of the "
+        "fire. The flame has already chosen its heir. It is waiting for Pyralis to be "
+        "ready, and for Ignis to let go.",
+    ),
+    "glacius.jfif": (
+        "What He Saw Under the Ice",
+        "Under the frozen lake, Glacius saw Hrimfang's old pack sleeping in the ice, "
+        "waiting for a leader with the wolf's blood. He knows the leader is Fenric, and "
+        "he knows what Boreas will lose when that boy comes home.",
+    ),
+    "isolde.jfif": (
+        "The Unsent Letters",
+        "In the highest room of the Tidewatch tower, Isolde keeps twenty letters to "
+        "Celestine, one for each year, all asking her to come home. She has never sent "
+        "one. She is afraid her sister would say no.",
+    ),
+    "elowen.jfif": (
+        "The Dying Flowers",
+        "The moon flowers began to wilt the night of the Sundering. Elowen keeps them "
+        "blooming with her own life, one night at a time. She is much older than she "
+        "looks, and much more tired than she smiles.",
+    ),
+    "hayato.jfif": (
+        "The Draw",
+        "Hayato's first duel with Kaito ended in a draw because Hayato let it. He saw "
+        "the grief in the boy's eyes and could not bring himself to win. He has fought "
+        "at his very best in every duel since, so the lie would only ever be told once.",
+    ),
+    "maren.jfif": (
+        "The Spell She Broke",
+        "The spell Maren unraveled was the one holding the storms of Voltaris together. "
+        "She was expelled to hide the truth: the tower is failing. Ophira holds it up "
+        "alone, and Maren is the only person who knows how to rebuild it.",
+    ),
+    "fenric.jfif": (
+        "Born the Same Night",
+        "Fenric was born the night Hrimfang died. The wolf's last breath was split in "
+        "two: one half went to a shepherd girl in the snow, the other to a newborn "
+        "half-wolf. He is not an outcast. He is the pack's true leader.",
+    ),
+    "faelyn.jfif": (
+        "Counting Stars",
+        "Every night Faelyn climbs the tallest tree in the Wilds and counts Lyra's new "
+        "stars. She knows every one by heart. She tells everyone she has not forgiven "
+        "Lyra. The stars know better.",
+    ),
+    "amethia.jfif": (
+        "The Torn Page",
+        "In the Warden Archive Amethia found the page Malachar tore from his tome: "
+        "instructions for closing the Box. It requires the willing hand of a Warden. "
+        "Only two are left: Malachar, and a swamp witch who swears she quit. Amethia "
+        "has told no one.",
+    ),
+    "valeria.jfif": (
+        "The Father's Order",
+        "The order to keep the capital's gates shut came from the twins' own father. "
+        "Valeria has never forgiven him. Aurelius obeyed because he loved him. She has "
+        "only recently understood that both of them were trying to make him proud.",
+    ),
+    "stellara.jfif": (
+        "The Star That Spoke",
+        "One of the stars Stellara caught spoke with Lyra's voice: help me stitch it "
+        "closed. Since that night, the huntress has been quietly throwing some of the "
+        "fallen stars back into the sky.",
+    ),
+    "morwen.jfif": (
+        "He Chose to Go",
+        "Ravenna showed Morwen the truth: Edric was not taken. He walked into the "
+        "shadow willingly. Morwen no longer knows whether she wants revenge on "
+        "Zarathor, or on Edric for leaving her.",
+    ),
+    "kage.jfif": (
+        "The Lord Who Gave the Order",
+        "The rival lord who ordered the Kurokage to burn the Tonbo castle was Kage's "
+        "own father. Kage was the child who found Kaito in the well and walked away. "
+        "He is the one Kaito has been searching for.",
+    ),
+    "odette.jfif": (
+        "Colette's Request",
+        "Last winter Colette spoke a full sentence for the first time. She asked for "
+        "Celestine by name. Odette is still trying to find the courage to send a "
+        "letter to the sky.",
+    ),
+    "nocturna.jfif": (
+        "Why She Never Reads Them",
+        "Nocturna does not open her sister's letters because she knows what they say: "
+        "that Amethia forgives her. Reading it would mean deciding whether she deserves it.",
+    ),
+    "eldric.png": (
+        "The Serpent's Name",
+        "The serpent of runes is a fragment of one of the Seven Wardens, trapped in "
+        "the mountains since the Box was forged. Each night it tells Eldric one secret. "
+        "Last night it told him the name of the Warden who walked away.",
+    ),
+    "ravenna.png": (
+        "The Raven",
+        "Ravenna's raven of violet fire is Lira, Malachar's daughter, who slipped out of "
+        "his tome and found her way to the guide of souls. Lira is proof that a soul "
+        "can be freed without being devoured. She has asked Ravenna not to tell her "
+        "father yet.",
+    ),
+    "cassius.png": (
+        "The Path of Stones",
+        "Cassius knows Solara is going blind. Every night he carves small grooves into "
+        "the temple floor so she can find her way by touch, and he hammers loudly so "
+        "she can follow the sound. He has never told her he knows.",
+    ),
+    "nyra.jfif": (
+        "The Job That Went Wrong",
+        "The child who got hurt on Nyra and Lucan's last job was Jory. He does not "
+        "remember her face, only a voice saying sorry. Every loaf of bread she gives "
+        "him is part of the same apology.",
+    ),
+    "dorian.jfif": (
+        "Spark's Heart",
+        "Spark's heart is a shard of captured lightning that a young archivist gave a "
+        "lonely boy outside the storm tower. The archivist was Ophira. She still asks "
+        "after the little dragon.",
+    ),
+    "grizelda.jfif": (
+        "The Warden Who Walked Away",
+        "Grizelda was one of the Seven Wardens. She walked out before the Box was "
+        "finished, saying a lock would only teach the Hollow to wait. She has been "
+        "waiting too, in the swamp, for the day someone would need a Warden who did "
+        "not make that mistake.",
+    ),
+    "ophira.jfif": (
+        "Holding the Tower",
+        "The storm tower of Voltaris is failing. Ophira holds it together alone every "
+        "night, releasing storms by hand. She has not slept a full night in years, and "
+        "she has not asked Maren for help, because asking would mean admitting Maren "
+        "was right.",
+    ),
+    "verdana.jfif": (
+        "The Last Seed",
+        "Verdana knows what she is: the last seed of the Aetherwell. Planted in the "
+        "Riftheart, she could heal the world, but she would no longer be Verdana. She "
+        "has not decided yet, and Puff has not left her side since she found out.",
+    ),
+    "tavik.jfif": (
+        "Kesh's Return",
+        "Kesh is Hrimfang's own pup. When Fenric claims the pack, Kesh will go with "
+        "him. Tavik has known it from the start, and he leads them north anyway, "
+        "because that is what you do for family.",
+    ),
+    "lucan.jfif": (
+        "Grit's Real Job",
+        "Mortis did not lose Grit by accident. Lucan is his grandson, the child of a "
+        "daughter who left Nocthaven before the plague, and Grit was sent to keep him "
+        "alive. Lucan has no idea. Grit is exhausted.",
+    ),
+    # 3★
+    "rowan.jfif": (
+        "What the Bow Remembers",
+        "Some nights the antler bow whispers in his grandfather's voice. It always "
+        "says the same thing: tell the elf it was not his fault.",
+    ),
+    "corvus.jfif": (
+        "His Real Name",
+        "His real name is Corin. He is Nyra's younger brother, the one she believes died "
+        "in the Sundering. The guild took him in, and he has never found the courage to "
+        "lower his collar and let her see his face.",
+    ),
+    "tobin.jfif": (
+        "Grandpa's Sword",
+        "The sword in the barn belonged to his grandfather, a knight who ran from "
+        "Valdremont and never spoke of it. Before he died, the old man told Tobin one "
+        "thing: if a knight with a lion on his shield comes, do not run. Tobin is "
+        "trying very hard not to.",
+    ),
+    "garrick.jfif": (
+        "The Fourth Death",
+        "Garrick caused Gorvane's fourth death. In the middle of a battle the warlord "
+        "turned on his own son, and Garrick struck him down to save Brannoc. Nobody "
+        "else saw it. Garrick left the next day.",
+    ),
+    "maelis.jfif": (
+        "The Patient Who Lived",
+        "Her first patient did not die. He woke the next morning and asked for the "
+        "girl who saved him. Annelise has written it in every letter, but Maelis never "
+        "gets past the first line before she has to stop.",
+    ),
+    "jory.jfif": (
+        "The Voice",
+        "Jory has a scar from the night a job went wrong in front of him. He does not "
+        "remember the thieves, only a woman's voice saying sorry, over and over. He "
+        "has heard that voice again, on the rooftops.",
+    ),
+    "albin.jfif": (
+        "The Reports",
+        "Astra reads every report Albin sends and keeps them all in her observatory, "
+        "in order. She stays away because the star inside her hurts the people close "
+        "to it, and she would rather be a bad teacher than a dangerous one.",
+    ),
+    "brina.jfif": (
+        "The Airship",
+        "In the back of her workshop Brina is building an airship, big enough for two, "
+        "to fly her cousin out of Cogsreach to the Zephyrine Isles before the barons "
+        "finally catch her.",
+    ),
+    "silas.jfif": (
+        "Where the Mushrooms Grow",
+        "His glowing mushrooms only grow where the Hollow leaks into the world. The "
+        "Mirewood is one of those leaks, and Grizelda has been guarding it for centuries. "
+        "Silas worked it out last month. He has not stopped picking mushrooms.",
+    ),
+    "kael.jfif": (
+        "The Warden's Journal",
+        "In a ruin Kael found the journal of a Warden, with a map to the Mystic Box "
+        "and a last page he has never dared to read. He has the feeling it is "
+        "addressed to him.",
+    ),
+    "vexa.jfif": (
+        "The Bridge",
+        "The bridge Vexa keeps selling belonged to her family before the Sundering "
+        "swallowed their village. Every time she sells it, she tells the buyer the "
+        "story of the people who lived on it. Nobody has ever asked for a refund.",
+    ),
+    "torvin.jfif": (
+        "The Stones' Warning",
+        "The stones under Cinderpeak sing that the mountain will wake when the Everfire "
+        "changes hands. Torvin has not told Pyralis, because his friend would go anyway, "
+        "and Torvin intends to be standing beside him when he does.",
+    ),
+    "annelise.jfif": (
+        "The Golden Knight",
+        "Annelise remembers a golden knight at a closing gate, crying behind his helm. "
+        "She has never blamed him. She would like to tell him so, if she ever finds out "
+        "who he is.",
+    ),
+    "brannoc.jfif": (
+        "The Promise",
+        "His father made him promise: if he ever comes back a fifth time, Brannoc must "
+        "be the one to end it. Every fight in the arena is practice for the only fight "
+        "he does not want to win.",
+    ),
+    "ryuji.jfif": (
+        "The Petal",
+        "Ryuji once cut a falling cherry petal in half with the wind of his punch. "
+        "Nobody saw. He has never told anyone, because if they knew, they might ask him "
+        "to pick up the sword again.",
+    ),
+    "liesel.jfif": (
+        "Ember's Errand",
+        "Ember is a spirit of the Everfire, sent out of Cinderpeak to find the flame's "
+        "next guardian. It stayed with Liesel because she healed it, but it always "
+        "turns its head when Pyralis walks by.",
+    ),
+    "wren.jfif": (
+        "What Bloop Says",
+        "Bloop can talk, but only to Wren. It says Grizelda is very lonely, and that she "
+        "was once very important. Wren has started inviting the old witch to dinner.",
+    ),
+}
+
+
+def public_lore(character, ascension=0, owned=None):
+    """Região, título, história, laços e capítulo secreto da carta.
+
+    `ascension`: ascensão do jogador nessa carta (libera o capítulo secreto).
+    `owned`: file_names que o jogador tem; marca os laços com quem ele já tem.
+    Devolve None se a carta não tiver história.
+    """
     if not character:
         return None
     file_name = character.get("file_name")
@@ -1356,16 +1879,33 @@ def public_lore(character):
         return None
 
     region = _region(lore["region"])
+    secret_title, secret_text = SECRETS[file_name]
+    unlocked = ascension >= SECRET_UNLOCK_ASCENSION
     return {
         "title": lore["title"],
         "story": list(lore["story"]),
-        "region": {"id": region["id"], "name": region["name"]},
-        "bonds": _bonds_of(file_name),
+        "region": {"id": region["id"], "name": region["name"], "element": region["element"]},
+        "bonds": _bonds_of(file_name, owned),
+        "secret": {
+            "title": secret_title,
+            "unlockAscension": SECRET_UNLOCK_ASCENSION,
+            "unlocked": unlocked,
+            # O texto só sai do servidor depois de liberado.
+            "text": secret_text if unlocked else None,
+        },
     }
 
 
+def unlocked_secret_title(character, before, after):
+    """Título do capítulo secreto se ir de `before` para `after` o liberou."""
+    secret = SECRETS.get((character or {}).get("file_name"))
+    if secret and before < SECRET_UNLOCK_ASCENSION <= after:
+        return secret[0]
+    return None
+
+
 def public_world():
-    """Mapa-múndi: o mundo, as regiões e quem vem de cada uma."""
+    """Mapa-múndi: o mundo, a crônica, as regiões e quem vem de cada uma."""
     residents = {region["id"]: [] for region in REGIONS}
     for character in CHARACTERS:
         lore = STORIES.get(character["file_name"])
@@ -1381,6 +1921,7 @@ def public_world():
 
     return {
         "world": copy.deepcopy(WORLD),
+        "chronicle": copy.deepcopy(CHRONICLE),
         "regions": [
             {
                 **copy.deepcopy(region),
@@ -1398,7 +1939,7 @@ def _region(region_id):
     return next(region for region in REGIONS if region["id"] == region_id)
 
 
-def _bonds_of(file_name):
+def _bonds_of(file_name, owned=None):
     bonds = []
     for a, b, a_about_b, b_about_a in BONDS:
         if a == file_name:
@@ -1408,12 +1949,13 @@ def _bonds_of(file_name):
         else:
             continue
         character = get_character(other)
-        bonds.append(
-            {
-                "name": character["name"],
-                "file_name": other,
-                "rarity": character["rarity"],
-                "relation": relation,
-            }
-        )
+        bond = {
+            "name": character["name"],
+            "file_name": other,
+            "rarity": character["rarity"],
+            "relation": relation,
+        }
+        if owned is not None:
+            bond["owned"] = other in owned
+        bonds.append(bond)
     return bonds
