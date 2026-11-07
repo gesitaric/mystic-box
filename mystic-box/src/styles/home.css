@@ -689,3 +689,115 @@
   letter-spacing: 1.5px;
   text-transform: uppercase;
 }
+
+/* ---------- Sininho de duelos ---------- */
+
+.duel-bell {
+  position: relative;
+}
+
+.duel-bell .hud-icon-button {
+  position: relative;
+}
+
+.duel-bell .hud-icon-button.has-alert {
+  border-color: rgba(255, 217, 138, 0.8);
+  color: #ffd98a;
+}
+
+.duel-bell-badge {
+  position: absolute;
+  top: -4px;
+  right: -4px;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  border-radius: 999px;
+  background: #e2455c;
+  color: #fff;
+  font-size: 11px;
+  font-weight: 800;
+  line-height: 18px;
+  text-align: center;
+}
+
+.duel-bell-panel {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  z-index: 20;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: min(320px, calc(100vw - 32px));
+  padding: 12px;
+  border: 1px solid rgba(255, 220, 150, 0.3);
+  border-radius: 16px;
+  background: rgba(16, 9, 32, 0.96);
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.5);
+}
+
+.duel-bell-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  color: var(--gold);
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+}
+
+.duel-bell-refresh {
+  padding: 4px 10px;
+  border: 1px solid rgba(203, 182, 238, 0.35);
+  border-radius: 999px;
+  background: transparent;
+  color: #cbb6ee;
+  font: inherit;
+  font-size: 11px;
+  letter-spacing: 1px;
+  cursor: pointer;
+}
+
+.duel-bell-refresh:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+.duel-bell-item {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 8px 10px;
+  border: 1px solid rgba(255, 220, 150, 0.2);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.duel-bell-text {
+  color: #e8dcff;
+  font-size: 13px;
+}
+
+.duel-bell-text strong {
+  color: #fff;
+}
+
+.duel-bell-expires {
+  margin-left: 6px;
+  color: #cbb6ee;
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+}
+
+.duel-bell-actions {
+  display: flex;
+  gap: 6px;
+}
+
+.duel-bell-empty {
+  margin: 0;
+  color: #cbb6ee;
+  font-size: 13px;
+}

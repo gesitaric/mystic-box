@@ -55,7 +55,10 @@ function formatDuration(seconds) {
     const hours = seconds / 3600;
     return `${hours} hour${hours === 1 ? "" : "s"}`;
   }
-  if (seconds % 60 === 0) return `${seconds / 60} minutes`;
+  if (seconds % 60 === 0) {
+    const minutes = seconds / 60;
+    return `${minutes} minute${minutes === 1 ? "" : "s"}`;
+  }
   return `${seconds} seconds`;
 }
 
@@ -330,6 +333,7 @@ const BATTLE_PAGES = [
   { id: "archetypes", label: "Classes" },
   { id: "effects", label: "Effects" },
   { id: "difficulty", label: "Rewards" },
+  { id: "duels", label: "Duels" },
 ];
 
 function FlowPage({ battle }) {
@@ -750,6 +754,49 @@ function DifficultyPage({ battle }) {
   );
 }
 
+function DuelsPage({ pvp }) {
+  if (!pvp) return null;
+  return (
+    <>
+      <p className="gr-lead">
+        Challenge another summoner by name. Same cards, skills and rules as the arena, but
+        both teams are played by people.
+      </p>
+      <h3 className="gr-heading">Challenges</h3>
+      <ul className="gr-list">
+        <li>You need a username to challenge, and you find your rival by theirs.</li>
+        <li>
+          Pick your {pvp.teamSize} cards and send the challenge. Your rival has{" "}
+          {formatDuration(pvp.challengeTtlSeconds)} to accept with their own team, or decline.
+        </li>
+        <li>
+          You can have up to {pvp.maxOutgoingChallenges} open challenges and one duel at a
+          time.
+        </li>
+        <li>Each side fights at its own level, with no difficulty bonus.</li>
+      </ul>
+      <h3 className="gr-heading">Turns</h3>
+      <ul className="gr-list">
+        <li>
+          Each turn has {formatDuration(pvp.turnSeconds)}. When time runs out, the card acts on
+          its own.
+        </li>
+        <li>Miss {pvp.maxMissedTurns} turns in a row and you abandon the duel.</li>
+        <li>If {pvp.maxRounds} rounds pass with both teams standing, it is a draw.</li>
+      </ul>
+      <h3 className="gr-heading">Experience</h3>
+      <ul className="gr-list">
+        <li>Victory: {pvp.winExperience} XP.</li>
+        <li>
+          Defeat or draw: {pvp.lossExperience} XP, plus {pvp.lossExperiencePerDefeat} XP per
+          foe you knocked out.
+        </li>
+        <li>Fleeing or abandoning: 0 XP. Your rival takes the victory.</li>
+      </ul>
+    </>
+  );
+}
+
 const BATTLE_PAGE_COMPONENTS = {
   flow: FlowPage,
   aether: AetherPage,
@@ -758,6 +805,7 @@ const BATTLE_PAGE_COMPONENTS = {
   archetypes: ArchetypesPage,
   effects: EffectsPage,
   difficulty: DifficultyPage,
+  duels: DuelsPage,
 };
 
 function BattleChapter({ rules, page, setPage }) {
@@ -778,7 +826,7 @@ function BattleChapter({ rules, page, setPage }) {
           </button>
         ))}
       </div>
-      <Page battle={rules.battle} />
+      <Page battle={rules.battle} pvp={rules.pvp} />
     </>
   );
 }

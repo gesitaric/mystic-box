@@ -1,4 +1,4 @@
-"""Motor de batalha contra o computador.
+"""Motor de batalha: contra o computador ou duelo online entre jogadores.
 
 Batalha por turnos entre dois times de 3 cartas. Regras principais:
 
@@ -16,6 +16,11 @@ Batalha por turnos entre dois times de 3 cartas. Regras principais:
 - Efeitos: queimadura, atordoamento, enfraquecer, expor, lentidão, escudo,
   provocação, regeneração, fortalecer e guarda.
 - Provocação: golpes de alvo único precisam mirar quem está provocando.
+- Duelo online (mode "pvp"): as mesmas regras, mas os dois lados são
+  jogadores. O lado "player" é quem desafiou e o "enemy" quem aceitou; cada
+  um luta no próprio nível, sem bônus de dificuldade. Se as rodadas acabarem,
+  é empate. `public_state`/`view_events` mostram a batalha do ponto de vista
+  de cada lado (o próprio time sempre aparece como "player").
 
 O estado da batalha é um dict serializável em JSON, guardado pelo servidor. O
 cliente só manda a intenção (habilidade e alvo); tudo é validado e calculado
@@ -53,6 +58,16 @@ SLOW_MULTIPLIER = 0.6
 # inimigo derrotado. Desistir não dá experiência.
 LOSS_EXPERIENCE_RATIO = 0.3
 LOSS_EXPERIENCE_PER_DEFEAT = 5
+
+# Duelo online: experiência da vitória (derrota e empate seguem
+# LOSS_EXPERIENCE_RATIO/LOSS_EXPERIENCE_PER_DEFEAT; desistir/abandonar dá 0).
+PVP = {
+    "label": "Online duel",
+    "experience": 90,
+}
+
+# Motivos de fim em que o perdedor saiu da batalha (não ganha experiência).
+WITHDRAW_REASONS = ("forfeit", "abandon")
 
 DIFFICULTIES = {
     "novice": {
@@ -651,6 +666,42 @@ def create_battle(battle_id, player_team, player_level, difficulty, rng, enemy_t
     return state, events
 
 
+def create_pvp_battle(battle_id, challenger_team, challenger_level, opponent_team,
+                      opponent_level, rng):
+    """Duelo entre dois jogadores: quem desafiou é "player", quem aceitou "enemy".
+
+    Cada time luta no nível do seu dono, com os atributos normais.
+    Devolve (estado, eventos) parado na vez da primeira carta.
+    """
+    for team in (challenger_team, opponent_team):
+        if len(team) != TEAM_SIZE:
+            raise BattleError(f"Choose exactly {TEAM_SIZE} cards.")
+        if len({c["file_name"] for c in team}) != TEAM_SIZE:
+            raise BattleError("Choose different cards.")
+
+    state = {
+        "battleId": battle_id,
+        "mode": "pvp",
+        "difficulty": None,
+        "status": "active",
+        "endReason": None,
+        "round": 0,
+        "queue": [],
+        "turn": None,
+        "acting": None,
+        "aether": {"player": STARTING_AETHER, "enemy": STARTING_AETHER},
+        "playerLevel": challenger_level,
+        "enemyLevel": opponent_level,
+        "units": [
+            *(build_unit(c, "player", i, challenger_level) for i, c in enumerate(challenger_team)),
+            *(build_unit(c, "enemy", i, opponent_level) for i, c in enumerate(opponent_team)),
+        ],
+    }
+    events = []
+    _advance(state, rng, events)
+    return state, events
+
+
 # ----------------------------------------------------------------- turnos ---
 
 
@@ -659,11 +710,21 @@ def effective_celerity(unit):
     return celerity * SLOW_MULTIPLIER if _has(unit, "slow") else celerity
 
 
+def is_pvp(state):
+    return state.get("mode") == "pvp"
+
+
+def human_sides(state):
+    """Lados controlados por jogadores (os outros são do computador)."""
+    return ("player", "enemy") if is_pvp(state) else ("player",)
+
+
 def _start_round(state, rng, events):
     state["round"] += 1
     if state["round"] > MAX_ROUNDS:
         state["round"] = MAX_ROUNDS
-        _finish(state, "lost", "timeout", events)
+        # Contra o computador, demorar demais é derrota; entre jogadores, empate.
+        _finish(state, "draw" if is_pvp(state) else "lost", "timeout", events)
         return
     living = [u for u in state["units"] if _alive(u)]
     # Desempate aleatório entre velocidades iguais.
@@ -750,7 +811,7 @@ def _advance(state, rng, events):
         if not acts:
             state["acting"] = None
             continue
-        if actor["side"] == "player":
+        if actor["side"] in human_sides(state):
             state["turn"] = actor["id"]
             return
         skill_id, target_id = choose_action(state, actor, rng)
@@ -879,24 +940,35 @@ def choose_action(state, actor, rng):
 # ---------------------------------------------------------- ação do jogador ---
 
 
-def play_turn(state, action, rng):
-    """Executa a ação do jogador na carta da vez e roda os turnos do computador.
+def withdraw(state, side, reason, events):
+    """O lado `side` sai da batalha (desistência ou abandono) e perde."""
+    _finish(state, "lost" if side == "player" else "won", reason, events)
+
+
+def play_turn(state, action, rng, side="player"):
+    """Executa a ação do lado `side` na carta da vez e roda os turnos do computador.
 
     `action`: {"type": "skill", "skill": id, "target": unitId | None},
     {"type": "auto"} (o computador decide pelo jogador) ou {"type": "forfeit"}.
-    Devolve a lista de eventos. Lança BattleError se a ação for inválida.
+    Desistir vale a qualquer momento; as outras ações só na vez de uma carta
+    de `side`. Devolve a lista de eventos. Lança BattleError se a ação for
+    inválida.
     """
-    if state["status"] != "active" or not state["turn"]:
+    if state["status"] != "active":
         raise BattleError("This battle is over.")
 
     events = []
     action_type = action.get("type")
 
     if action_type == "forfeit":
-        _finish(state, "lost", "forfeit", events)
+        withdraw(state, side, "forfeit", events)
         return events
 
+    if not state["turn"]:
+        raise BattleError("This battle is over.")
     actor = _unit(state, state["turn"])
+    if actor["side"] != side:
+        raise BattleError("It is not your turn.")
     if action_type == "auto":
         skill_id, target_id = choose_action(state, actor, rng)
     elif action_type == "skill":
@@ -922,18 +994,36 @@ def play_turn(state, action, rng):
 # --------------------------------------------------------------- recompensa ---
 
 
-def defeated_enemies(state):
-    return len(_team(state, "enemy", alive=False))
+def defeated_enemies(state, side="player"):
+    """Cartas do adversário de `side` que estão derrotadas."""
+    return len(_team(state, _opponent(side), alive=False))
 
 
-def battle_experience(state):
-    """Experiência ganha ao fim da batalha (0 se ainda estiver ativa)."""
-    base = DIFFICULTIES[state["difficulty"]]["experience"]
-    if state["status"] == "won":
+def outcome_for(state, side="player"):
+    """Resultado visto pelo lado `side`: active, won, lost ou draw."""
+    status = state["status"]
+    if side == "enemy" and status in ("won", "lost"):
+        return "lost" if status == "won" else "won"
+    return status
+
+
+def _win_experience(state):
+    if is_pvp(state):
+        return PVP["experience"]
+    return DIFFICULTIES[state["difficulty"]]["experience"]
+
+
+def battle_experience(state, side="player"):
+    """Experiência ganha por `side` ao fim da batalha (0 se ainda estiver ativa)."""
+    base = _win_experience(state)
+    outcome = outcome_for(state, side)
+    if outcome == "won":
         return base
-    if state["status"] == "lost" and state["endReason"] != "forfeit":
+    if outcome == "lost" and state["endReason"] in WITHDRAW_REASONS:
+        return 0
+    if outcome in ("lost", "draw"):
         return round(base * LOSS_EXPERIENCE_RATIO) + (
-            LOSS_EXPERIENCE_PER_DEFEAT * defeated_enemies(state)
+            LOSS_EXPERIENCE_PER_DEFEAT * defeated_enemies(state, side)
         )
     return 0
 
@@ -941,10 +1031,75 @@ def battle_experience(state):
 # ------------------------------------------------------------ visão pública ---
 
 
-def _public_unit(unit):
+def _flip_id(unit_id):
+    """p0 <-> e0: ids vistos pelo lado "enemy" (o próprio time vira "p")."""
+    if not isinstance(unit_id, str) or not unit_id:
+        return unit_id
+    prefix = {"p": "e", "e": "p"}.get(unit_id[0])
+    return prefix + unit_id[1:] if prefix else unit_id
+
+
+def view_id(unit_id, viewer):
+    """Id de uma carta como `viewer` vê (a conversão é a mesma nos dois sentidos)."""
+    return _flip_id(unit_id) if viewer == "enemy" else unit_id
+
+
+def _view_side(side, viewer):
+    if viewer == "enemy" and side in ("player", "enemy"):
+        return _opponent(side)
+    return side
+
+
+def _view_aether(aether, viewer):
+    return {_view_side(side, viewer): value for side, value in aether.items()}
+
+
+def view_reason(reason, outcome):
+    """Motivo do fim visto por quem teve `outcome`.
+
+    "victory"/"defeat" seguem o resultado de quem vê; quem venceu porque o
+    outro saiu vê "opponent_forfeit"/"opponent_abandon".
+    """
+    if reason in ("victory", "defeat") and outcome in ("won", "lost"):
+        return "victory" if outcome == "won" else "defeat"
+    if reason in WITHDRAW_REASONS and outcome == "won":
+        return f"opponent_{reason}"
+    return reason
+
+
+_EVENT_ID_FIELDS = ("actor", "target", "source")
+_EVENT_ID_LIST_FIELDS = ("targets", "order")
+
+
+def view_events(events, viewer="player"):
+    """Eventos como `viewer` vê (próprio time como "player")."""
+    viewed = []
+    for event in events:
+        event = dict(event)
+        if viewer == "enemy":
+            for field in _EVENT_ID_FIELDS:
+                if field in event:
+                    event[field] = _flip_id(event[field])
+            for field in _EVENT_ID_LIST_FIELDS:
+                if field in event:
+                    event[field] = [_flip_id(unit_id) for unit_id in event[field]]
+            if isinstance(event.get("aether"), dict):
+                event["aether"] = _view_aether(event["aether"], viewer)
+            for field in ("from", "to"):
+                if field in event:
+                    event[field] = _view_side(event[field], viewer)
+            if event.get("type") == "end" and event["result"] in ("won", "lost"):
+                event["result"] = "lost" if event["result"] == "won" else "won"
+        if event.get("type") == "end":
+            event["reason"] = view_reason(event["reason"], event["result"])
+        viewed.append(event)
+    return viewed
+
+
+def _public_unit(unit, viewer="player"):
     return {
-        "id": unit["id"],
-        "side": unit["side"],
+        "id": view_id(unit["id"], viewer),
+        "side": _view_side(unit["side"], viewer),
         "fileName": unit["fileName"],
         "name": unit["name"],
         "rarity": unit["rarity"],
@@ -972,37 +1127,48 @@ def _public_unit(unit):
     }
 
 
-def public_state(state):
-    """O que o jogador vê da batalha (tudo calculado aqui)."""
+def public_state(state, viewer="player"):
+    """O que o lado `viewer` vê da batalha (tudo calculado aqui).
+
+    O time de quem vê sempre aparece como "player" (ids "p0".."p2").
+    """
     actor = _unit(state, state["turn"]) if state["turn"] else None
+    your_turn = bool(actor) and state["status"] == "active" and actor["side"] == viewer
     actions = []
-    if actor and state["status"] == "active":
+    if your_turn:
         for skill_id in actor["skills"]:
             reason = skill_unavailable_reason(state, actor, skill_id)
+            targets = valid_targets(state, actor, skill_id) if reason is None else []
             actions.append(
                 {
                     **public_skill(skill_id),
                     "usable": reason is None,
                     "reason": reason,
-                    "targets": valid_targets(state, actor, skill_id) if reason is None else [],
+                    "targets": [view_id(unit_id, viewer) for unit_id in targets],
                 }
             )
 
+    pvp = is_pvp(state)
+    outcome = outcome_for(state, viewer)
     return {
         "battleId": state["battleId"],
-        "status": state["status"],
-        "endReason": state["endReason"],
-        "difficulty": state["difficulty"],
-        "difficultyLabel": DIFFICULTIES[state["difficulty"]]["label"],
+        "mode": "pvp" if pvp else "pve",
+        "status": outcome,
+        "endReason": view_reason(state["endReason"], outcome),
+        "difficulty": "pvp" if pvp else state["difficulty"],
+        "difficultyLabel": PVP["label"] if pvp else DIFFICULTIES[state["difficulty"]]["label"],
         "round": state["round"],
         "maxRounds": MAX_ROUNDS,
-        "aether": dict(state["aether"]),
+        "aether": _view_aether(state["aether"], viewer),
         "maxAether": MAX_AETHER,
-        "turn": state["turn"],
+        "turn": view_id(state["turn"], viewer),
+        "yourTurn": your_turn,
         "upcoming": [
-            unit_id for unit_id in state["queue"] if _alive(_unit(state, unit_id))
+            view_id(unit_id, viewer)
+            for unit_id in state["queue"]
+            if _alive(_unit(state, unit_id))
         ],
-        "units": [_public_unit(unit) for unit in state["units"]],
+        "units": [_public_unit(unit, viewer) for unit in state["units"]],
         "actions": actions,
         "elementRiders": {
             key: ELEMENT_RIDERS[key] for key in {u["element"] for u in state["units"]}

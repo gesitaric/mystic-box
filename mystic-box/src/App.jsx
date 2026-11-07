@@ -325,6 +325,54 @@ function App() {
   const onCooldown = cooldownRemaining > 0;
   const onHome = Boolean(session) && screen === "home";
   const onBattle = Boolean(session) && screen === "battle";
+
+  // Desafios de duelo do sininho. Não há consulta periódica: busca ao abrir a
+  // tela inicial e quando o jogador abre/atualiza o sininho.
+  const [duels, setDuels] = useState(null);
+  const [duelsLoading, setDuelsLoading] = useState(false);
+  // Como a arena abre: null (normal), { challenge } vindo do sininho ou
+  // { opponent } vindo da busca de jogadores.
+  const [duelIntent, setDuelIntent] = useState(null);
+
+  const fetchDuels = useCallback(async (activeSession) => {
+    if (!activeSession) return;
+    setDuelsLoading(true);
+    try {
+      const token = activeSession.session.getIdToken().getJwtToken();
+      const response = await fetch(`${API_URL}/pvp`, { headers: { Authorization: token } });
+      if (!response.ok) throw new Error(`Failed to fetch the duels (${response.status}).`);
+      // receivedAt: base da contagem regressiva dos prazos devolvidos.
+      setDuels({ ...(await response.json()), receivedAt: Date.now() });
+    } catch (duelsError) {
+      console.error(duelsError);
+    } finally {
+      setDuelsLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (!onHome || !session) return;
+    // Uma consulta ao abrir a tela inicial (o resultado vem da API).
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    void fetchDuels(session);
+  }, [onHome, session, fetchDuels]);
+
+  const declineDuel = useCallback(
+    async (challenge) => {
+      try {
+        const token = session.session.getIdToken().getJwtToken();
+        await fetch(`${API_URL}/pvp/challenges/decline`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json", Authorization: token },
+          body: JSON.stringify({ challengeId: challenge.challengeId }),
+        });
+      } catch (declineError) {
+        console.error(declineError);
+      }
+      await fetchDuels(session);
+    },
+    [session, fetchDuels]
+  );
   // Telas que não mostram o portal de invocação.
   const offSummon = onHome || onBattle;
 
@@ -441,6 +489,11 @@ function App() {
   const closeCollection = useCallback(() => setCollectionOpen(false), []);
   const closeShop = useCallback(() => setShopOpen(false), []);
   const closePlayers = useCallback(() => setPlayersTab(null), []);
+  const challengePlayer = useCallback((opponent) => {
+    setPlayersTab(null);
+    setDuelIntent({ opponent: { username: opponent.username, level: opponent.level } });
+    setScreen("battle");
+  }, []);
 
   // Nome e tempo de espera devolvidos pelo servidor depois de uma troca.
   const handleProfileChange = useCallback((changes) => {
@@ -557,6 +610,7 @@ function App() {
         <BattleScreen
           apiUrl={API_URL}
           session={session}
+          duelIntent={duelIntent}
           onExit={() => setScreen("home")}
           onSessionExpired={handleBattleSessionExpired}
           onProgressChange={setProgress}
@@ -569,8 +623,23 @@ function App() {
           balance={balance}
           progress={progress}
           cooldownLabel={onCooldown ? formatCountdown(cooldownRemaining) : ""}
+          duels={duels}
+          duelsLoading={duelsLoading}
+          onRefreshDuels={() => void fetchDuels(session)}
+          onAnswerDuel={(challenge) => {
+            setDuelIntent({ challenge });
+            setScreen("battle");
+          }}
+          onDeclineDuel={declineDuel}
+          onOpenDuel={() => {
+            setDuelIntent({});
+            setScreen("battle");
+          }}
           onSummon={() => setScreen("summon")}
-          onBattle={() => setScreen("battle")}
+          onBattle={() => {
+            setDuelIntent(null);
+            setScreen("battle");
+          }}
           onCollection={() => setCollectionOpen(true)}
           onShop={() => setShopOpen(true)}
           onProfile={() => setPlayersTab("name")}
@@ -738,6 +807,7 @@ function App() {
           onClose={closePlayers}
           onSessionExpired={handleCollectionSessionExpired}
           onProfileChange={handleProfileChange}
+          onChallenge={challengePlayer}
         />
       )}
 

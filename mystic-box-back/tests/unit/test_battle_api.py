@@ -16,7 +16,8 @@ class FakeDynamo:
     """DynamoDB mínimo em memória para os testes das batalhas."""
 
     def __init__(self):
-        self.tables = {"battles": {}, "cards": [], "progress": {}, "wallet": {}}
+        self.tables = {"battles": {}, "cards": [], "progress": {}, "wallet": {},
+                       "pvp_players": {}}
         self.fail_progress_condition = 0
 
     # --- leitura
@@ -95,6 +96,7 @@ def db(monkeypatch):
         monkeypatch.setattr(module, "_client", fake)
         monkeypatch.setattr(module, "BATTLES_TABLE", "battles")
         monkeypatch.setattr(module, "USER_PROGRESS_TABLE", "progress")
+    monkeypatch.setattr(get_battle, "PVP_PLAYERS_TABLE", "pvp_players")
     monkeypatch.setattr(play_battle, "USER_CARDS_TABLE", "cards")
     monkeypatch.setattr(play_battle, "USER_WALLET_TABLE", "wallet")
     monkeypatch.setattr(play_battle, "new_rng", lambda: random.Random(42))
@@ -384,6 +386,7 @@ def test_get_battle_without_battle(authenticated_event, db):
 
     assert status == 200
     assert data["battle"] is None
+    assert data["pvpBattleId"] is None
     assert data["teamSize"] == battle.TEAM_SIZE
     assert data["progress"]["level"] == 1
     unlocked = [d["id"] for d in data["difficulties"] if d["unlocked"]]
@@ -411,3 +414,16 @@ def test_get_battle_hides_finished_battle(authenticated_event, db):
 
     assert data["battle"] is None
     assert data["progress"]["losses"] == 1
+
+
+@pytest.mark.parametrize("status, expected", [("active", "duel-1"), ("finished", None)])
+def test_get_battle_points_to_active_duel(authenticated_event, db, status, expected):
+    db.tables["pvp_players"][USER] = {
+        "userId": {"S": USER},
+        "battleId": {"S": "duel-1"},
+        "status": {"S": status},
+    }
+
+    _, data = call(get_battle, authenticated_event(httpMethod="GET"))
+
+    assert data["pvpBattleId"] == expected

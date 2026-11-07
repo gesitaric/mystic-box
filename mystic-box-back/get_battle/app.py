@@ -1,7 +1,9 @@
 """GET /battles/current: batalha ativa do jogador e opções para começar outra.
 
 Devolve a batalha em andamento (ou null), as dificuldades (com as liberadas
-pelo nível do jogador), o tamanho do time e o progresso do jogador.
+pelo nível do jogador), o tamanho do time, o progresso do jogador e
+`pvpBattleId`: o id do duelo online ativo (ou null), para o frontend abrir a
+arena com uma chamada só quando não há duelo.
 """
 
 import json
@@ -20,6 +22,7 @@ CORS_HEADERS = {
 
 BATTLES_TABLE = os.environ.get("BATTLES_TABLE")
 USER_PROGRESS_TABLE = os.environ.get("USER_PROGRESS_TABLE")
+PVP_PLAYERS_TABLE = os.environ.get("PVP_PLAYERS_TABLE")
 
 # Criado uma vez por container e reaproveitado entre invocações.
 _client = None
@@ -68,6 +71,7 @@ def lambda_handler(event, context):
     try:
         battle_item = get_item(BATTLES_TABLE, user_id)
         progress_item = get_item(USER_PROGRESS_TABLE, user_id) or {}
+        pvp_pointer = get_item(PVP_PLAYERS_TABLE, user_id) or {}
     except ClientError:
         return response(500, {"message": "Could not load the battle."})
 
@@ -82,6 +86,11 @@ def lambda_handler(event, context):
         200,
         {
             "battle": battle,
+            "pvpBattleId": (
+                pvp_pointer["battleId"]["S"]
+                if pvp_pointer.get("status", {}).get("S") == "active"
+                else None
+            ),
             "teamSize": TEAM_SIZE,
             "difficulties": public_difficulties(level),
             "progress": public_progress(
