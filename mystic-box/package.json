@@ -9,6 +9,7 @@
     "build": "vite build",
     "lint": "eslint .",
     "preview": "vite preview",
+    "test": "node --test \"src/**/*.test.js\"",
     "images": "node scripts/optimize-images.mjs",
     "deploy": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/deploy.ps1"
   },

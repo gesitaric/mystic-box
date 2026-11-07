@@ -3,6 +3,7 @@ import AuthModal from "./components/AuthModal";
 import BattleScreen from "./components/battle/BattleScreen";
 import HomeScreen from "./components/HomeScreen";
 import PlayerProfileModal from "./components/PlayerProfileModal";
+import { applyBattleProgress } from "./profileProgress";
 import ShopModal from "./components/ShopModal";
 import SummonPortal from "./components/portal/SummonPortal";
 import SummonSpread from "./components/SummonSpread";
@@ -500,6 +501,11 @@ function App() {
     setProgress((current) => (current ? { ...current, ...changes } : current));
   }, []);
 
+  // Nível e experiência devolvidos pela batalha.
+  const handleBattleProgress = useCallback((battleProgress) => {
+    setProgress((current) => applyBattleProgress(current, battleProgress));
+  }, []);
+
   // Saldo devolvido pelo servidor após uma venda; sem ele, consulta de novo.
   const handleBalanceChange = useCallback(
     (newBalance) => {
@@ -613,7 +619,7 @@ function App() {
           duelIntent={duelIntent}
           onExit={() => setScreen("home")}
           onSessionExpired={handleBattleSessionExpired}
-          onProgressChange={setProgress}
+          onProgressChange={handleBattleProgress}
           onBalanceChange={handleBalanceChange}
         />
       ) : onHome ? (
