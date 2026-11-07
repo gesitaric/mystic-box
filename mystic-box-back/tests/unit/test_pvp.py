@@ -24,6 +24,7 @@ TABLES = {
     "cards": ("userId", "ownedCardId"),
     "progress": ("userId", None),
     "wallet": ("userId", None),
+    "ascensions": ("userId", "file_name"),
 }
 
 
@@ -66,6 +67,7 @@ def db(monkeypatch, clock):
         "USER_CARDS_TABLE": "cards",
         "USER_PROGRESS_TABLE": "progress",
         "USER_WALLET_TABLE": "wallet",
+        "CARD_ASCENSIONS_TABLE": "ascensions",
     }
     for module in (pvp_battle, pvp_challenges):
         monkeypatch.setattr(module, "_client", fake)
@@ -425,6 +427,22 @@ def test_accept_starts_the_duel(authenticated_event, db):
 
     _, alice = lobby(authenticated_event, ALICE)
     assert alice["battle"] == {"battleId": battle_id, "opponent": "Bob"}
+
+
+def test_duel_uses_each_players_ascension(authenticated_event, db):
+    for user_id, file_name, level in ((ALICE, ALICE_TEAM[0], 2), (BOB, BOB_TEAM[1], 1)):
+        db.tables["ascensions"][(user_id, file_name)] = {
+            "userId": {"S": user_id},
+            "file_name": {"S": file_name},
+            "ascension": {"N": str(level)},
+        }
+
+    state = stored_state(db, start_duel(authenticated_event))
+
+    ascension = {(u["side"], u["fileName"]): u["ascension"] for u in state["units"]}
+    assert ascension[("player", ALICE_TEAM[0])] == 2
+    assert ascension[("player", ALICE_TEAM[1])] == 0
+    assert ascension[("enemy", BOB_TEAM[1])] == 1
 
 
 def test_accept_checks_both_teams(authenticated_event, db):

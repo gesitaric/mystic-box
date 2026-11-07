@@ -5,8 +5,9 @@ import unicodedata
 import boto3
 from boto3.dynamodb.conditions import Key
 from botocore.exceptions import ClientError
+from mystic_shared.ascension import public_ascension, read_ascensions
 from mystic_shared.cards import get_character, listing_price_range, max_listing_quantity
-from mystic_shared.battle import public_skills
+from mystic_shared.battle import ascension_unlocks_skill, public_skills
 from mystic_shared.stats import public_battle_profile
 
 CORS_HEADERS = {
@@ -16,9 +17,11 @@ CORS_HEADERS = {
 }
 
 USER_CARDS_TABLE = os.environ.get("USER_CARDS_TABLE")
+CARD_ASCENSIONS_TABLE = os.environ.get("CARD_ASCENSIONS_TABLE")
 
-# Criado uma vez por container e reaproveitado entre invocações.
+# Criados uma vez por container e reaproveitados entre invocações.
 _table = None
+_client = None
 
 
 def get_table():
@@ -26,6 +29,18 @@ def get_table():
     if _table is None:
         _table = boto3.resource("dynamodb").Table(USER_CARDS_TABLE)
     return _table
+
+
+def get_client():
+    global _client
+    if _client is None:
+        _client = boto3.client("dynamodb")
+    return _client
+
+
+def get_ascensions(user_id):
+    """{file_name: ascensão} do jogador."""
+    return read_ascensions(get_client(), CARD_ASCENSIONS_TABLE, user_id)
 
 
 def response(status_code, body):
@@ -91,8 +106,13 @@ def sort_cards(cards, sort, order):
     return ordered
 
 
-def group_cards(items):
-    """Junta as cópias da mesma carta (mesmo `file_name`) em um só item."""
+def group_cards(items, ascensions=None):
+    """Junta as cópias da mesma carta (mesmo `file_name`) em um só item.
+
+    `ascensions`: {file_name: ascensão} do jogador; os atributos e as
+    habilidades de batalha já saem com a ascensão aplicada.
+    """
+    ascensions = ascensions or {}
     groups = {}
 
     for item in items:
@@ -122,6 +142,7 @@ def group_cards(items):
             group["name"] = character["name"]
             group["rarity"] = character["rarity"]
         obtained_at = group.pop("obtainedAt")
+        ascension = ascensions.get(group["file_name"], 0)
         cards.append(
             {
                 **group,
@@ -132,16 +153,27 @@ def group_cards(items):
                 "listingPriceRange": listing_price_range(character),
                 # Quantas cópias podem ser anunciadas de uma vez.
                 "maxListingQuantity": max_listing_quantity(character, group["quantity"]),
-                "battle": battle_profile(character) if character else None,
+                "battle": battle_profile(character, ascension) if character else None,
+                # Ascensão (cópias repetidas fortalecem a carta); None = não ascende.
+                "ascension": (
+                    public_ascension(
+                        ascension, group["quantity"], ascension_unlocks_skill(character)
+                    )
+                    if character
+                    else None
+                ),
             }
         )
 
     return cards
 
 
-def battle_profile(character):
+def battle_profile(character, ascension=0):
     """Elemento, arquétipo, atributos (nível 1) e habilidades de batalha da carta."""
-    return {**public_battle_profile(character), "skills": public_skills(character)}
+    return {
+        **public_battle_profile(character, ascension=ascension),
+        "skills": public_skills(character, ascension),
+    }
 
 
 def get_user_id(event):
@@ -180,9 +212,10 @@ def lambda_handler(event, context):
             if not last_key:
                 break
             query_kwargs["ExclusiveStartKey"] = last_key
+        ascensions = get_ascensions(user_id)
     except ClientError:
         return response(500, {"message": "Could not load your cards."})
 
-    cards = sort_cards(group_cards(items), sort, order)
+    cards = sort_cards(group_cards(items, ascensions), sort, order)
 
     return response(200, {"cards": cards, "totalCards": len(items)})

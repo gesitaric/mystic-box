@@ -121,6 +121,23 @@ Resources:
       - AttributeName: userId
         KeyType: HASH
 
+  # Ascensão de cada carta de cada jogador (cópias repetidas consumidas para
+  # fortalecer a carta). Fica com o jogador, não com uma cópia.
+  CardAscensionsTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+      - AttributeName: userId
+        AttributeType: S
+      - AttributeName: file_name
+        AttributeType: S
+      KeySchema:
+      - AttributeName: userId
+        KeyType: HASH
+      - AttributeName: file_name
+        KeyType: RANGE
+
   # Nome de cada jogador e quando ele foi trocado pela última vez. Quem tem
   # nome também tem searchKey, que o coloca no índice de busca por nome.
   UserProfilesTable:
@@ -352,9 +369,12 @@ Resources:
       Environment:
         Variables:
           USER_CARDS_TABLE: !Ref UserCardsTable
+          CARD_ASCENSIONS_TABLE: !Ref CardAscensionsTable
       Policies:
       - DynamoDBReadPolicy:
           TableName: !Ref UserCardsTable
+      - DynamoDBReadPolicy:
+          TableName: !Ref CardAscensionsTable
       Events:
         GetUserCards:
           Type: Api
@@ -369,6 +389,41 @@ Resources:
           Properties:
             RestApiId: !Ref MysticBoxApi
             Path: /users/me/cards
+            Method: options
+
+  AscendCardFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: ascend_card/
+      Handler: app.lambda_handler
+      Runtime: python3.14
+      Architectures:
+      - x86_64
+      Layers:
+      - !Ref SharedLayer
+      Environment:
+        Variables:
+          USER_CARDS_TABLE: !Ref UserCardsTable
+          CARD_ASCENSIONS_TABLE: !Ref CardAscensionsTable
+      Policies:
+      - DynamoDBCrudPolicy:
+          TableName: !Ref UserCardsTable
+      - DynamoDBCrudPolicy:
+          TableName: !Ref CardAscensionsTable
+      Events:
+        AscendCard:
+          Type: Api
+          Properties:
+            RestApiId: !Ref MysticBoxApi
+            Path: /users/me/cards/ascend
+            Method: post
+            Auth:
+              Authorizer: CognitoAuthorizer
+        AscendCardOptions:
+          Type: Api
+          Properties:
+            RestApiId: !Ref MysticBoxApi
+            Path: /users/me/cards/ascend
             Method: options
 
   SaveUserCardFunction:
@@ -730,11 +785,14 @@ Resources:
           USER_CARDS_TABLE: !Ref UserCardsTable
           USER_PROGRESS_TABLE: !Ref UserProgressTable
           USER_WALLET_TABLE: !Ref UserWalletTable
+          CARD_ASCENSIONS_TABLE: !Ref CardAscensionsTable
       Policies:
       - DynamoDBCrudPolicy:
           TableName: !Ref BattlesTable
       - DynamoDBReadPolicy:
           TableName: !Ref UserCardsTable
+      - DynamoDBReadPolicy:
+          TableName: !Ref CardAscensionsTable
       - DynamoDBCrudPolicy:
           TableName: !Ref UserProgressTable
       - DynamoDBCrudPolicy:
@@ -826,6 +884,7 @@ Resources:
           USERNAMES_TABLE: !Ref UsernamesTable
           USER_CARDS_TABLE: !Ref UserCardsTable
           USER_PROGRESS_TABLE: !Ref UserProgressTable
+          CARD_ASCENSIONS_TABLE: !Ref CardAscensionsTable
       Policies:
       - DynamoDBCrudPolicy:
           TableName: !Ref PvpChallengesTable
@@ -841,6 +900,8 @@ Resources:
           TableName: !Ref UserCardsTable
       - DynamoDBReadPolicy:
           TableName: !Ref UserProgressTable
+      - DynamoDBReadPolicy:
+          TableName: !Ref CardAscensionsTable
       Events:
         PvpLobby:
           Type: Api
@@ -1026,6 +1087,12 @@ Outputs:
   UserCardsTable:
     Description: DynamoDB table that stores the cards owned by each user
     Value: !Ref UserCardsTable
+  AscendCardApi:
+    Description: API Gateway endpoint URL to consume duplicate copies and ascend a card
+    Value: !Sub "https://${MysticBoxApi}.execute-api.${AWS::Region}.${AWS::URLSuffix}/Prod/users/me/cards/ascend"
+  CardAscensionsTable:
+    Description: DynamoDB table that stores each player's card ascension levels
+    Value: !Ref CardAscensionsTable
   GetWalletApi:
     Description: API Gateway endpoint URL for the user's wallet (Fragmentos Arcanos)
     Value: !Sub "https://${MysticBoxApi}.execute-api.${AWS::Region}.${AWS::URLSuffix}/Prod/users/me/wallet"

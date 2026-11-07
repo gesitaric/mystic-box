@@ -6,6 +6,7 @@ export const ELEMENT_STYLE = {
   tide: { icon: "🌊", color: "#5cc0ff" },
   gale: { icon: "🌪️", color: "#7fe6c8" },
   terra: { icon: "⛰️", color: "#d6ad6e" },
+  volt: { icon: "⚡", color: "#8fa2ff" },
   lumen: { icon: "☀️", color: "#ffe27a" },
   umbra: { icon: "🌑", color: "#b48cff" },
 };
@@ -21,6 +22,7 @@ export const STATUS_ICON = {
   regen: "✚",
   empower: "⚔️",
   guard: "◈",
+  companion: "🐾",
 };
 
 export const STAT_LABELS = [
@@ -73,6 +75,7 @@ const STATUS_NAMES = {
   regen: "Regen",
   empower: "Empower",
   guard: "Guard",
+  companion: "Companion",
 };
 
 // Texto do registro para um evento devolvido pela API (ou null para não mostrar).
@@ -94,8 +97,9 @@ export function describeEvent(event, names) {
         event.effectiveness === "weak" && "resisted",
         event.absorbed > 0 && `${event.absorbed} absorbed`,
       ].filter(Boolean);
+      const verb = event.chain ? "is struck by arcing lightning for" : "takes";
       return {
-        text: `${name(event.target)} takes ${event.amount} damage${notes.length ? ` (${notes.join(", ")})` : ""}.`,
+        text: `${name(event.target)} ${verb} ${event.amount} damage${notes.length ? ` (${notes.join(", ")})` : ""}.`,
         kind: "damage",
       };
     }
@@ -114,6 +118,8 @@ export function describeEvent(event, names) {
       return { text: `${name(event.target)} is stunned and loses the turn.`, kind: "status" };
     case "aether":
       return { text: `${name(event.source)} steals ${event.amount} Aether.`, kind: "status" };
+    case "companion":
+      return { text: `${name(event.actor)}'s companion lunges at ${name(event.target)}.`, kind: "skill", side: event.actor?.[0] };
     case "timeout":
       return { text: `${name(event.target)} ran out of time and acts on its own.`, kind: "status" };
     case "end":
@@ -144,6 +150,8 @@ export function eventDelay(event) {
       return 380;
     case "aether":
       return 320;
+    case "companion":
+      return 450;
     case "timeout":
       return 450;
     case "status":

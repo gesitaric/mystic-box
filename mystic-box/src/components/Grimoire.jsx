@@ -129,6 +129,7 @@ function StartChapter({ rules, go }) {
   const loop = [
     { icon: "🌀", title: "Summon", text: `${summon.cardsPerSummon} free cards every ${formatDuration(summon.cooldownSeconds)}.`, to: "summon" },
     { icon: "🗂️", title: "Collect", text: "Keep your pulls, or trade them with other players in the shop.", to: "shop" },
+    { icon: "✴", title: "Ascend", text: "Turn duplicate copies into a stronger card.", to: "ascension" },
     { icon: "⚔️", title: "Battle", text: `Pick ${battle.teamSize} cards and fight the computer.`, to: "battle" },
     { icon: "⬆️", title: "Level up", text: "Experience raises your level, stats and rewards.", to: "progression" },
     { icon: "✧", title: "Earn Shards", text: "Level up and sell cards to other players to earn Arcane Shards.", to: "shop" },
@@ -467,7 +468,8 @@ function DamagePage({ battle }) {
       <ul className="gr-list">
         <li>
           <b>Physical</b> skills use Might against Bulwark. <b>Magical</b> skills use Arcana
-          against Resolve. <b>Hybrid</b> skills average both.
+          against Resolve. <b>Hybrid</b> skills use {damage.hybridPowerPercent}% of Might + Arcana
+          against the average of both defenses.
         </li>
         <li>The “Skill” value is the ×number in each skill&apos;s description.</li>
         <li>
@@ -881,12 +883,81 @@ function SearchResults({ rules, query, onPick }) {
   );
 }
 
+function AscensionChapter({ rules }) {
+  const { ascension } = rules;
+  return (
+    <>
+      <p className="gr-lead">
+        Duplicates are not wasted. In your collection, spend extra copies of a card to{" "}
+        <b>ascend</b> it, up to ascension <b>{ascension.maxLevel}</b>. Each ascension makes
+        that card <b>{ascension.statBonusPercent}% stronger</b> in Vitality, Might, Arcana,
+        Bulwark and Resolve.
+      </p>
+
+      <table className="gr-table">
+        <thead>
+          <tr>
+            <th scope="col">Ascension</th>
+            <th scope="col">Copies spent</th>
+            <th scope="col">Total bonus</th>
+          </tr>
+        </thead>
+        <tbody>
+          {ascension.levels.map((row) => (
+            <tr key={row.level}>
+              <td>
+                {"✴".repeat(row.level)}
+                {row.unlocksSkill && " · new skill"}
+              </td>
+              <td>{row.copies}</td>
+              <td>+{row.statBonusPercent}%</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+
+      <h3 className="gr-heading">Class skills at max ascension</h3>
+      <table className="gr-table">
+        <thead>
+          <tr>
+            <th scope="col">Rarity</th>
+            <th scope="col">Normal</th>
+            <th scope="col">Ascended {ascension.skillUnlockLevel}</th>
+          </tr>
+        </thead>
+        <tbody>
+          {ascension.skillsByRarity.map((row) => (
+            <tr key={row.rarity}>
+              <td>
+                <Stars count={row.rarity} />
+              </td>
+              <td>{row.base}</td>
+              <td>{row.ascended}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+
+      <h3 className="gr-heading">Good to know</h3>
+      <ul className="gr-list">
+        <li>One copy always stays in your collection; only the extra ones are spent.</li>
+        <li>
+          Ascension belongs to you, not to a copy: it applies to every copy you own and stays
+          even if you sell them. A copy bought in the shop arrives without ascension.
+        </li>
+        <li>Ascension counts in battles against the computer and in online duels.</li>
+      </ul>
+    </>
+  );
+}
+
 // ---------------------------------------------------------------- modal ---
 
 const CHAPTERS = [
   { id: "start", label: "Start here", icon: "✦", component: StartChapter },
   { id: "summon", label: "Summon", icon: "🌀", component: SummonChapter },
   { id: "shop", label: "Shards & Shop", icon: "✧", component: ShopChapter },
+  { id: "ascension", label: "Ascension", icon: "✴", component: AscensionChapter },
   { id: "battle", label: "Battle", icon: "⚔️", component: BattleChapter },
   { id: "progression", label: "Progression", icon: "⬆️", component: ProgressionChapter },
 ];

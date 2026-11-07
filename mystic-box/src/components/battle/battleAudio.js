@@ -107,6 +107,12 @@ export function createBattleAudio() {
         tone({ type: "sine", from: 90, to: 50, gain: 0.35 * gain, attack: 0.01, duration: 0.4 }, false);
         hiss({ duration: 0.3, filterType: "lowpass", from: 600, to: 150, gain: 0.2 * gain });
         break;
+      case "volt":
+        [0, 0.07, 0.14].forEach((delay) =>
+          tone({ type: "square", from: 1800, to: 300, gain: 0.035 * gain, attack: 0.002, duration: 0.09, delay })
+        );
+        hiss({ duration: 0.25, filterType: "highpass", from: 3000, to: 6000, gain: 0.12 * gain });
+        break;
       case "lumen":
         [NOTE.C6, NOTE.E6, NOTE.G6].forEach((freq, i) =>
           tone({ type: "sine", from: freq, gain: 0.04 * gain, attack: 0.01, duration: 0.6, delay: i * 0.05 })

@@ -29,6 +29,7 @@ from mystic_shared.battle import (
     play_turn,
     public_state,
 )
+from mystic_shared.ascension import read_ascensions
 from mystic_shared.cards import get_character
 from mystic_shared.progression import level_for_experience, level_up_reward, public_progress
 
@@ -42,6 +43,7 @@ BATTLES_TABLE = os.environ.get("BATTLES_TABLE")
 USER_CARDS_TABLE = os.environ.get("USER_CARDS_TABLE")
 USER_PROGRESS_TABLE = os.environ.get("USER_PROGRESS_TABLE")
 USER_WALLET_TABLE = os.environ.get("USER_WALLET_TABLE")
+CARD_ASCENSIONS_TABLE = os.environ.get("CARD_ASCENSIONS_TABLE")
 
 # Batalhas somem sozinhas (TTL) um dia depois da última ação.
 BATTLE_TTL_SECONDS = 24 * 60 * 60
@@ -310,6 +312,7 @@ def start(user_id, event):
     try:
         owned = get_owned_file_names(user_id)
         experience, _, _, _ = get_progress(user_id)
+        ascensions = read_ascensions(get_client(), CARD_ASCENSIONS_TABLE, user_id)
     except ClientError:
         return response(500, {"message": "Could not start the battle."})
 
@@ -322,7 +325,8 @@ def start(user_id, event):
     level, _ = level_for_experience(experience)
     try:
         state, events = create_battle(
-            str(uuid.uuid4()), characters, level, difficulty, new_rng()
+            str(uuid.uuid4()), characters, level, difficulty, new_rng(),
+            ascensions=ascensions,
         )
     except BattleError as error:
         return response(400, {"message": str(error)})

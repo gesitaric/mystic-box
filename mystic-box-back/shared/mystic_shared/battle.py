@@ -14,7 +14,8 @@ Batalha por turnos entre dois times de 3 cartas. Regras principais:
 - Elementos: dano com vantagem elemental x1.3, com desvantagem x0.8. Os
   feitiços dos Arcanistas carregam um efeito do seu elemento.
 - Efeitos: queimadura, atordoamento, enfraquecer, expor, lentidão, escudo,
-  provocação, regeneração, fortalecer e guarda.
+  provocação, regeneração, fortalecer, guarda e companheiro (o monstro dos
+  Invocadores, que ataca no começo de cada turno da carta).
 - Provocação: golpes de alvo único precisam mirar quem está provocando.
 - Duelo online (mode "pvp"): as mesmas regras, mas os dois lados são
   jogadores. O lado "player" é quem desafiou e o "enemy" quem aceitou; cada
@@ -30,6 +31,7 @@ determinísticos.
 
 import random
 
+from .ascension import MAX_ASCENSION, bonus_skills, clamp_ascension
 from .cards import CHARACTERS
 from .progression import MAX_LEVEL
 from .stats import ARCHETYPES, ELEMENTS, SCALED_STATS, battle_stats, element_multiplier
@@ -45,6 +47,8 @@ MAX_ROUNDS = 30
 DEFENSE_CONSTANT = 50
 DAMAGE_VARIANCE = 0.1
 CRIT_MULTIPLIER = 1.5
+# Dano híbrido: soma Might e Arcana com este peso (contra a média das defesas).
+HYBRID_POWER_RATIO = 0.7
 
 BURN_RATIO = 0.07
 REGEN_RATIO = 0.08
@@ -53,6 +57,10 @@ EXPOSE_MULTIPLIER = 1.25
 EMPOWER_MULTIPLIER = 1.3
 GUARD_MULTIPLIER = 0.5
 SLOW_MULTIPLIER = 0.6
+
+# Monstro companheiro dos Invocadores: golpe híbrido no começo de cada turno.
+COMPANION_MULTIPLIER = 0.75
+COMPANION_TURNS = 3
 
 # Experiência de uma derrota: fração da experiência de vitória + bônus por
 # inimigo derrotado. Desistir não dá experiência.
@@ -115,6 +123,9 @@ STATUSES = {
     "empower": {"label": "Empower", "kind": "buff", "description": "Deals 30% more damage."},
     "guard": {"label": "Guard", "kind": "buff",
               "description": "Takes 50% less damage until its next turn."},
+    "companion": {"label": "Companion", "kind": "buff",
+                  "description": "Its bonded monster strikes a foe (0.75x hybrid) at "
+                                 "the start of each of this card's turns."},
 }
 
 # Efeito que os feitiços de cada elemento carregam.
@@ -123,12 +134,14 @@ ELEMENT_RIDERS = {
     "tide": "Drenches the target (Slow).",
     "gale": "Tears the target's guard open (Expose).",
     "terra": "Crushes the target's strength (Weaken).",
+    "volt": "Lightning arcs to the weakest other foe for 35% of the damage.",
     "lumen": "Heals the most wounded ally for 30% of the damage.",
     "umbra": "Drains 35% of the damage as vitality.",
 }
 
 LUMEN_HEAL_RATIO = 0.3
 UMBRA_DRAIN_RATIO = 0.35
+VOLT_CHAIN_RATIO = 0.35
 
 TARGET_TYPES = ("enemy", "all_enemies", "ally", "all_allies", "self", "fallen_ally")
 
@@ -227,7 +240,7 @@ def _lose_hp(target, amount, events, event):
     return amount - absorbed
 
 
-def _deal_damage(attacker, defender, multiplier, kind, rng, events, pierce=0.0):
+def _deal_damage(attacker, defender, multiplier, kind, rng, events, pierce=0.0, extra=None):
     """Calcula e aplica um golpe. Devolve o dano causado à vitalidade."""
     stats_a, stats_d = attacker["stats"], defender["stats"]
     if kind == "physical":
@@ -235,7 +248,7 @@ def _deal_damage(attacker, defender, multiplier, kind, rng, events, pierce=0.0):
     elif kind == "magical":
         power, defense = stats_a["arcana"], stats_d["resolve"]
     else:  # híbrido
-        power = (stats_a["might"] + stats_a["arcana"]) / 2
+        power = (stats_a["might"] + stats_a["arcana"]) * HYBRID_POWER_RATIO
         defense = (stats_d["bulwark"] + stats_d["resolve"]) / 2
 
     defense *= 1 - pierce
@@ -268,7 +281,7 @@ def _deal_damage(attacker, defender, multiplier, kind, rng, events, pierce=0.0):
         max(1, round(damage)),
         events,
         {"type": "damage", "source": attacker["id"], "critical": critical,
-         "effectiveness": effectiveness, "kind": kind},
+         "effectiveness": effectiveness, "kind": kind, **(extra or {})},
     )
 
 
@@ -286,6 +299,13 @@ def _element_rider(state, caster, target, damage, events):
         _apply_status(state, target, "expose", 2, events)
     elif element == "terra":
         _apply_status(state, target, "weaken", 2, events)
+    elif element == "volt" and damage > 0:
+        others = [u for u in _team(state, target["side"]) if u["id"] != target["id"]]
+        if others:
+            chained = min(others, key=lambda u: u["hp"] / u["maxHp"])
+            _lose_hp(chained, max(1, round(damage * VOLT_CHAIN_RATIO)), events,
+                     {"type": "damage", "source": caster["id"], "critical": False,
+                      "effectiveness": None, "kind": "magical", "chain": True})
     elif element == "lumen" and damage > 0:
         allies = _team(state, caster["side"])
         wounded = min(allies, key=lambda u: u["hp"] / u["maxHp"])
@@ -411,6 +431,37 @@ def _grand_deception(state, actor, targets, rng, events):
         _apply_status(state, ally, "empower", 2, events)
 
 
+def _companion_attack(state, actor, rng, events):
+    """O monstro do Invocador ataca um inimigo (respeitando a provocação)."""
+    foe_side = _opponent(actor["side"])
+    options = _taunters(state, foe_side) or _team(state, foe_side)
+    if not options:
+        return
+    target = rng.choice(options)
+    events.append({"type": "companion", "actor": actor["id"], "target": target["id"]})
+    _deal_damage(actor, target, COMPANION_MULTIPLIER, "hybrid", rng, events,
+                 extra={"companion": True})
+
+
+def _call_companion(state, actor, targets, rng, events):
+    _deal_damage(actor, targets[0], 0.8, "hybrid", rng, events)
+    _apply_status(state, actor, "companion", COMPANION_TURNS, events)
+
+
+def _beast_rampage(state, actor, targets, rng, events):
+    bonded = _has(actor, "companion")
+    for target in targets:
+        _deal_damage(actor, target, 0.75, "hybrid", rng, events)
+        if bonded:
+            _apply_status(state, target, "expose", 2, events)
+
+
+def _primal_awakening(state, actor, targets, rng, events):
+    _deal_damage(actor, targets[0], 2.0, "hybrid", rng, events)
+    _apply_status(state, actor, "companion", COMPANION_TURNS, events)
+    _apply_status(state, actor, "empower", 2, events)
+
+
 # role: usado pela IA. attack | heal | revive | buff | defend
 SKILLS = {
     "strike": {
@@ -513,6 +564,25 @@ SKILLS = {
                        "Empowers all allies.",
         "effect": _grand_deception,
     },
+    # Summoner
+    "call_companion": {
+        "name": "Call Companion", "cost": 3, "target": "enemy", "role": "attack",
+        "description": "The bonded monster pounces on a foe (0.8x hybrid) and stays "
+                       "for 3 turns as a Companion.",
+        "effect": _call_companion,
+    },
+    "beast_rampage": {
+        "name": "Beast Rampage", "cost": 5, "target": "all_enemies", "role": "attack",
+        "description": "Hybrid assault on every foe (0.75x). With a Companion out, "
+                       "also Exposes them.",
+        "effect": _beast_rampage,
+    },
+    "primal_awakening": {
+        "name": "Primal Awakening", "cost": 7, "target": "enemy", "role": "attack",
+        "description": "Supreme. The monster reveals its true form: massive hybrid "
+                       "blow (2.0x), then stays as a Companion and Empowers this card.",
+        "effect": _primal_awakening,
+    },
 }
 
 ARCHETYPE_SKILLS = {
@@ -521,20 +591,31 @@ ARCHETYPE_SKILLS = {
     "arcanist": ("elemental_bolt", "arcane_tempest", "cataclysm"),
     "mystic": ("mending_light", "sanctuary", "rebirth_hymn"),
     "trickster": ("hexing_shiv", "aether_siphon", "grand_deception"),
+    "summoner": ("call_companion", "beast_rampage", "primal_awakening"),
 }
 
 BASIC_SKILLS = ("strike", "guard")
 
 
-def archetype_skill_count(rarity):
-    """Quantas habilidades do arquétipo a carta dessa raridade conhece."""
-    return max(1, rarity - 2)
+# Todo arquétipo tem 3 habilidades (a última é a suprema).
+ARCHETYPE_SKILL_SLOTS = 3
 
 
-def skills_for(character):
-    """Habilidades da carta: básicas + do arquétipo conforme a raridade."""
-    unlocked = archetype_skill_count(character["rarity"])
+def archetype_skill_count(rarity, ascension=0):
+    """Quantas habilidades do arquétipo a carta conhece (raridade + ascensão)."""
+    return min(ARCHETYPE_SKILL_SLOTS, max(1, rarity - 2) + bonus_skills(ascension))
+
+
+def skills_for(character, ascension=0):
+    """Habilidades da carta: básicas + do arquétipo conforme raridade e ascensão."""
+    unlocked = archetype_skill_count(character["rarity"], ascension)
     return [*BASIC_SKILLS, *ARCHETYPE_SKILLS[character["archetype"]][:unlocked]]
+
+
+def ascension_unlocks_skill(character):
+    """Se a ascensão máxima ensina uma habilidade nova a esta carta."""
+    rarity = character["rarity"]
+    return archetype_skill_count(rarity, MAX_ASCENSION) > archetype_skill_count(rarity)
 
 
 def public_skill(skill_id):
@@ -548,16 +629,17 @@ def public_skill(skill_id):
     }
 
 
-def public_skills(character):
-    return [public_skill(skill_id) for skill_id in skills_for(character)]
+def public_skills(character, ascension=0):
+    return [public_skill(skill_id) for skill_id in skills_for(character, ascension)]
 
 
 # ----------------------------------------------------------- montagem ---
 
 
-def build_unit(character, side, index, level, power=1.0):
+def build_unit(character, side, index, level, power=1.0, ascension=0):
     """Combatente da batalha. `power` multiplica os atributos grandes (dificuldade)."""
-    stats = battle_stats(character, level)
+    ascension = clamp_ascension(ascension)
+    stats = battle_stats(character, level, ascension)
     for stat in SCALED_STATS:
         stats[stat] = max(1, round(stats[stat] * power))
     return {
@@ -569,11 +651,12 @@ def build_unit(character, side, index, level, power=1.0):
         "element": character["element"],
         "archetype": character["archetype"],
         "level": level,
+        "ascension": ascension,
         "stats": stats,
         "maxHp": stats["vitality"],
         "hp": stats["vitality"],
         "statuses": {},
-        "skills": skills_for(character),
+        "skills": skills_for(character, ascension),
     }
 
 
@@ -621,10 +704,12 @@ def public_difficulties(player_level):
     ]
 
 
-def create_battle(battle_id, player_team, player_level, difficulty, rng, enemy_team=None):
+def create_battle(battle_id, player_team, player_level, difficulty, rng, enemy_team=None,
+                  ascensions=None):
     """Monta a batalha e roda os turnos até a vez do jogador.
 
     `player_team`: definições (de `cards.py`) das cartas escolhidas.
+    `ascensions`: {file_name: ascensão} das cartas do jogador (lido no servidor).
     Devolve (estado, eventos).
     """
     if difficulty not in DIFFICULTIES:
@@ -654,7 +739,11 @@ def create_battle(battle_id, player_team, player_level, difficulty, rng, enemy_t
         "playerLevel": player_level,
         "enemyLevel": foe_level,
         "units": [
-            *(build_unit(c, "player", i, player_level) for i, c in enumerate(player_team)),
+            *(
+                build_unit(c, "player", i, player_level,
+                           ascension=(ascensions or {}).get(c["file_name"], 0))
+                for i, c in enumerate(player_team)
+            ),
             *(
                 build_unit(c, "enemy", i, foe_level, DIFFICULTIES[difficulty]["enemyPower"])
                 for i, c in enumerate(foes)
@@ -667,10 +756,11 @@ def create_battle(battle_id, player_team, player_level, difficulty, rng, enemy_t
 
 
 def create_pvp_battle(battle_id, challenger_team, challenger_level, opponent_team,
-                      opponent_level, rng):
+                      opponent_level, rng, challenger_ascensions=None,
+                      opponent_ascensions=None):
     """Duelo entre dois jogadores: quem desafiou é "player", quem aceitou "enemy".
 
-    Cada time luta no nível do seu dono, com os atributos normais.
+    Cada time luta no nível e com as ascensões do seu dono.
     Devolve (estado, eventos) parado na vez da primeira carta.
     """
     for team in (challenger_team, opponent_team):
@@ -693,8 +783,16 @@ def create_pvp_battle(battle_id, challenger_team, challenger_level, opponent_tea
         "playerLevel": challenger_level,
         "enemyLevel": opponent_level,
         "units": [
-            *(build_unit(c, "player", i, challenger_level) for i, c in enumerate(challenger_team)),
-            *(build_unit(c, "enemy", i, opponent_level) for i, c in enumerate(opponent_team)),
+            *(
+                build_unit(c, "player", i, challenger_level,
+                           ascension=(challenger_ascensions or {}).get(c["file_name"], 0))
+                for i, c in enumerate(challenger_team)
+            ),
+            *(
+                build_unit(c, "enemy", i, opponent_level,
+                           ascension=(opponent_ascensions or {}).get(c["file_name"], 0))
+                for i, c in enumerate(opponent_team)
+            ),
         ],
     }
     events = []
@@ -744,7 +842,7 @@ def _next_actor(state, rng, events):
     return None
 
 
-def _start_turn(state, actor, events):
+def _start_turn(state, actor, events, rng=None):
     """Efeitos do início do turno. Devolve False se o combatente não age."""
     actor["statuses"].pop("guard", None)
     _gain_aether(state, actor["side"], AETHER_PER_TURN)
@@ -758,6 +856,10 @@ def _start_turn(state, actor, events):
             return False
     if _has(actor, "regen"):
         _heal(actor, actor["maxHp"] * REGEN_RATIO, events, status="regen")
+    if _has(actor, "companion"):
+        _companion_attack(state, actor, rng or random.Random(), events)
+        if not _team(state, _opponent(actor["side"])):
+            return False
     if _has(actor, "stun"):
         del actor["statuses"]["stun"]
         events.append({"type": "stunned", "target": actor["id"]})
@@ -805,7 +907,7 @@ def _advance(state, rng, events):
         if actor is None:
             return
         state["acting"] = actor["id"]
-        acts = _start_turn(state, actor, events)
+        acts = _start_turn(state, actor, events, rng)
         if _check_end(state, events):
             return
         if not acts:
@@ -1108,6 +1210,7 @@ def _public_unit(unit, viewer="player"):
         "archetype": unit["archetype"],
         "archetypeLabel": ARCHETYPES[unit["archetype"]]["label"],
         "level": unit["level"],
+        "ascension": unit.get("ascension", 0),
         "stats": unit["stats"],
         "maxHp": unit["maxHp"],
         "hp": unit["hp"],

@@ -279,6 +279,75 @@ def test_aether_siphon_steals_aether():
     assert state["aether"] == {"player": 2, "enemy": 2}
 
 
+def test_call_companion_summons_monster_that_strikes_each_turn():
+    state, _ = new_battle(player=("liesel.jfif", "rowan.jfif", "brina.jfif"))
+    summoner = unit(state, "p0")
+    summoner["hp"] = summoner["maxHp"]
+    state["aether"]["player"] = 5
+    state["acting"] = "p0"
+    events = []
+
+    battle._perform(state, summoner, "call_companion", "e0", random.Random(1), events)
+    battle._end_turn(state, summoner)
+
+    assert summoner["statuses"]["companion"]["turns"] == battle.COMPANION_TURNS
+    strikes = 0
+    for _ in range(battle.COMPANION_TURNS):
+        events = []
+        battle._start_turn(state, summoner, events, random.Random(2))
+        battle._end_turn(state, summoner)
+        strikes += sum(1 for e in events if e["type"] == "damage" and e.get("companion"))
+    assert strikes == battle.COMPANION_TURNS
+    assert "companion" not in summoner["statuses"]
+
+
+def test_companion_respects_taunt():
+    state, _ = new_battle(player=("liesel.jfif", "rowan.jfif", "brina.jfif"))
+    summoner = unit(state, "p0")
+    summoner["statuses"]["companion"] = {"turns": 2}
+    unit(state, "e1")["statuses"]["taunt"] = {"turns": 2}
+    events = []
+
+    battle._start_turn(state, summoner, events, random.Random(3))
+
+    hit = next(e for e in events if e["type"] == "damage" and e.get("companion"))
+    assert hit["target"] == "e1"
+
+
+def test_beast_rampage_exposes_only_with_companion():
+    state, _ = new_battle(player=("grizelda.jfif", "rowan.jfif", "brina.jfif"))
+    summoner = unit(state, "p0")
+    state["aether"]["player"] = 10
+    events = []
+    battle._perform(state, summoner, "beast_rampage", None, random.Random(1), events)
+    assert not any(e["type"] == "status" and e["status"] == "expose" for e in events)
+
+    summoner["statuses"]["companion"] = {"turns": 2}
+    events = []
+    battle._perform(state, summoner, "beast_rampage", None, random.Random(1), events)
+    assert any(e["type"] == "status" and e["status"] == "expose" for e in events)
+
+
+def test_volt_bolt_chains_to_another_foe():
+    state, _ = new_battle(player=("ophira.jfif", "rowan.jfif", "brina.jfif"))
+    state["aether"]["player"] = 5
+    events = []
+
+    battle._perform(state, unit(state, "p0"), "elemental_bolt", "e0", FixedRng(), events)
+
+    chained = [e for e in events if e["type"] == "damage" and e.get("chain")]
+    assert len(chained) == 1
+    assert chained[0]["target"] != "e0"
+
+
+def test_terra_beats_volt_and_volt_beats_tide():
+    from mystic_shared import stats
+
+    assert stats.element_multiplier("terra", "volt") == stats.ADVANTAGE_MULTIPLIER
+    assert stats.element_multiplier("volt", "tide") == stats.ADVANTAGE_MULTIPLIER
+    assert stats.element_multiplier("volt", "terra") == stats.DISADVANTAGE_MULTIPLIER
+
+
 # ---------- fim e recompensa ----------
 
 

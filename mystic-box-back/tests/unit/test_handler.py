@@ -4,13 +4,22 @@ from unittest.mock import MagicMock
 import pytest
 from botocore.exceptions import ClientError
 from mystic_shared import cards
-from mystic_shared.battle import public_skills
+from mystic_shared.ascension import public_ascension
+from mystic_shared.battle import ascension_unlocks_skill, public_skills
 from mystic_shared.stats import public_battle_profile
 
 from get_summon_status import app as get_summon_status
 from get_user_cards import app as get_user_cards
 from open_box import app as open_box
 from save_user_card import app as save_user_card
+
+
+@pytest.fixture(autouse=True)
+def no_ascensions(monkeypatch):
+    """Coleção sem ascensões, salvo quando o teste define outras."""
+    ascensions = {}
+    monkeypatch.setattr(get_user_cards, "get_ascensions", lambda user_id: ascensions)
+    return ascensions
 
 
 def test_open_box_options(apigw_event):
@@ -75,6 +84,7 @@ def test_get_user_cards_groups_repeated_cards(authenticated_event, monkeypatch):
                 **public_battle_profile(cards.get_character("astra.jfif")),
                 "skills": public_skills(cards.get_character("astra.jfif")),
             },
+            "ascension": public_ascension(0, 3, False),
         },
         {
             "file_name": "rowan.jfif",
@@ -89,6 +99,7 @@ def test_get_user_cards_groups_repeated_cards(authenticated_event, monkeypatch):
                 **public_battle_profile(cards.get_character("rowan.jfif")),
                 "skills": public_skills(cards.get_character("rowan.jfif")),
             },
+            "ascension": public_ascension(0, 1, True),
         },
     ]
     table.query.assert_called_once()
@@ -109,6 +120,32 @@ def test_get_user_cards_unknown_card_cannot_be_listed(authenticated_event, monke
     assert data["cards"][0]["maxListingQuantity"] == 0
     assert data["cards"][0]["lastObtainedAt"] is None
     assert data["cards"][0]["battle"] is None
+    assert data["cards"][0]["ascension"] is None
+
+
+def test_get_user_cards_applies_ascension(authenticated_event, monkeypatch, no_ascensions):
+    table = MagicMock()
+    table.query.return_value = {
+        "Items": [
+            {"ownedCardId": str(i), "name": "Rowan", "rarity": 3, "file_name": "rowan.jfif"}
+            for i in range(4)
+        ]
+    }
+    monkeypatch.setattr(get_user_cards, "_table", table)
+    no_ascensions["rowan.jfif"] = 3
+    rowan = cards.get_character("rowan.jfif")
+
+    card = json.loads(get_user_cards.lambda_handler(authenticated_event(), "")["body"])["cards"][0]
+
+    assert card["ascension"]["level"] == 3
+    assert card["ascension"]["nextCost"] is None
+    assert card["ascension"]["canAscend"] is False
+    assert ascension_unlocks_skill(rowan)
+    # 3★ na ascensão máxima aprende a segunda habilidade do arquétipo.
+    assert [s["id"] for s in card["battle"]["skills"]] == [
+        "strike", "guard", "bastion_call", "tremor_slam"
+    ]
+    assert card["battle"]["stats"]["vitality"] > public_battle_profile(rowan)["stats"]["vitality"]
 
 
 @pytest.fixture()

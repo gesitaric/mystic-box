@@ -18,6 +18,7 @@ function UserCardsList({
         apiUrl={apiUrl}
         session={session}
         onSessionExpired={onSessionExpired}
+        allowAscend
       />
     </Modal>
   );

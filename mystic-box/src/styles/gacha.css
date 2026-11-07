@@ -2754,3 +2754,64 @@ h1 {
   font-size: 18px;
 }
 
+
+/* Ascensão na coleção */
+
+.collection-card-actions {
+  display: flex;
+  gap: 6px;
+}
+
+.collection-card-ascension {
+  position: absolute;
+  top: 6px;
+  left: 6px;
+  z-index: 2;
+  padding: 2px 7px;
+  border: 1px solid rgba(255, 196, 120, 0.7);
+  border-radius: 999px;
+  background: rgba(30, 12, 50, 0.85);
+  color: #ffc478;
+  font-size: 11px;
+  letter-spacing: 1px;
+  box-shadow: 0 0 10px rgba(255, 170, 80, 0.45);
+  pointer-events: none;
+}
+
+.collection-sell-button.is-ascend {
+  border-color: rgba(190, 150, 255, 0.35);
+  color: #cdb4ff;
+}
+
+.collection-sell-button.is-ascend.is-ready {
+  border-color: rgba(255, 196, 120, 0.8);
+  color: #ffc478;
+  box-shadow: 0 0 10px rgba(255, 170, 80, 0.35);
+}
+
+.ascend-steps {
+  display: grid;
+  gap: 6px;
+  margin: 18px 0 12px;
+}
+
+.ascend-steps > div {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 6px 10px;
+  border-radius: 8px;
+  background: rgba(20, 10, 40, 0.6);
+  font-size: 13px;
+}
+
+.ascend-steps dt {
+  color: #9d88c4;
+}
+
+.ascend-steps dd {
+  margin: 0;
+  color: #ffdc8e;
+  font-weight: 700;
+  text-align: right;
+}

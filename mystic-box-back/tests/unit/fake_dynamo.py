@@ -3,7 +3,8 @@
 Entende condições simples (`a = :v`, `<>`, `<=`, `<`, `>=`, `>`,
 `attribute_exists`, `attribute_not_exists`, ligadas por AND/OR sem
 parênteses), atualizações `SET a = :v, ...` e `ADD a :v, ...`, consultas por
-igualdade da chave (tabela ou índice) e transações com CancellationReasons.
+igualdade da chave (tabela ou índice) com FilterExpression e transações
+(Put, Delete, Update e ConditionCheck) com CancellationReasons.
 """
 
 import copy
@@ -114,7 +115,8 @@ class FakeDynamo:
             ]
         return {"Responses": responses}
 
-    def query(self, TableName, KeyConditionExpression, ExpressionAttributeValues, **_):
+    def query(self, TableName, KeyConditionExpression, ExpressionAttributeValues,
+              FilterExpression=None, ExpressionAttributeNames=None, **_):
         match = re.match(r"^(\w+)\s*=\s*(:\w+)", KeyConditionExpression)
         attribute, placeholder = match.groups()
         wanted = ExpressionAttributeValues[placeholder]["S"]
@@ -122,6 +124,8 @@ class FakeDynamo:
             copy.deepcopy(item)
             for item in self.tables[TableName].values()
             if item.get(attribute, {}).get("S") == wanted
+            and self._check(item, FilterExpression, ExpressionAttributeNames,
+                            ExpressionAttributeValues)
         ]
         return {"Items": items}
 
@@ -165,6 +169,15 @@ class FakeDynamo:
 
         return apply
 
+    def _condition_check(self, check):
+        table = check["TableName"]
+        current = self.tables[table].get(self._key(table, check["Key"]))
+        if not self._check(current, check.get("ConditionExpression"),
+                           check.get("ExpressionAttributeNames"),
+                           check.get("ExpressionAttributeValues")):
+            return False
+        return lambda: None
+
     def put_item(self, **put):
         apply = self._put(put)
         if not apply:
@@ -185,7 +198,8 @@ class FakeDynamo:
 
     def transact_write_items(self, TransactItems):
         self.calls.append(("transact_write_items", len(TransactItems)))
-        handlers = {"Put": self._put, "Delete": self._delete, "Update": self._update}
+        handlers = {"Put": self._put, "Delete": self._delete, "Update": self._update,
+                    "ConditionCheck": self._condition_check}
         applies = []
         reasons = []
         for entry in TransactItems:

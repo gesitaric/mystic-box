@@ -23,6 +23,7 @@ from datetime import datetime, timezone
 import boto3
 from botocore.exceptions import ClientError
 from mystic_shared import pvp
+from mystic_shared.ascension import read_ascensions
 from mystic_shared.battle import TEAM_SIZE, BattleError, create_pvp_battle, new_rng
 from mystic_shared.cards import get_character
 from mystic_shared.progression import level_for_experience
@@ -41,6 +42,7 @@ USER_PROFILES_TABLE = os.environ.get("USER_PROFILES_TABLE")
 USERNAMES_TABLE = os.environ.get("USERNAMES_TABLE")
 USER_CARDS_TABLE = os.environ.get("USER_CARDS_TABLE")
 USER_PROGRESS_TABLE = os.environ.get("USER_PROGRESS_TABLE")
+CARD_ASCENSIONS_TABLE = os.environ.get("CARD_ASCENSIONS_TABLE")
 CHALLENGER_INDEX = "ChallengerIndex"
 
 # Duelos somem sozinhos (TTL) um dia depois da última ação.
@@ -468,6 +470,8 @@ def accept(user_id, body):
             characters,
             get_level(user_id),
             new_rng(),
+            challenger_ascensions=read_ascensions(get_client(), CARD_ASCENSIONS_TABLE, challenger_id),
+            opponent_ascensions=read_ascensions(get_client(), CARD_ASCENSIONS_TABLE, user_id),
         )
     except BattleError as error:
         raise RequestError(400, str(error)) from error
