@@ -6,6 +6,7 @@ from botocore.exceptions import ClientError
 from mystic_shared import cards
 from mystic_shared.ascension import public_ascension
 from mystic_shared.battle import ascension_unlocks_skill, public_skills
+from mystic_shared.lore import public_lore
 from mystic_shared.stats import public_battle_profile
 
 from get_summon_status import app as get_summon_status
@@ -84,6 +85,7 @@ def test_get_user_cards_groups_repeated_cards(authenticated_event, monkeypatch):
                 **public_battle_profile(cards.get_character("astra.jfif")),
                 "skills": public_skills(cards.get_character("astra.jfif")),
             },
+            "lore": public_lore(cards.get_character("astra.jfif")),
             "ascension": public_ascension(0, 3, False),
         },
         {
@@ -99,6 +101,7 @@ def test_get_user_cards_groups_repeated_cards(authenticated_event, monkeypatch):
                 **public_battle_profile(cards.get_character("rowan.jfif")),
                 "skills": public_skills(cards.get_character("rowan.jfif")),
             },
+            "lore": public_lore(cards.get_character("rowan.jfif")),
             "ascension": public_ascension(0, 1, True),
         },
     ]
@@ -121,6 +124,7 @@ def test_get_user_cards_unknown_card_cannot_be_listed(authenticated_event, monke
     assert data["cards"][0]["lastObtainedAt"] is None
     assert data["cards"][0]["battle"] is None
     assert data["cards"][0]["ascension"] is None
+    assert data["cards"][0]["lore"] is None
 
 
 def test_get_user_cards_applies_ascension(authenticated_event, monkeypatch, no_ascensions):

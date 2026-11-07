@@ -3,6 +3,7 @@ import { getCharacterImage } from "../characterImages";
 import AscensionCeremony from "./AscensionCeremony";
 import { CardFace } from "./GachaCard";
 import Modal from "./Modal";
+import "../styles/lore.css";
 
 const SORT_FIELDS = [
   { value: "rarity", label: "Rarity" },
@@ -256,6 +257,52 @@ function AscendModal({ card, ascending, error, onConfirm, onClose }) {
   );
 }
 
+// História da personagem (`card.lore`, vinda do servidor junto com a coleção):
+// de onde ela vem, a história e os laços com outras personagens.
+function StoryModal({ card, onClose }) {
+  const rarity = Number(card.rarity) || 0;
+  const lore = card.lore;
+  const bonds = lore.bonds ?? [];
+
+  return (
+    <Modal label={`Story of ${card.name}`} className="story-modal" onClose={onClose}>
+      <div className="story-hero" data-rarity={rarity}>
+        <div className="story-hero-art">
+          <CardFace card={card} image={getCharacterImage(card.file_name)} rarity={rarity} />
+        </div>
+        <header className="story-heading">
+          {lore.region && <p className="story-region">✦ {lore.region.name}</p>}
+          <h2>{card.name}</h2>
+          {lore.title && <p className="story-title">{lore.title}</p>}
+        </header>
+      </div>
+
+      <div className="story-text">
+        {lore.story.map((paragraph, index) => (
+          <p key={index}>{paragraph}</p>
+        ))}
+      </div>
+
+      {bonds.length > 0 && (
+        <section className="story-bonds" aria-label="Bonds">
+          <h3>Bonds</h3>
+          <ul>
+            {bonds.map((bond) => (
+              <li key={bond.file_name} data-rarity={bond.rarity}>
+                <img src={getCharacterImage(bond.file_name)} alt="" loading="lazy" />
+                <div>
+                  <strong>{bond.name}</strong>
+                  <span>{bond.relation}</span>
+                </div>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
+    </Modal>
+  );
+}
+
 // Cartas do usuário, agrupadas por personagem, com ordenação e anúncio no
 // mercado. Usado na coleção (com ascensão) e na aba "Sell" da loja.
 function OwnedCards({ apiUrl, session, onSessionExpired, onListed, allowAscend = false }) {
@@ -278,6 +325,7 @@ function OwnedCards({ apiUrl, session, onSessionExpired, onListed, allowAscend =
   const [ascendError, setAscendError] = useState("");
   // Cerimônia mostrada depois que a ascensão deu certo: carta antes + resposta.
   const [ceremony, setCeremony] = useState(null);
+  const [storyCard, setStoryCard] = useState(null);
 
   function openAscend(card) {
     setListFeedback(null);
@@ -542,14 +590,29 @@ function OwnedCards({ apiUrl, session, onSessionExpired, onListed, allowAscend =
               card.listingPriceRange != null && card.maxListingQuantity > 0;
             const ascension = card.ascension;
             const canOpenAscend = allowAscend && ascension?.nextCost != null;
+            const hasStory = Array.isArray(card.lore?.story) && card.lore.story.length > 0;
+            const face = (
+              <CardFace
+                card={card}
+                image={getCharacterImage(card.file_name)}
+                rarity={rarity}
+              />
+            );
             return (
               <li key={key} className="collection-card" data-rarity={rarity}>
                 <div className="collection-card-art">
-                  <CardFace
-                    card={card}
-                    image={getCharacterImage(card.file_name)}
-                    rarity={rarity}
-                  />
+                  {hasStory ? (
+                    <button
+                      type="button"
+                      className="collection-card-story"
+                      onClick={() => setStoryCard(card)}
+                      aria-label={`Read the story of ${card.name}`}
+                    >
+                      {face}
+                    </button>
+                  ) : (
+                    face
+                  )}
                   {quantity > 1 && (
                     <span
                       className="collection-card-quantity"
@@ -620,6 +683,8 @@ function OwnedCards({ apiUrl, session, onSessionExpired, onListed, allowAscend =
           onClose={() => setAscendingCard(null)}
         />
       )}
+
+      {storyCard && <StoryModal card={storyCard} onClose={() => setStoryCard(null)} />}
 
       {ceremony && (
         <AscensionCeremony

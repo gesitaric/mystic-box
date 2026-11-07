@@ -1,6 +1,7 @@
 import { getCharacterImage } from "../characterImages";
 import DuelBell from "./DuelBell";
 import Grimoire from "./Grimoire";
+import WorldMap from "./WorldMap";
 import "../styles/home.css";
 
 // Artes de vitrine dos cards de ação (só decoração).
@@ -249,6 +250,7 @@ function HomeScreen({
           </svg>
           <span>Players</span>
         </button>
+        <WorldMap apiUrl={apiUrl} />
         <Grimoire apiUrl={apiUrl} variant="dock" />
       </nav>
     </section>

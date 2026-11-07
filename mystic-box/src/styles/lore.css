@@ -1,0 +1,396 @@
+/* ---------- História da personagem (coleção) ---------- */
+
+.collection-card-story {
+  display: block;
+  width: 100%;
+  height: 100%;
+  padding: 0;
+  border: 0;
+  border-radius: 12px;
+  background: none;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+  transition: transform 0.2s ease, filter 0.2s ease;
+}
+
+.collection-card-story:hover {
+  transform: translateY(-3px);
+  filter: brightness(1.1);
+}
+
+.collection-card-story:focus-visible {
+  outline: 2px solid #ffdc8e;
+  outline-offset: 3px;
+}
+
+.auth-modal.story-modal {
+  width: min(560px, 94vw);
+}
+
+.story-hero {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+}
+
+.story-hero-art {
+  flex: 0 0 120px;
+  aspect-ratio: 13 / 18;
+}
+
+.story-hero .card-content {
+  border-radius: 12px;
+  box-shadow:
+    0 0 0 1px rgba(255, 255, 255, 0.08) inset,
+    0 0 18px var(--card-rarity-glow),
+    0 10px 24px rgba(0, 0, 0, 0.5);
+}
+
+.story-hero .rarity {
+  margin-top: 6px;
+  font-size: 11px;
+  letter-spacing: 2px;
+}
+
+.story-hero .name {
+  margin-top: 6px;
+  font-size: 12px;
+  letter-spacing: 1px;
+}
+
+.story-heading h2 {
+  margin: 4px 0;
+  color: #fff3d6;
+  font-size: 26px;
+  letter-spacing: 3px;
+}
+
+.story-region {
+  margin: 0;
+  color: #9fd2ff;
+  font-size: 12px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+}
+
+.story-title {
+  margin: 0;
+  color: #ffdc8e;
+  font-style: italic;
+  letter-spacing: 1px;
+}
+
+.story-text {
+  margin-top: 18px;
+  padding: 14px 16px;
+  border-left: 2px solid rgba(255, 220, 142, 0.45);
+  border-radius: 10px;
+  background: rgba(20, 10, 40, 0.6);
+  color: #e4d8f8;
+  font-size: 14px;
+  line-height: 1.65;
+  text-align: left;
+}
+
+.story-text p {
+  margin: 0 0 12px;
+}
+
+.story-text p:first-child::first-letter {
+  float: left;
+  margin: 4px 6px 0 0;
+  color: #ffdc8e;
+  font-size: 34px;
+  line-height: 0.9;
+}
+
+.story-text p:last-child {
+  margin-bottom: 0;
+}
+
+.story-bonds {
+  margin-top: 18px;
+  text-align: left;
+}
+
+.story-bonds h3,
+.world-region h4 {
+  margin: 0 0 10px;
+  color: #cbb6ee;
+  font-size: 12px;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+}
+
+.story-bonds ul,
+.world-residents {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.story-bonds li,
+.world-residents li {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 10px;
+  border-radius: 10px;
+  background: rgba(20, 10, 40, 0.6);
+}
+
+.story-bonds img,
+.world-residents img {
+  flex: 0 0 auto;
+  width: 40px;
+  height: 40px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 50%;
+  object-fit: cover;
+  object-position: top;
+}
+
+.story-bonds [data-rarity="5"] > img,
+.world-residents [data-rarity="5"] > img {
+  border-color: #ffd36e;
+  box-shadow: 0 0 8px rgba(255, 200, 90, 0.5);
+}
+
+.story-bonds [data-rarity="4"] > img,
+.world-residents [data-rarity="4"] > img {
+  border-color: #c99bff;
+}
+
+.story-bonds li div,
+.world-residents li div {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.story-bonds strong,
+.world-residents strong {
+  color: #fff3d6;
+  font-size: 13px;
+  letter-spacing: 1px;
+}
+
+.story-bonds span {
+  color: #d6c8ee;
+  font-size: 13px;
+  line-height: 1.4;
+}
+
+@media (max-width: 480px) {
+  .story-hero {
+    flex-direction: column;
+    text-align: center;
+  }
+}
+
+/* ---------- Mapa-múndi ---------- */
+
+.auth-modal.world-modal {
+  width: min(1040px, 96vw);
+}
+
+.world-header p {
+  color: #cbb6ee;
+  font-style: italic;
+}
+
+.world-legend-toggle {
+  display: block;
+  margin: 12px auto 0;
+  padding: 6px 14px;
+  border: 1px solid rgba(255, 220, 142, 0.35);
+  border-radius: 999px;
+  background: rgba(20, 10, 40, 0.7);
+  color: #ffdc8e;
+  font: inherit;
+  font-size: 13px;
+  letter-spacing: 1px;
+  cursor: pointer;
+}
+
+.world-legend {
+  max-width: 720px;
+  margin-inline: auto;
+}
+
+.world-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1.7fr) minmax(260px, 1fr);
+  gap: 18px;
+  margin-top: 18px;
+  align-items: start;
+}
+
+.world-map {
+  position: relative;
+  aspect-ratio: 16 / 10;
+  overflow: hidden;
+  border: 1px solid rgba(255, 220, 142, 0.35);
+  border-radius: 14px;
+  box-shadow: 0 0 30px rgba(120, 80, 220, 0.3) inset;
+}
+
+.world-map-svg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.world-ley-line {
+  stroke: rgba(192, 140, 255, 0.28);
+  stroke-width: 0.3;
+  stroke-dasharray: 1.2 1.4;
+  animation: worldLeyFlow 6s linear infinite;
+}
+
+@keyframes worldLeyFlow {
+  to {
+    stroke-dashoffset: -26;
+  }
+}
+
+.world-land path {
+  transition: stroke-width 0.2s ease;
+}
+
+.world-land.is-selected path {
+  filter: drop-shadow(0 0 1.5px rgba(255, 255, 255, 0.7));
+}
+
+.world-rift-glow {
+  animation: worldRiftPulse 3.5s ease-in-out infinite;
+  transform-box: fill-box;
+  transform-origin: center;
+}
+
+@keyframes worldRiftPulse {
+  0%,
+  100% {
+    opacity: 0.6;
+    transform: scale(0.9);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.12);
+  }
+}
+
+.world-region-pin {
+  position: absolute;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 8px;
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  border-radius: 999px;
+  background: rgba(10, 6, 24, 0.78);
+  color: #f3e9ff;
+  font: inherit;
+  font-size: 11px;
+  letter-spacing: 0.5px;
+  white-space: nowrap;
+  cursor: pointer;
+  transform: translate(-50%, -50%);
+  transition: background 0.2s ease, border-color 0.2s ease, transform 0.2s ease;
+}
+
+.world-region-pin:hover,
+.world-region-pin:focus-visible {
+  border-color: #ffdc8e;
+  outline: none;
+  transform: translate(-50%, -50%) scale(1.06);
+}
+
+.world-region-pin.is-selected {
+  border-color: #ffdc8e;
+  background: rgba(70, 40, 110, 0.92);
+  color: #fff3d6;
+  box-shadow: 0 0 12px rgba(255, 220, 142, 0.5);
+}
+
+.world-region-pin-count {
+  min-width: 16px;
+  padding: 0 4px;
+  border-radius: 999px;
+  background: rgba(255, 220, 142, 0.2);
+  color: #ffdc8e;
+  font-size: 10px;
+  text-align: center;
+}
+
+.world-region {
+  padding: 16px;
+  border-radius: 14px;
+  background: rgba(20, 10, 40, 0.6);
+  text-align: left;
+}
+
+.world-region header h3 {
+  margin: 2px 0 8px;
+  color: #fff3d6;
+  font-size: 20px;
+  letter-spacing: 2px;
+}
+
+.world-region-epithet {
+  margin: 0;
+  color: #9fd2ff;
+  font-size: 12px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+}
+
+.world-region-description {
+  margin: 0 0 16px;
+  color: #e4d8f8;
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+.world-residents {
+  max-height: 340px;
+  overflow-y: auto;
+}
+
+.world-residents strong span {
+  color: #ffdc8e;
+  font-size: 10px;
+  letter-spacing: 1px;
+}
+
+.world-residents em {
+  color: #b9a8d8;
+  font-size: 12px;
+}
+
+.world-region-hint {
+  margin: 12px 0 0;
+  color: #9d88c4;
+  font-size: 12px;
+  font-style: italic;
+}
+
+@media (max-width: 760px) {
+  .world-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .world-region-pin {
+    padding: 2px 5px;
+    font-size: 8px;
+  }
+
+  .world-region-pin-count {
+    display: none;
+  }
+}

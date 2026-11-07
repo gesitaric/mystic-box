@@ -1053,6 +1053,30 @@ Resources:
             Path: /rules
             Method: options
 
+  GetWorldFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: get_world/
+      Handler: app.lambda_handler
+      Runtime: python3.14
+      Architectures:
+      - x86_64
+      Layers:
+      - !Ref SharedLayer
+      Events:
+        GetWorld:
+          Type: Api
+          Properties:
+            RestApiId: !Ref MysticBoxApi
+            Path: /world
+            Method: get
+        GetWorldOptions:
+          Type: Api
+          Properties:
+            RestApiId: !Ref MysticBoxApi
+            Path: /world
+            Method: options
+
 Outputs:
   OpenBoxApi:
     Description: API Gateway endpoint URL for the open box function

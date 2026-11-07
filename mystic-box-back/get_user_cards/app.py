@@ -8,6 +8,7 @@ from botocore.exceptions import ClientError
 from mystic_shared.ascension import public_ascension, read_ascensions
 from mystic_shared.cards import get_character, listing_price_range, max_listing_quantity
 from mystic_shared.battle import ascension_unlocks_skill, public_skills
+from mystic_shared.lore import public_lore
 from mystic_shared.stats import public_battle_profile
 
 CORS_HEADERS = {
@@ -154,6 +155,8 @@ def group_cards(items, ascensions=None):
                 # Quantas cópias podem ser anunciadas de uma vez.
                 "maxListingQuantity": max_listing_quantity(character, group["quantity"]),
                 "battle": battle_profile(character, ascension) if character else None,
+                # História da personagem ({title, story: [parágrafos]}) ou None.
+                "lore": public_lore(character),
                 # Ascensão (cópias repetidas fortalecem a carta); None = não ascende.
                 "ascension": (
                     public_ascension(
