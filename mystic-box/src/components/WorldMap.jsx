@@ -1,5 +1,7 @@
 import { useEffect, useState } from "react";
-import worldMapArt from "../assets/world-map.svg";
+// Imagem pronta (WebP em 2x) desenhada a partir de `world-map.svg`: desenhar o
+// SVG com tantos brilhos e desfoques no navegador deixa o mapa pesado.
+import worldMapArt from "../assets/world-map.webp";
 import { getCharacterImage } from "../characterImages";
 import Modal from "./Modal";
 import "../styles/lore.css";
@@ -62,6 +64,9 @@ function MapCanvas({ regions, selectedId, owned, onSelect }) {
         className="world-map-art"
         src={worldMapArt}
         alt="Illustrated map of the Shattered Realms of Aethra"
+        width="1600"
+        height="1000"
+        decoding="async"
         draggable="false"
       />
       {regions.map((region) => {
