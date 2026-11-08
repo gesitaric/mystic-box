@@ -263,6 +263,19 @@ Resources:
         AttributeName: expiresAt
         Enabled: true
 
+  # Progresso de cada jogador nas regiões: fases da campanha vencidas
+  # (`stage_<região>`).
+  RegionProgressTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+      - AttributeName: userId
+        AttributeType: S
+      KeySchema:
+      - AttributeName: userId
+        KeyType: HASH
+
   # Tokens de sorteio já usados para guardar cartas (uso único). Os itens
   # somem sozinhos pelo TTL depois que o token expira.
   SummonTokensTable:
@@ -706,11 +719,17 @@ Resources:
         Variables:
           USER_PROGRESS_TABLE: !Ref UserProgressTable
           USER_PROFILES_TABLE: !Ref UserProfilesTable
+          REGION_PROGRESS_TABLE: !Ref RegionProgressTable
+          CARD_ASCENSIONS_TABLE: !Ref CardAscensionsTable
       Policies:
       - DynamoDBReadPolicy:
           TableName: !Ref UserProgressTable
       - DynamoDBReadPolicy:
           TableName: !Ref UserProfilesTable
+      - DynamoDBReadPolicy:
+          TableName: !Ref RegionProgressTable
+      - DynamoDBReadPolicy:
+          TableName: !Ref CardAscensionsTable
       Events:
         GetProfile:
           Type: Api
@@ -820,7 +839,10 @@ Resources:
           USER_PROGRESS_TABLE: !Ref UserProgressTable
           USER_WALLET_TABLE: !Ref UserWalletTable
           CARD_ASCENSIONS_TABLE: !Ref CardAscensionsTable
+          REGION_PROGRESS_TABLE: !Ref RegionProgressTable
       Policies:
+      - DynamoDBCrudPolicy:
+          TableName: !Ref RegionProgressTable
       - DynamoDBCrudPolicy:
           TableName: !Ref BattlesTable
       - DynamoDBReadPolicy:
@@ -859,6 +881,129 @@ Resources:
           Properties:
             RestApiId: !Ref MysticBoxApi
             Path: /battles/current/actions
+            Method: options
+
+  GetCampaignFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: get_campaign/
+      Handler: app.lambda_handler
+      Runtime: python3.14
+      LoggingConfig:
+        LogGroup: !Ref GetCampaignFunctionLogGroup
+      Architectures:
+      - x86_64
+      Layers:
+      - !Ref SharedLayer
+      Environment:
+        Variables:
+          REGION_PROGRESS_TABLE: !Ref RegionProgressTable
+          USER_PROGRESS_TABLE: !Ref UserProgressTable
+          USER_CARDS_TABLE: !Ref UserCardsTable
+      Policies:
+      - DynamoDBReadPolicy:
+          TableName: !Ref RegionProgressTable
+      - DynamoDBReadPolicy:
+          TableName: !Ref UserProgressTable
+      - DynamoDBReadPolicy:
+          TableName: !Ref UserCardsTable
+      Events:
+        GetCampaign:
+          Type: Api
+          Properties:
+            RestApiId: !Ref MysticBoxApi
+            Path: /users/me/campaign
+            Method: get
+            Auth:
+              Authorizer: CognitoAuthorizer
+        GetCampaignOptions:
+          Type: Api
+          Properties:
+            RestApiId: !Ref MysticBoxApi
+            Path: /users/me/campaign
+            Method: options
+
+  ClaimRegionFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: claim_region/
+      Handler: app.lambda_handler
+      Runtime: python3.14
+      LoggingConfig:
+        LogGroup: !Ref ClaimRegionFunctionLogGroup
+      Architectures:
+      - x86_64
+      Layers:
+      - !Ref SharedLayer
+      Environment:
+        Variables:
+          USER_CARDS_TABLE: !Ref UserCardsTable
+          REGION_PROGRESS_TABLE: !Ref RegionProgressTable
+          USER_WALLET_TABLE: !Ref UserWalletTable
+      Policies:
+      - DynamoDBReadPolicy:
+          TableName: !Ref UserCardsTable
+      - DynamoDBCrudPolicy:
+          TableName: !Ref RegionProgressTable
+      - DynamoDBCrudPolicy:
+          TableName: !Ref UserWalletTable
+      Events:
+        ClaimRegion:
+          Type: Api
+          Properties:
+            RestApiId: !Ref MysticBoxApi
+            Path: /users/me/regions/claim
+            Method: post
+            Auth:
+              Authorizer: CognitoAuthorizer
+        ClaimRegionOptions:
+          Type: Api
+          Properties:
+            RestApiId: !Ref MysticBoxApi
+            Path: /users/me/regions/claim
+            Method: options
+
+  SetTitleFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: set_title/
+      Handler: app.lambda_handler
+      Runtime: python3.14
+      LoggingConfig:
+        LogGroup: !Ref SetTitleFunctionLogGroup
+      Architectures:
+      - x86_64
+      Layers:
+      - !Ref SharedLayer
+      Environment:
+        Variables:
+          USER_PROFILES_TABLE: !Ref UserProfilesTable
+          USER_PROGRESS_TABLE: !Ref UserProgressTable
+          REGION_PROGRESS_TABLE: !Ref RegionProgressTable
+          CARD_ASCENSIONS_TABLE: !Ref CardAscensionsTable
+      Policies:
+      - DynamoDBCrudPolicy:
+          TableName: !Ref UserProfilesTable
+      - DynamoDBReadPolicy:
+          TableName: !Ref UserProgressTable
+      - DynamoDBReadPolicy:
+          TableName: !Ref RegionProgressTable
+      - DynamoDBReadPolicy:
+          TableName: !Ref CardAscensionsTable
+      Events:
+        SetTitle:
+          Type: Api
+          Properties:
+            RestApiId: !Ref MysticBoxApi
+            Path: /users/me/title
+            Method: post
+            Auth:
+              Authorizer: CognitoAuthorizer
+        SetTitleOptions:
+          Type: Api
+          Properties:
+            RestApiId: !Ref MysticBoxApi
+            Path: /users/me/title
             Method: options
 
   GetBattleFunction:
@@ -1095,6 +1240,32 @@ Resources:
             Path: /rules
             Method: options
 
+  GetWorldFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: get_world/
+      Handler: app.lambda_handler
+      Runtime: python3.14
+      LoggingConfig:
+        LogGroup: !Ref GetWorldFunctionLogGroup
+      Architectures:
+      - x86_64
+      Layers:
+      - !Ref SharedLayer
+      Events:
+        GetWorld:
+          Type: Api
+          Properties:
+            RestApiId: !Ref MysticBoxApi
+            Path: /world
+            Method: get
+        GetWorldOptions:
+          Type: Api
+          Properties:
+            RestApiId: !Ref MysticBoxApi
+            Path: /world
+            Method: options
+
   # Grupos de log das Lambdas (LoggingConfig.LogGroup de cada uma), com
   # retenção para os logs não ficarem guardados para sempre.
   # Uma Lambda nova precisa do seu grupo aqui.
@@ -1205,6 +1376,31 @@ Resources:
     Properties:
       LogGroupName: !Sub "/aws/lambda/${AWS::StackName}/GetRulesFunction"
       RetentionInDays: 14
+
+  GetCampaignFunctionLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub "/aws/lambda/${AWS::StackName}/GetCampaignFunction"
+      RetentionInDays: 14
+
+  ClaimRegionFunctionLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub "/aws/lambda/${AWS::StackName}/ClaimRegionFunction"
+      RetentionInDays: 14
+
+  SetTitleFunctionLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub "/aws/lambda/${AWS::StackName}/SetTitleFunction"
+      RetentionInDays: 14
+
+  GetWorldFunctionLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub "/aws/lambda/${AWS::StackName}/GetWorldFunction"
+      RetentionInDays: 14
+
 
 Outputs:
   OpenBoxApi:

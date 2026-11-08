@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
+import CampaignPanel from "./CampaignPanel";
 import { getCharacterImage } from "../../characterImages";
 import { LevelBadge } from "../HomeScreen";
 import Grimoire from "../Grimoire";
@@ -34,6 +35,7 @@ const TURN_END_MARGIN_MS = 1000;
 
 const ARENA_TABS = [
   { value: "pve", label: "vs Computer" },
+  { value: "campaign", label: "Campaign" },
   { value: "pvp", label: "Online duel" },
 ];
 
@@ -80,6 +82,16 @@ function freshView(view) {
   };
 }
 
+// Ressonância de região do time (calculada no servidor).
+function ResonanceChip({ resonance, side }) {
+  if (!resonance) return null;
+  return (
+    <p className={`battle-resonance is-${side}`} title={resonance.description}>
+      ✦ {resonance.regionName}: <strong>{resonance.name}</strong>
+    </p>
+  );
+}
+
 function AetherMeter({ label, value, max, side }) {
   return (
     <div className={`battle-aether is-${side}`} aria-label={`${label}: ${value} of ${max} Aether`}>
@@ -94,7 +106,19 @@ function AetherMeter({ label, value, max, side }) {
   );
 }
 
-function BattleUnit({ unit, hp, alive, active, acting, targetable, inspected, floats, onClick }) {
+function BattleUnit({
+  unit,
+  hp,
+  alive,
+  active,
+  acting,
+  targetable,
+  inspected,
+  floats,
+  bondNames,
+  rivalNames,
+  onClick,
+}) {
   const element = ELEMENT_STYLE[unit.element];
   const percent = Math.max(0, Math.min(100, (hp / unit.maxHp) * 100));
   const hit = floats.some((float) => float.kind === "damage");
@@ -111,6 +135,7 @@ function BattleUnit({ unit, hp, alive, active, acting, targetable, inspected, fl
         targetable && "is-targetable",
         inspected && "is-inspected",
         hit && "is-hit",
+        unit.ascension > 0 && "is-ascended",
       ]
         .filter(Boolean)
         .join(" ")}
@@ -138,10 +163,22 @@ function BattleUnit({ unit, hp, alive, active, acting, targetable, inspected, fl
         <span className="battle-unit-element" title={unit.elementLabel}>
           {element?.icon}
         </span>
-        <span className="battle-unit-level">
-          Lv {unit.level}
-          {unit.ascension > 0 && ` ${"✴".repeat(unit.ascension)}`}
-        </span>
+        {bondNames.length > 0 && (
+          <span className="battle-unit-bond" title={`Bonded with ${bondNames.join(" and ")}`}>
+            ♥
+          </span>
+        )}
+        {rivalNames.length > 0 && (
+          <span className="battle-unit-rival" title={`Rival of ${rivalNames.join(" and ")}`}>
+            ⚔
+          </span>
+        )}
+        <span className="battle-unit-level">Lv {unit.level}</span>
+        {unit.ascension > 0 && (
+          <span className="battle-unit-ascension" title={`Ascension ${unit.ascension}`}>
+            {"✴".repeat(unit.ascension)}
+          </span>
+        )}
       </div>
       <div className="battle-unit-body">
         <span className="battle-unit-name">{unit.name}</span>
@@ -177,7 +214,94 @@ function BattleUnit({ unit, hp, alive, active, acting, targetable, inspected, fl
   );
 }
 
+// Leitura do duelo: laços, rivalidades e ressonâncias que o servidor revelou
+// no começo do duelo, mostrados antes da primeira jogada.
+const READING_TYPES = ["bond", "bondTorn", "rivalry", "resonance"];
+const READING_ICON = { bond: "♥", bondTorn: "💔", rivalry: "⚔", resonance: "✦" };
+
+function duelReading(events, units) {
+  const names = Object.fromEntries(units.map((unit) => [unit.id, unit.name]));
+  const firstRound = events.findIndex((event) => event.type === "round");
+  const opening = firstRound === -1 ? events : events.slice(0, firstRound);
+  return opening
+    .filter((event) => READING_TYPES.includes(event.type))
+    .map((event, index) => {
+      const mine = (id) => id?.startsWith("p");
+      if (event.type === "resonance") {
+        return {
+          id: index,
+          kind: event.type,
+          side: mine(event.targets?.[0]) ? "yours" : "theirs",
+          title: `${event.regionName}: ${event.name}`,
+          text: event.description,
+        };
+      }
+      const titles = {
+        bond: `${names[event.actor]} & ${names[event.target]} fight together`,
+        bondTorn: `${names[event.actor]} must face ${names[event.target]}`,
+        rivalry: `${names[event.actor]} vs ${names[event.target]}`,
+      };
+      return {
+        id: index,
+        kind: event.type,
+        side: event.type === "bond" ? (mine(event.actor) ? "yours" : "theirs") : "both",
+        title: titles[event.type],
+        text: `“${event.line}” — “${event.reply}”`,
+      };
+    });
+}
+
+function DuelReading({ entries, rivalName, onClose }) {
+  return (
+    <div className="battle-result" role="dialog" aria-modal="true" aria-label="Duel reading">
+      <div className="battle-result-card battle-reading">
+        <span className="auth-ornament">✦ ✧ ✦</span>
+        <h2>THE READING</h2>
+        <p className="battle-result-reason">
+          The Box reads the threads between your champions and {rivalName}&apos;s.
+        </p>
+        <ul className="battle-reading-list">
+          {entries.map((entry) => (
+            <li key={entry.id} className={`is-${entry.kind} is-${entry.side}`}>
+              <strong>
+                {READING_ICON[entry.kind]} {entry.title}
+                {entry.side === "theirs" && <em> · {rivalName}</em>}
+              </strong>
+              <span>{entry.text}</span>
+            </li>
+          ))}
+        </ul>
+        <div className="battle-result-actions">
+          <button type="button" className="keep-button" onClick={onClose}>
+            Begin the duel
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 const RESULT_TITLE = { won: "VICTORY", lost: "DEFEAT", draw: "DRAW" };
+
+function CampaignResult({ campaign }) {
+  if (!campaign) return null;
+  return (
+    <div className="battle-result-campaign">
+      {campaign.firstClear && (
+        <p className="battle-result-levelup">
+          {campaign.boss ? "Champion defeated!" : "Stage cleared!"}
+          {campaign.reward > 0 && <> You earned ✧ {campaign.reward}.</>}
+        </p>
+      )}
+      {campaign.epilogue && (
+        <blockquote className="campaign-epilogue">
+          <span>Epilogue</span>
+          {campaign.epilogue}
+        </blockquote>
+      )}
+    </div>
+  );
+}
 
 function BattleResult({ result, onAgain, onExit }) {
   const won = result.outcome === "won";
@@ -194,6 +318,7 @@ function BattleResult({ result, onAgain, onExit }) {
             {result.shardsReward > 0 && <> and earned ✧ {result.shardsReward}</>}.
           </p>
         )}
+        <CampaignResult campaign={result.campaign} />
         <LevelBadge progress={result.progress} />
         <div className="battle-result-actions">
           <button type="button" className="keep-button" onClick={onAgain}>
@@ -214,6 +339,7 @@ function BattleScreen({
   apiUrl,
   session,
   duelIntent,
+  campaignIntent,
   onExit,
   onSessionExpired,
   onProgressChange,
@@ -229,6 +355,8 @@ function BattleScreen({
   const [floats, setFloats] = useState([]);
   const [log, setLog] = useState([]);
   const [result, setResult] = useState(null);
+  // Leitura do duelo mostrada ao entrar num duelo que acabou de começar.
+  const [reading, setReading] = useState(null);
   const [error, setError] = useState("");
   const [startError, setStartError] = useState("");
   const [starting, setStarting] = useState(false);
@@ -240,7 +368,9 @@ function BattleScreen({
   const [lastTeam, setLastTeam] = useState([]);
   const [showLevelUp, setShowLevelUp] = useState(false);
   // Aba da preparação: contra o computador ou duelo online.
-  const [arena, setArena] = useState(duelIntent ? "pvp" : "pve");
+  const [arena, setArena] = useState(duelIntent ? "pvp" : campaignIntent ? "campaign" : "pve");
+  // Fase da campanha escolhida (região e fase vindas de GET /users/me/campaign).
+  const [campaignStage, setCampaignStage] = useState(null);
   const [clock, setClock] = useState(() => Date.now());
   // Último lote de eventos do duelo já recebido.
   const seqRef = useRef(0);
@@ -382,6 +512,19 @@ function BattleScreen({
         case "revive":
           sfx.revive();
           break;
+        case "bond":
+        case "bondGrief":
+          sfx.status(true);
+          break;
+        case "rivalry":
+          sfx.status(false);
+          break;
+        case "resonance":
+          sfx.status(true);
+          break;
+        case "duo":
+          sfx.cast(unitsById[event.target]?.element, false);
+          break;
         case "aether":
           sfx.siphon();
           break;
@@ -430,7 +573,7 @@ function BattleScreen({
           addFloat(
             event.target,
             event.amount > 0
-              ? `-${event.amount}${event.critical ? "!" : ""}`
+              ? `${event.rival ? "⚔ " : ""}-${event.amount}${event.critical ? "!" : ""}`
               : `🛡 ${event.absorbed}`,
             event.amount > 0 ? "damage" : "shield"
           );
@@ -456,6 +599,34 @@ function BattleScreen({
           break;
         case "stunned":
           addFloat(event.target, "Stunned", "status");
+          break;
+        case "bond":
+          addFloat(event.actor, "♥", "bond");
+          addFloat(event.target, "♥", "bond");
+          break;
+        case "lastWords":
+          addFloat(event.target, "…", "lastWords");
+          break;
+        case "duo":
+          setActingId(event.actor);
+          addFloat(event.target, "✦ Duo", "duo");
+          break;
+        case "omen":
+          for (const id of event.targets ?? []) addFloat(id, "☾", "resonance");
+          break;
+        case "resonance":
+          for (const id of event.targets ?? []) addFloat(id, "✦", "resonance");
+          break;
+        case "bondTorn":
+          addFloat(event.actor, "💔", "bond");
+          addFloat(event.target, "💔", "bond");
+          break;
+        case "rivalry":
+          addFloat(event.actor, "⚔", "rivalry");
+          addFloat(event.target, "⚔", "rivalry");
+          break;
+        case "bondGrief":
+          addFloat(event.target, "♥ Resolve", "bond");
           break;
         case "companion":
           setActingId(event.actor);
@@ -483,7 +654,9 @@ function BattleScreen({
           setAutoMode(false);
           setResult(outcome);
           if (outcome.progress) callbacks.current.onProgressChange?.(outcome.progress);
-          if (outcome.shardsReward > 0) callbacks.current.onBalanceChange?.();
+          if (outcome.shardsReward > 0 || outcome.campaign?.reward > 0) {
+            callbacks.current.onBalanceChange?.();
+          }
         } else if (
           next.status === "active" &&
           next.turn &&
@@ -521,14 +694,14 @@ function BattleScreen({
   const closeLevelUp = useCallback(() => setShowLevelUp(false), []);
   const playLevelUpSound = useCallback((name, ...args) => audio.current?.[name]?.(...args), []);
 
-  async function startBattle(team, difficulty) {
+  async function startBattle(team, difficulty, campaign = null) {
     setStarting(true);
     setStartError("");
     setLastTeam(team);
     try {
       const { ok, data } = await request("/battles", {
         method: "POST",
-        body: JSON.stringify({ team, difficulty }),
+        body: JSON.stringify(campaign ? { team, campaign } : { team, difficulty }),
       });
       if (!ok) {
         setStartError(data.message ?? "Could not start the battle.");
@@ -567,6 +740,10 @@ function BattleScreen({
       audio.current?.start();
       setView(freshView(data.battle));
       setPlayback({ events: data.events ?? [], next: received(data.battle), outcome: data.result });
+      if ((data.battle.round ?? 0) <= 1 && !data.result) {
+        const entries = duelReading(data.events ?? [], data.battle.units ?? []);
+        setReading(entries.length > 0 ? entries : null);
+      }
       setPhase("battle");
     } catch (enterError) {
       if (enterError instanceof SessionExpired) return;
@@ -829,6 +1006,62 @@ function BattleScreen({
               onSessionExpired={onSessionExpired}
             />
           </>
+        ) : arena === "campaign" && !campaignStage ? (
+          <CampaignPanel
+            request={request}
+            initialRegion={campaignIntent?.region}
+            onChooseStage={(region, stage) => {
+              setStartError("");
+              setCampaignStage({ region, stage });
+            }}
+          />
+        ) : arena === "campaign" ? (
+          <TeamSetup
+            apiUrl={apiUrl}
+            session={session}
+            setup={{ teamSize: setup?.teamSize }}
+            initialTeam={lastTeam}
+            starting={starting}
+            startError={startError}
+            startLabel={campaignStage.stage.boss ? "Face the champion" : "Begin the battle"}
+            onStart={(team) =>
+              startBattle(team, null, {
+                region: campaignStage.region.region,
+                stage: campaignStage.stage.stage,
+              })
+            }
+            onSessionExpired={onSessionExpired}
+            cachedCards={rosterCards}
+            onCardsLoaded={setRosterCards}
+          >
+            <section className="battle-panel campaign-brief">
+              <button
+                type="button"
+                className="session-button"
+                onClick={() => setCampaignStage(null)}
+              >
+                ← {campaignStage.region.regionName}
+              </button>
+              <h2 className="battle-panel-title">
+                {campaignStage.stage.boss ? "♛ " : ""}
+                {campaignStage.stage.name}
+              </h2>
+              <p className="battle-inspect-desc">{campaignStage.stage.intro}</p>
+              <div className="campaign-stage-foes">
+                {campaignStage.stage.enemies.map((enemy) => (
+                  <img
+                    key={enemy.file_name}
+                    src={getCharacterImage(enemy.file_name)}
+                    alt={enemy.name}
+                    title={enemy.name}
+                  />
+                ))}
+                <span className="campaign-stage-meta">
+                  Foes Lv {campaignStage.stage.enemyLevel} · +{campaignStage.stage.experience} XP
+                </span>
+              </div>
+            </section>
+          </TeamSetup>
         ) : (
           <TeamSetup
             apiUrl={apiUrl}
@@ -887,6 +1120,12 @@ function BattleScreen({
         targetable={targetable}
         inspected={inspectedId === unit.id}
         floats={floats.filter((float) => float.unitId === unit.id)}
+        bondNames={(unit.bonds ?? [])
+          .map((id) => units.find((other) => other.id === id)?.name)
+          .filter(Boolean)}
+        rivalNames={(unit.rivals ?? [])
+          .map((id) => units.find((other) => other.id === id)?.name)
+          .filter(Boolean)}
         onClick={() => {
           if (targetable) {
             audio.current?.select();
@@ -915,7 +1154,10 @@ function BattleScreen({
           ← Home
         </button>
         <span className="battle-round">
-          {duel ? `Duel vs ${rivalName}` : view.difficultyLabel} · Round {view.round}/
+          {duel
+            ? `Duel vs ${rivalName}${view.opponent?.title ? `, ${view.opponent.title}` : ""}`
+            : view.difficultyLabel}{" "}
+          · Round {view.round}/
           {view.maxRounds}
         </span>
         <SoundButton on={soundOn} onToggle={() => setSoundOn((on) => !on)} />
@@ -928,6 +1170,7 @@ function BattleScreen({
         max={view.maxAether}
         side="enemy"
       />
+      <ResonanceChip resonance={view.resonance?.enemy} side="enemy" />
       <div className="battle-row is-enemy">{enemies.map(renderUnit)}</div>
 
       <div className="battle-center">
@@ -956,6 +1199,7 @@ function BattleScreen({
       </div>
 
       <div className="battle-row is-player">{allies.map(renderUnit)}</div>
+      <ResonanceChip resonance={view.resonance?.player} side="player" />
       <AetherMeter label="Your Aether" value={aether.player} max={view.maxAether} side="player" />
 
       <div className="battle-actions">
@@ -983,12 +1227,17 @@ function BattleScreen({
                 <button
                   key={action.id}
                   type="button"
-                  className={`battle-skill${selectedSkill?.id === action.id ? " is-selected" : ""}`}
+                  className={`battle-skill${selectedSkill?.id === action.id ? " is-selected" : ""}${
+                    action.duo ? " is-duo" : ""
+                  }`}
                   disabled={!action.usable || busy || autoMode}
                   title={action.usable ? action.description : `${action.description} (${action.reason})`}
                   onClick={() => chooseSkill(action)}
                 >
-                  <span className="battle-skill-name">{action.name}</span>
+                  <span className="battle-skill-name">
+                    {action.duo && "✦✦ "}
+                    {action.name}
+                  </span>
                   <span className="battle-skill-meta">
                     {action.cost > 0 ? `${action.cost} ✦` : "Free"} ·{" "}
                     {TARGET_LABELS[action.target]}
@@ -1093,6 +1342,14 @@ function BattleScreen({
           )}
           <SkillList skills={inspectedUnit.skills} />
         </aside>
+      )}
+
+      {reading && !result && (
+        <DuelReading
+          entries={reading}
+          rivalName={rivalName}
+          onClose={() => setReading(null)}
+        />
       )}
 
       {result && <BattleResult result={result} onAgain={backToSetup} onExit={onExit} />}

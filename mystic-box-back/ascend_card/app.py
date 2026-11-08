@@ -22,6 +22,7 @@ from mystic_shared.ascension import (
 )
 from mystic_shared.battle import ascension_unlocks_skill, public_skills
 from mystic_shared.cards import get_character
+from mystic_shared.lore import unlocked_secret_title
 from mystic_shared.stats import public_battle_profile
 
 CORS_HEADERS = {
@@ -257,5 +258,7 @@ def lambda_handler(event, context):
                 **public_battle_profile(character, ascension=ascension),
                 "skills": public_skills(character, ascension),
             },
+            # Título do capítulo secreto liberado nesta ascensão, ou None.
+            "secretUnlocked": unlocked_secret_title(character, current, ascension),
         },
     )

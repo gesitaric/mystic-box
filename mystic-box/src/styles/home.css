@@ -822,3 +822,71 @@
   color: #cbb6ee;
   font-size: 13px;
 }
+
+.hud-title {
+  color: #ffdc8e;
+  font-size: 10px;
+  font-style: italic;
+  letter-spacing: 1px;
+}
+
+.player-title {
+  display: block;
+  color: #ffdc8e;
+  font-size: 11px;
+  font-style: italic;
+}
+
+.title-picker {
+  text-align: left;
+}
+
+.title-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  max-height: 50vh;
+  margin: 10px 0 0;
+  padding: 0;
+  overflow-y: auto;
+  list-style: none;
+}
+
+.title-option {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  width: 100%;
+  padding: 8px 12px;
+  border: 1px solid rgba(203, 182, 238, 0.25);
+  border-radius: 10px;
+  background: rgba(20, 10, 40, 0.6);
+  color: #f3e9ff;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.title-option strong {
+  color: #fff3d6;
+  font-size: 14px;
+}
+
+.title-option span {
+  color: #cbb6ee;
+  font-size: 12px;
+}
+
+.title-option.is-active {
+  border-color: #ffdc8e;
+  box-shadow: 0 0 12px rgba(255, 220, 142, 0.35);
+}
+
+.title-option.is-locked {
+  opacity: 0.55;
+  cursor: default;
+}
+
+.title-option:disabled {
+  cursor: default;
+}

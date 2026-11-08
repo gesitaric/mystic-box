@@ -198,6 +198,19 @@ function SummonChapter({ rules }) {
         </section>
       </div>
 
+      {summon.omen && (
+        <>
+          <h3 className="gr-heading">☾ Omen of the week</h3>
+          <p className="gr-lead">
+            Every Monday a new land takes the spotlight. Its champions are{" "}
+            <b>{summon.omen.summonMultiplier}× likelier</b> than others of the same rarity (the
+            rarity odds above do not change), and a team with one of them earns{" "}
+            <b>+{summon.omen.experienceBonusPercent}% XP</b> against the computer and in the
+            campaign. Check the world map to see this week&apos;s omen.
+          </p>
+        </>
+      )}
+
       <h3 className="gr-heading">Recharge</h3>
       <ul className="gr-list">
         <li>
@@ -702,6 +715,71 @@ function EffectsPage({ battle }) {
           </ul>
         </section>
       ))}
+      {battle.bonds && (
+        <section>
+          <h3 className="gr-heading">♥ Bonds</h3>
+          <p className="gr-lead">
+            Champions who share a bond in their story fight harder side by side: each bonded
+            teammate grants +{battle.bonds.statBonusPercent}% vitality, might, arcana, bulwark and
+            resolve. If one of them falls, the others gain {battle.bonds.griefStatus} for{" "}
+            {battle.bonds.griefTurns} turns. Read the bonds in each card&apos;s story.
+          </p>
+          {battle.resonances?.length > 0 && (
+            <>
+              <h3 className="gr-heading">✦ Region resonance</h3>
+              <p className="gr-lead">
+                A team of three champions from the same land awakens that land&apos;s power at
+                the start of the battle.
+              </p>
+              <ul className="gr-effects is-buff">
+                {battle.resonances.map((r) => (
+                  <li key={r.region}>
+                    <span className="gr-effect-icon" aria-hidden="true">
+                      ✦
+                    </span>
+                    <span>
+                      <b>
+                        {r.regionName}: {r.name}
+                      </b>
+                      <span>{r.description}</span>
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            </>
+          )}
+          {battle.duos?.length > 0 && (
+            <>
+              <h3 className="gr-heading">✦✦ Duo techniques</h3>
+              <p className="gr-lead">
+                Some bonded pairs share a technique. With both in the team, each of them can use
+                it while the other is still standing.
+              </p>
+              <ul className="gr-effects is-buff">
+                {battle.duos.map((duo) => (
+                  <li key={duo.id}>
+                    <span className="gr-effect-icon" aria-hidden="true">
+                      ✦✦
+                    </span>
+                    <span>
+                      <b>
+                        {duo.name} ({duo.pair.join(" & ")}) · {duo.cost} ✦
+                      </b>
+                      <span>{duo.description}</span>
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            </>
+          )}
+          <h3 className="gr-heading">⚔ Rivalries</h3>
+          <p className="gr-lead">
+            Some champions cannot stand each other. When rivals meet on opposite sides, they
+            deal +{battle.bonds.rivalDamagePercent}% damage to one another. The rivals are listed in
+            each card&apos;s story.
+          </p>
+        </section>
+      )}
     </>
   );
 }

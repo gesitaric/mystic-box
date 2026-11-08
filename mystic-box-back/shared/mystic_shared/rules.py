@@ -6,7 +6,7 @@ limites do mercado, curva de nível e as regras da batalha. Nada aqui é copiado
 regra nesses módulos muda o que o jogador lê.
 """
 
-from . import ascension, battle, cards, progression, pvp, stats
+from . import ascension, battle, cards, lore, omens, progression, pvp, stats
 
 RARITIES = (5, 4, 3)
 
@@ -167,6 +167,22 @@ def _battle_rules():
             for key, s in battle.STATUSES.items()
         ],
         "difficulties": _difficulty_rules(),
+        "resonances": [
+            lore.public_resonance(region_id) for region_id in lore.REGION_RESONANCES
+        ],
+        "duos": [
+            {
+                "pair": [cards.get_character(f)["name"] for f in spec["pair"]],
+                **battle.public_skill(skill_id),
+            }
+            for skill_id, spec in battle.DUO_TECHNIQUES.items()
+        ],
+        "bonds": {
+            "statBonusPercent": _percent(battle.BOND_STAT_BONUS),
+            "griefStatus": battle.STATUSES["empower"]["label"],
+            "griefTurns": battle.BOND_GRIEF_TURNS,
+            "rivalDamagePercent": _percent(battle.RIVAL_DAMAGE_MULTIPLIER - 1),
+        },
         "rewards": {
             "lossExperiencePercent": _percent(battle.LOSS_EXPERIENCE_RATIO),
             "lossExperiencePerDefeat": battle.LOSS_EXPERIENCE_PER_DEFEAT,
@@ -210,6 +226,10 @@ def public_rules(cooldown_seconds, token_ttl_seconds):
             "rarityChances": rarity_chances(cards.RARITY_WEIGHTS),
             "lastCardRarityChances": rarity_chances(cards.LAST_CARD_RARITY_WEIGHTS),
             "totalCards": len(cards.CHARACTERS),
+            "omen": {
+                "summonMultiplier": omens.FEATURED_SUMMON_MULTIPLIER,
+                "experienceBonusPercent": round(omens.OMEN_EXPERIENCE_BONUS * 100),
+            },
         },
         "shop": _shop_rules(),
         "progression": _progression_rules(),

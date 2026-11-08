@@ -125,6 +125,33 @@ function TeamSetup({
 
   const inspectedCard = cards.find((card) => card.file_name === inspected);
   const ready = team.length === teamSize && !starting && canStart;
+  // Ressonância de região: a regra e o texto vêm da API (`lore.region.resonance`).
+  const teamRegions = team
+    .map((name) => cards.find((card) => card.file_name === name)?.lore?.region)
+    .filter(Boolean);
+  const regionCounts = {};
+  for (const region of teamRegions) {
+    regionCounts[region.id] = (regionCounts[region.id] ?? 0) + 1;
+  }
+  const [topRegionId, topCount = 0] =
+    Object.entries(regionCounts).sort((a, b) => b[1] - a[1])[0] ?? [];
+  const topRegion = teamRegions.find((region) => region.id === topRegionId);
+  const resonance = topRegion?.resonance ?? null;
+  const resonanceActive = resonance && topCount === teamSize;
+  // Técnicas de dupla liberadas pelo time escolhido (vêm de `battle.duos`).
+  const teamDuos = [];
+  for (const name of team) {
+    const card = cards.find((c) => c.file_name === name);
+    for (const duo of card?.battle?.duos ?? []) {
+      if (team.includes(duo.partner) && !teamDuos.some((d) => d.skill.id === duo.skill.id)) {
+        teamDuos.push({ ...duo, owner: card.name });
+      }
+    }
+  }
+  const resonanceHint =
+    resonance && !resonanceActive && topCount >= 2 && team.length < teamSize
+      ? teamSize - topCount
+      : 0;
   const showDifficulty = Boolean(setup?.difficulties);
 
   return (
@@ -184,11 +211,17 @@ function TeamSetup({
               const position = team.indexOf(card.file_name);
               const selected = position >= 0;
               const element = ELEMENT_STYLE[card.battle.element];
+              const ascended = card.ascension?.level ?? 0;
+              const bonded = (card.lore?.bonds ?? []).some(
+                (bond) => bond.file_name !== card.file_name && team.includes(bond.file_name)
+              );
               return (
                 <li key={card.file_name}>
                   <button
                     type="button"
-                    className={`battle-roster-card${selected ? " is-selected" : ""}`}
+                    className={`battle-roster-card${selected ? " is-selected" : ""}${
+                      ascended > 0 ? " is-ascended" : ""
+                    }`}
                     data-rarity={card.rarity}
                     style={{ "--element": element?.color }}
                     aria-pressed={selected}
@@ -199,11 +232,27 @@ function TeamSetup({
                   >
                     <img src={getCharacterImage(card.file_name)} alt="" />
                     {selected && <span className="battle-roster-order">{position + 1}</span>}
+                    {bonded && (
+                      <span className="battle-roster-bond" title="Bonded with a card in your team">
+                        ♥
+                      </span>
+                    )}
                     <span className="battle-roster-name">{card.name}</span>
                     <span className="battle-roster-meta">
                       {element?.icon} {card.battle.archetypeLabel}
                     </span>
-                    <span className="battle-roster-stars">{"✦".repeat(card.rarity)}</span>
+                    <span className="battle-roster-stars">
+                      {"✦".repeat(card.rarity)}
+                      {ascended > 0 && (
+                        <span
+                          className="battle-roster-ascension"
+                          title={`Ascension ${ascended}/${card.ascension.max} · +${card.ascension.statBonusPercent}% stats`}
+                        >
+                          {" "}
+                          {"✴".repeat(ascended)}
+                        </span>
+                      )}
+                    </span>
                   </button>
                 </li>
               );
@@ -219,12 +268,43 @@ function TeamSetup({
             <span className="battle-inspect-sub">
               {ELEMENT_STYLE[inspectedCard.battle.element]?.icon}{" "}
               {inspectedCard.battle.elementLabel} · {inspectedCard.battle.archetypeLabel}
+              {inspectedCard.ascension?.level > 0 && (
+                <span className="battle-inspect-ascension">
+                  {" "}
+                  · {"✴".repeat(inspectedCard.ascension.level)} +
+                  {inspectedCard.ascension.statBonusPercent}% stats
+                </span>
+              )}
             </span>
           </h2>
           <p className="battle-inspect-desc">{inspectedCard.battle.archetypeDescription}</p>
           <StatGrid stats={inspectedCard.battle.stats} />
+          {inspectedCard.lore?.bonds?.some((bond) => bond.owned) && (
+            <p className="battle-inspect-bonds">
+              <span>♥ Bonds</span>
+              {inspectedCard.lore.bonds
+                .filter((bond) => bond.owned)
+                .map((bond) => bond.name)
+                .join(" · ")}
+            </p>
+          )}
           {inspectedCard.battle.skills && <SkillList skills={inspectedCard.battle.skills} />}
         </section>
+      )}
+
+      {teamDuos.map((duo) => (
+        <p key={duo.skill.id} className="battle-setup-duo">
+          ✦✦ Duo technique: <strong>{duo.skill.name}</strong> — {duo.skill.description}
+        </p>
+      ))}
+
+      {resonance && (resonanceActive || resonanceHint > 0) && (
+        <p className={`battle-setup-resonance${resonanceActive ? " is-active" : ""}`}>
+          ✦ {resonance.regionName}: <strong>{resonance.name}</strong> —{" "}
+          {resonanceActive
+            ? resonance.description
+            : `add ${resonanceHint} more from ${resonance.regionName} to awaken it.`}
+        </p>
       )}
 
       <div className="battle-setup-actions">

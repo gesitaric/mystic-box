@@ -412,3 +412,258 @@ def test_public_state_lists_actions_for_current_card():
     assert strike["usable"] and set(strike["targets"]) == {"e0", "e1", "e2"}
     assert len(view["units"]) == 6
     json.dumps(view)
+
+
+# ---------- laços ----------
+
+
+BONDED = ("malachar.jfif", "mortis.jfif", "rowan.jfif")
+
+
+def test_bonded_cards_on_the_same_team_get_stronger():
+    from mystic_shared.lore import bond_between
+
+    assert bond_between("rowan.jfif", "malachar.jfif") is None
+    plain, _ = new_battle(player=("tobin.jfif", "kael.jfif", "rowan.jfif"))
+    bonded, events = battle.create_battle(
+        "battle-1", team(*BONDED), 1, "novice", random.Random(1), enemy_team=team(*FOES),
+    )
+
+    malachar, mortis = unit(bonded, "p0"), unit(bonded, "p1")
+    assert malachar["bonds"] == ["p1"] and mortis["bonds"] == ["p0"]
+    assert unit(bonded, "p2")["bonds"] == []
+    base = battle.battle_stats(cards.get_character("malachar.jfif"), 1, 0)
+    assert malachar["stats"]["might"] == round(base["might"] * (1 + battle.BOND_STAT_BONUS))
+    assert malachar["maxHp"] == malachar["stats"]["vitality"]
+    # Rowan não tem laço com ninguém deste time: atributos iguais aos de sempre.
+    assert unit(bonded, "p2")["stats"] == unit(plain, "p2")["stats"]
+
+    bond = next(e for e in events if e["type"] == "bond")
+    assert (bond["actor"], bond["target"]) == ("p0", "p1")
+    assert (bond["line"], bond["reply"]) == bond_between("malachar.jfif", "mortis.jfif")
+
+
+def test_bonds_only_link_cards_on_the_same_side():
+    state, events = battle.create_battle(
+        "battle-1", team("malachar.jfif", "tobin.jfif", "kael.jfif"), 1, "novice",
+        random.Random(1), enemy_team=team("mortis.jfif", "corvus.jfif", "rowan.jfif"),
+    )
+    assert unit(state, "p0")["bonds"] == []
+    assert unit(state, "e0")["bonds"] == []
+    assert not [e for e in events if e["type"] == "bond"]
+
+
+def test_partner_is_empowered_when_a_bonded_ally_falls():
+    state, _ = battle.create_battle(
+        "battle-1", team(*BONDED), 1, "novice", random.Random(1), enemy_team=team(*FOES),
+    )
+    mortis = unit(state, "p1")
+    events = []
+    battle._lose_hp(mortis, mortis["hp"], events, {"type": "damage"})
+    battle._bond_grief(state, events, 0)
+
+    grief = next(e for e in events if e["type"] == "bondGrief")
+    assert (grief["target"], grief["source"]) == ("p0", "p1")
+    assert "empower" in unit(state, "p0")["statuses"]
+    assert "empower" not in unit(state, "p2")["statuses"]
+
+
+def test_public_state_shows_bonds_from_each_side():
+    state, events = battle.create_pvp_battle(
+        "duel-1", team("tobin.jfif", "kael.jfif", "corvus.jfif"), 1,
+        team(*BONDED), 1, random.Random(1),
+    )
+    view = battle.public_state(state, viewer="enemy")
+    assert next(u for u in view["units"] if u["id"] == "p0")["bonds"] == ["p1"]
+    bond = next(e for e in battle.view_events(events, "enemy") if e["type"] == "bond")
+    assert (bond["actor"], bond["target"]) == ("p0", "p1")
+
+
+# ---------- rivalidades ----------
+
+
+def test_rivals_on_opposite_sides_face_off_and_hit_harder():
+    from mystic_shared.lore import rivalry_between
+
+    state, events = battle.create_battle(
+        "battle-1", team("gorvane.jfif", "tobin.jfif", "kael.jfif"), 1, "novice",
+        random.Random(1), enemy_team=team("brannoc.jfif", "corvus.jfif", "rowan.jfif"),
+    )
+    assert unit(state, "p0")["rivals"] == ["e0"]
+    assert unit(state, "e0")["rivals"] == ["p0"]
+    assert unit(state, "p1")["rivals"] == []
+    clash = next(e for e in events if e["type"] == "rivalry")
+    assert (clash["actor"], clash["target"]) == ("p0", "e0")
+    assert (clash["line"], clash["reply"]) == rivalry_between("gorvane.jfif", "brannoc.jfif")
+
+    gorvane, brannoc, corvus = unit(state, "p0"), unit(state, "e0"), unit(state, "e1")
+    hits = []
+    battle._deal_damage(gorvane, brannoc, 1.0, "physical", FixedRng(), hits)
+    rival_hit = hits[0]
+    assert rival_hit["rival"] is True
+    plain = []
+    gorvane["rivals"] = []
+    brannoc["hp"] = brannoc["maxHp"]
+    battle._deal_damage(gorvane, brannoc, 1.0, "physical", FixedRng(), plain)
+    assert "rival" not in plain[0]
+    assert rival_hit["amount"] > plain[0]["amount"]
+    assert corvus["rivals"] == []
+
+
+def test_rivals_on_the_same_team_are_not_rivals_in_battle():
+    state, events = battle.create_battle(
+        "battle-1", team("gorvane.jfif", "brannoc.jfif", "kael.jfif"), 1, "novice",
+        random.Random(1), enemy_team=team(*FOES),
+    )
+    assert unit(state, "p0")["rivals"] == []
+    assert not [e for e in events if e["type"] == "rivalry"]
+
+
+# ---------- ressonância de região ----------
+
+
+CINDERPEAK = ("ignis.jfif", "pyralis.jfif", "torvin.jfif")
+NOCTHAVEN = ("malachar.jfif", "morwen.jfif", "nocturna.jfif")
+
+
+def test_team_from_one_region_gets_its_resonance():
+    state, events = battle.create_battle(
+        "battle-1", team(*CINDERPEAK), 1, "novice", random.Random(1), enemy_team=team(*FOES),
+    )
+    resonance = next(e for e in events if e["type"] == "resonance")
+    assert resonance["region"] == "cinderpeak"
+    assert resonance["targets"] == ["p0", "p1", "p2"]
+    assert state["resonance"] == {"player": "cinderpeak", "enemy": None}
+    # Aether extra no começo (antes dos turnos já jogados).
+    plain, _ = new_battle()
+    assert state["aether"]["player"] >= plain["aether"]["player"] + 3 - 1
+
+    view = battle.public_state(state)
+    assert view["resonance"]["player"]["name"] == "Everfire Spark"
+    assert view["resonance"]["enemy"] is None
+
+
+def test_resonance_can_curse_the_other_team():
+    state, _ = battle.create_battle(
+        "battle-1", team(*FOES), 1, "novice", random.Random(1), enemy_team=team(*NOCTHAVEN),
+    )
+    assert state["resonance"]["enemy"] == "nocthaven"
+    weakened = [u for u in state["units"] if u["side"] == "player" and "weaken" in u["statuses"]]
+    assert weakened  # pelo menos quem ainda não agiu continua enfraquecido
+
+
+def test_mixed_team_has_no_resonance():
+    state, events = new_battle()
+    assert state["resonance"] == {"player": None, "enemy": None}
+    assert not [e for e in events if e["type"] == "resonance"]
+
+
+# ---------- técnicas de dupla ----------
+
+
+def test_duo_technique_needs_both_partners_alive():
+    state, _ = battle.create_battle(
+        "battle-1", team("astra.jfif", "lyra.png", "rowan.jfif"), 1, "novice",
+        random.Random(1), enemy_team=team(*FOES),
+    )
+    astra, lyra, rowan = unit(state, "p0"), unit(state, "p1"), unit(state, "p2")
+    assert "falling_star_volley" in astra["skills"]
+    assert "falling_star_volley" in lyra["skills"]
+    assert "falling_star_volley" not in rowan["skills"]
+
+    state["aether"]["player"] = battle.DUO_AETHER_COST
+    assert battle.skill_unavailable_reason(state, astra, "falling_star_volley") is None
+    lyra["hp"] = 0
+    assert battle.skill_unavailable_reason(state, astra, "falling_star_volley") == (
+        "Your partner has fallen."
+    )
+
+
+def test_duo_technique_strikes_every_foe_together():
+    state, _ = battle.create_battle(
+        "battle-1", team("astra.jfif", "lyra.png", "rowan.jfif"), 1, "novice",
+        random.Random(1), enemy_team=team(*FOES),
+    )
+    astra = unit(state, "p0")
+    alive_foes = {u["id"] for u in state["units"] if u["side"] == "enemy" and u["hp"] > 0}
+    state["aether"]["player"] = battle.DUO_AETHER_COST
+    state["acting"] = "p0"
+    events = []
+    battle._perform(state, astra, "falling_star_volley", None, FixedRng(), events)
+
+    duo = next(e for e in events if e["type"] == "duo")
+    assert (duo["actor"], duo["target"]) == ("p0", "p1")
+    hit = {e["target"] for e in events if e["type"] == "damage"}
+    assert hit == alive_foes
+    assert state["aether"]["player"] == 0
+
+
+def test_duo_technique_is_not_learned_without_the_partner():
+    state, _ = new_battle(player=("astra.jfif", "tobin.jfif", "rowan.jfif"))
+    assert "falling_star_volley" not in unit(state, "p0")["skills"]
+
+
+def test_every_duo_is_a_bonded_pair():
+    from mystic_shared.lore import bond_between
+
+    for skill_id, spec in battle.DUO_TECHNIQUES.items():
+        assert bond_between(*spec["pair"]), skill_id
+        assert battle.SKILLS[skill_id]["duo"] is True
+
+
+def test_random_battles_with_duos_never_break():
+    for seed in range(20):
+        state, _ = battle.create_battle(
+            "battle-1", team("ignis.jfif", "drakara.jfif", "pyralis.jfif"), 5, "adept",
+            random.Random(seed),
+            enemy_team=team("seraphiel.jfif", "annelise.jfif", "elowen.jfif"),
+        )
+        play_until_end(state, seed=seed)
+
+
+# ---------- última fala ----------
+
+
+def _fall(state, unit_id):
+    target = unit(state, unit_id)
+    events = []
+    battle._lose_hp(target, target["hp"], events, {"type": "damage"})
+    battle._bond_grief(state, events, 0)
+    return events
+
+
+def test_ascended_card_says_its_last_words_when_it_falls():
+    from mystic_shared.lore import LAST_WORDS
+
+    state, _ = battle.create_battle(
+        "battle-1", team(*PLAYER), 1, "novice", random.Random(1), enemy_team=team(*FOES),
+        ascensions={"rowan.jfif": 1},
+    )
+    words = [e for e in _fall(state, "p0") if e["type"] == "lastWords"]
+    assert words == [{"type": "lastWords", "target": "p0", "line": LAST_WORDS["rowan.jfif"]}]
+
+
+def test_card_without_ascension_falls_in_silence():
+    state, _ = new_battle()
+    assert not [e for e in _fall(state, "p0") if e["type"] == "lastWords"]
+
+
+# ---------- leitura do duelo ----------
+
+
+def test_bonded_cards_on_opposite_sides_only_exchange_words():
+    from mystic_shared.lore import bond_between
+
+    state, events = battle.create_pvp_battle(
+        "duel-1", team("malachar.jfif", "tobin.jfif", "kael.jfif"), 1,
+        team("mortis.jfif", "corvus.jfif", "rowan.jfif"), 1, random.Random(1),
+    )
+    torn = next(e for e in events if e["type"] == "bondTorn")
+    assert (torn["actor"], torn["target"]) == ("p0", "e0")
+    assert (torn["line"], torn["reply"]) == bond_between("malachar.jfif", "mortis.jfif")
+    # Sem bônus: o laço só vale no mesmo time.
+    assert unit(state, "p0")["bonds"] == [] and unit(state, "e0")["bonds"] == []
+
+    seen_by_rival = next(e for e in battle.view_events(events, "enemy")
+                         if e["type"] == "bondTorn")
+    assert (seen_by_rival["actor"], seen_by_rival["target"]) == ("e0", "p0")

@@ -2,7 +2,7 @@
 
 Entende condições simples (`a = :v`, `<>`, `<=`, `<`, `>=`, `>`,
 `attribute_exists`, `attribute_not_exists`, ligadas por AND/OR sem
-parênteses), atualizações `SET a = :v, ...` e `ADD a :v, ...`, consultas por
+parênteses), atualizações `SET a = :v, ...`, `ADD a :v, ...` e `REMOVE a`, consultas por
 igualdade da chave (tabela ou índice) com FilterExpression e transações
 (Put, Delete, Update e ConditionCheck) com CancellationReasons.
 """
@@ -77,18 +77,20 @@ class FakeDynamo:
 
     def _apply_update(self, item, expression, names, values):
         names = names or {}
-        sections = re.split(r"\b(SET|ADD)\b", expression)
+        sections = re.split(r"\b(SET|ADD|REMOVE)\b", expression)
         mode = None
         for part in sections:
             part = part.strip()
-            if part in ("SET", "ADD"):
+            if part in ("SET", "ADD", "REMOVE"):
                 mode = part
                 continue
             if not part:
                 continue
             for assignment in part.split(","):
                 assignment = assignment.strip()
-                if mode == "SET":
+                if mode == "REMOVE":
+                    item.pop(names.get(assignment, assignment), None)
+                elif mode == "SET":
                     name, value = [x.strip() for x in assignment.split("=")]
                     item[names.get(name, name)] = copy.deepcopy(values[value])
                 else:

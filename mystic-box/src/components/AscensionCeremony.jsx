@@ -194,6 +194,14 @@ function AscensionCeremony({ card, result, onClose }) {
             </div>
           ))}
 
+          {result.secretUnlocked && (
+            <div className="ascension-skill ascension-secret">
+              <span className="ascension-skill-tag">Secret chapter unlocked</span>
+              <b>{result.secretUnlocked}</b>
+              <span>Open the card in your collection to read it.</span>
+            </div>
+          )}
+
           <button
             type="button"
             className="ascension-continue"

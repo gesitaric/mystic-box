@@ -150,8 +150,38 @@ def public_card(character):
     }
 
 
-def draw_cards(count=SUMMON_SIZE):
-    """Sorteia `count` personagens distintos; o último usa pesos mais generosos."""
+def card_weights(available, rarity_weights, featured=None, multiplier=1):
+    """Peso de cada carta em `available`.
+
+    Cartas em `featured` (boato da semana) pesam `multiplier` vezes mais que as
+    outras da mesma raridade, sem mudar a chance total de cada raridade.
+    """
+    featured = featured or set()
+    counts, boosted = {}, {}
+    for character in available:
+        rarity = character["rarity"]
+        counts[rarity] = counts.get(rarity, 0) + 1
+        if character["file_name"] in featured:
+            boosted[rarity] = boosted.get(rarity, 0) + 1
+    weights = []
+    for character in available:
+        rarity = character["rarity"]
+        base = rarity_weights[rarity]
+        if not boosted.get(rarity) or multiplier == 1:
+            weights.append(base)
+            continue
+        # Mesma soma da raridade: n * base = (n - f) * w + f * w * multiplier.
+        n, f = counts[rarity], boosted[rarity]
+        unit = base * n / (n - f + f * multiplier)
+        weights.append(unit * multiplier if character["file_name"] in featured else unit)
+    return weights
+
+
+def draw_cards(count=SUMMON_SIZE, featured=None, multiplier=1):
+    """Sorteia `count` personagens distintos; o último usa pesos mais generosos.
+
+    `featured`/`multiplier`: personagens com mais chance (boato da semana).
+    """
     available = list(CHARACTERS)
     drawn = []
 
@@ -159,7 +189,7 @@ def draw_cards(count=SUMMON_SIZE):
         rarity_weights = (
             LAST_CARD_RARITY_WEIGHTS if position == count - 1 else RARITY_WEIGHTS
         )
-        weights = [rarity_weights[character["rarity"]] for character in available]
+        weights = card_weights(available, rarity_weights, featured, multiplier)
         character = random.choices(available, weights=weights, k=1)[0]
         available.remove(character)
         drawn.append(character)
