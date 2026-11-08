@@ -31,8 +31,14 @@ $url = Get-StackOutput "FrontendUrl"
 if (-not $SkipBuild) { Invoke-Native npm run build }
 
 # Arquivos com hash no nome (dist/assets) nunca mudam: cache de 1 ano.
+$assetsCache = "public, max-age=31536000, immutable"
 Invoke-Native aws s3 sync dist/assets "s3://$bucket/assets" --delete `
-    --cache-control "public, max-age=31536000, immutable"
+    --exclude "*.webp" --cache-control $assetsCache
+
+# O AWS CLI no Windows nao reconhece .webp e grava binary/octet-stream:
+# envia as imagens a parte com o tipo explicito.
+Invoke-Native aws s3 sync dist/assets "s3://$bucket/assets" --delete `
+    --exclude "*" --include "*.webp" --content-type "image/webp" --cache-control $assetsCache
 
 # Demais arquivos (index.html, favicon...): o navegador sempre revalida,
 # para pegar a versao nova logo apos o deploy.
