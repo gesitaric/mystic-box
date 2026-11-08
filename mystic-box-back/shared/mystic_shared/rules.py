@@ -6,7 +6,7 @@ limites do mercado, curva de nível e as regras da batalha. Nada aqui é copiado
 regra nesses módulos muda o que o jogador lê.
 """
 
-from . import ascension, battle, cards, lore, progression, pvp, stats
+from . import ascension, battle, cards, lore, omens, progression, pvp, stats
 
 RARITIES = (5, 4, 3)
 
@@ -226,6 +226,10 @@ def public_rules(cooldown_seconds, token_ttl_seconds):
             "rarityChances": rarity_chances(cards.RARITY_WEIGHTS),
             "lastCardRarityChances": rarity_chances(cards.LAST_CARD_RARITY_WEIGHTS),
             "totalCards": len(cards.CHARACTERS),
+            "omen": {
+                "summonMultiplier": omens.FEATURED_SUMMON_MULTIPLIER,
+                "experienceBonusPercent": round(omens.OMEN_EXPERIENCE_BONUS * 100),
+            },
         },
         "shop": _shop_rules(),
         "progression": _progression_rules(),

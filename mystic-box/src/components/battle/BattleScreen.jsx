@@ -542,6 +542,9 @@ function BattleScreen({
           setActingId(event.actor);
           addFloat(event.target, "✦ Duo", "duo");
           break;
+        case "omen":
+          for (const id of event.targets ?? []) addFloat(id, "☾", "resonance");
+          break;
         case "resonance":
           for (const id of event.targets ?? []) addFloat(id, "✦", "resonance");
           break;

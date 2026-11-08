@@ -3,6 +3,7 @@ import json
 from botocore.exceptions import ClientError
 from mystic_shared import summon_token
 from mystic_shared.cards import draw_cards, public_card
+from mystic_shared.omens import FEATURED_SUMMON_MULTIPLIER, featured_file_names
 
 CORS_HEADERS = {
     "Access-Control-Allow-Origin": "*",
@@ -23,7 +24,8 @@ def lambda_handler(event, context):
     if event.get("httpMethod") == "OPTIONS":
         return response(200, {})
 
-    drawn = draw_cards()
+    # Personagens da região do boato da semana têm mais chance.
+    drawn = draw_cards(featured=featured_file_names(), multiplier=FEATURED_SUMMON_MULTIPLIER)
 
     try:
         # Só este token (e não as cartas) é aceito depois por POST /users/me/cards.

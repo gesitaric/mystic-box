@@ -93,7 +93,9 @@ def test_get_world_endpoint_is_public():
 
     ret = get_world.lambda_handler({"httpMethod": "GET"}, "")
     assert ret["statusCode"] == 200
-    assert json.loads(ret["body"]) == public_world()
+    body = json.loads(ret["body"])
+    assert body.pop("omen")["region"]
+    assert body == public_world()
 
 
 def test_every_character_has_last_words():

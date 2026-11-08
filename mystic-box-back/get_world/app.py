@@ -7,6 +7,7 @@ Público. As histórias completas de cada carta só aparecem na coleção
 import json
 
 from mystic_shared.lore import public_world
+from mystic_shared.omens import public_omen
 
 CORS_HEADERS = {
     "Access-Control-Allow-Origin": "*",
@@ -27,4 +28,6 @@ def lambda_handler(event, context):
     if event.get("httpMethod") == "OPTIONS":
         return response(200, {})
 
-    return response(200, public_world(), {"Cache-Control": "public, max-age=300"})
+    # O boato da semana muda toda segunda; o cache curto acompanha a troca.
+    world = {**public_world(), "omen": public_omen()}
+    return response(200, world, {"Cache-Control": "public, max-age=300"})

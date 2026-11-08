@@ -120,6 +120,11 @@ export function describeEvent(event, names) {
         text: `♥ ${name(event.actor)} & ${name(event.target)}: “${event.line}” — “${event.reply}”`,
         kind: "bond",
       };
+    case "omen":
+      return {
+        text: `☾ ${event.title}: ${event.targets.map(name).join(", ")} carry the omen (+${event.bonusPercent}% XP).`,
+        kind: "resonance",
+      };
     case "resonance":
       return {
         text: `✦ ${event.regionName} resonance — ${event.name}: ${event.description}`,
@@ -169,6 +174,7 @@ export function eventDelay(event) {
     case "heal":
       return event.amount > 0 ? 380 : 0;
     case "resonance":
+    case "omen":
       return 1800;
     case "duo":
       return 900;

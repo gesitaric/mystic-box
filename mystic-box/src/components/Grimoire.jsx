@@ -198,6 +198,19 @@ function SummonChapter({ rules }) {
         </section>
       </div>
 
+      {summon.omen && (
+        <>
+          <h3 className="gr-heading">☾ Omen of the week</h3>
+          <p className="gr-lead">
+            Every Monday a new land takes the spotlight. Its champions are{" "}
+            <b>{summon.omen.summonMultiplier}× likelier</b> than others of the same rarity (the
+            rarity odds above do not change), and a team with one of them earns{" "}
+            <b>+{summon.omen.experienceBonusPercent}% XP</b> against the computer and in the
+            campaign. Check the world map to see this week&apos;s omen.
+          </p>
+        </>
+      )}
+
       <h3 className="gr-heading">Recharge</h3>
       <ul className="gr-list">
         <li>

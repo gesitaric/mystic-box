@@ -1465,6 +1465,17 @@ def outcome_for(state, side="player"):
     return status
 
 
+def mark_omen(state, region_id, bonus, title):
+    """Boato da semana: se o time do jogador tem carta da região, mais experiência."""
+    team = [u for u in state["units"] if u["side"] == "player"]
+    heralds = [u["id"] for u in team if region_of(u["fileName"]) == region_id]
+    if not heralds:
+        return []
+    state["omen"] = {"region": region_id, "bonus": bonus, "title": title}
+    return [{"type": "omen", "targets": heralds, "title": title,
+             "bonusPercent": round(bonus * 100)}]
+
+
 def _win_experience(state):
     if is_pvp(state):
         return PVP["experience"]
@@ -1476,6 +1487,8 @@ def _win_experience(state):
 def battle_experience(state, side="player"):
     """Experiência ganha por `side` ao fim da batalha (0 se ainda estiver ativa)."""
     base = _win_experience(state)
+    if side == "player" and state.get("omen"):
+        base = round(base * (1 + state["omen"]["bonus"]))
     outcome = outcome_for(state, side)
     if outcome == "won":
         return base
@@ -1645,6 +1658,7 @@ def public_state(state, viewer="player"):
         ],
         "units": [_public_unit(unit, viewer) for unit in state["units"]],
         "actions": actions,
+        "omen": state.get("omen"),
         "resonance": {
             _view_side(side, viewer): public_resonance(region) if region else None
             for side, region in state.get("resonance", {}).items()

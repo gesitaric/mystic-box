@@ -29,6 +29,7 @@ from mystic_shared.battle import (
     battle_experience,
     create_battle,
     create_campaign_battle,
+    mark_omen,
     new_rng,
     play_turn,
     public_state,
@@ -44,6 +45,7 @@ from mystic_shared.campaign import (
     stage_setup,
 )
 from mystic_shared.cards import get_character
+from mystic_shared.omens import OMEN_EXPERIENCE_BONUS, public_omen
 from mystic_shared.progression import level_for_experience, level_up_reward, public_progress
 
 CORS_HEADERS = {
@@ -418,6 +420,10 @@ def start(user_id, event):
             )
     except (BattleError, CampaignError) as error:
         return response(400, {"message": str(error)})
+
+    # Boato da semana: carta da região em destaque rende mais experiência.
+    omen = public_omen()
+    events = events + mark_omen(state, omen["region"], OMEN_EXPERIENCE_BONUS, omen["title"])
 
     try:
         result = store_battle(user_id, state, None)

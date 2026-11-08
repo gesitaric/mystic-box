@@ -1,7 +1,9 @@
+import { useEffect, useState } from "react";
 import { getCharacterImage } from "../characterImages";
 import DuelBell from "./DuelBell";
 import Grimoire from "./Grimoire";
-import WorldMap from "./WorldMap";
+import WorldMap, { OmenNote } from "./WorldMap";
+import { loadWorld } from "./worldApi";
 import "../styles/home.css";
 
 // Artes de vitrine dos cards de ação (só decoração).
@@ -118,6 +120,20 @@ function HomeScreen({
 }) {
   const wins = progress?.wins ?? 0;
   const losses = progress?.losses ?? 0;
+  // Boato da semana (de GET /world, que o mapa também usa).
+  const [omen, setOmen] = useState(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    loadWorld(apiUrl)
+      .then((world) => {
+        if (!cancelled) setOmen(world.omen ?? null);
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, [apiUrl]);
 
   return (
     <section className="lobby" aria-label="Home">
@@ -176,6 +192,8 @@ function HomeScreen({
         <h1>MYSTIC BOX</h1>
         <p className="tagline">ARCANE SUMMONING</p>
       </div>
+
+      <OmenNote omen={omen} compact />
 
       <nav className="lobby-main" aria-label="Main actions">
         <button type="button" className="lobby-card is-summon" onClick={onSummon}>

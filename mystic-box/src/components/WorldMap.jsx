@@ -4,28 +4,12 @@ import { useCallback, useEffect, useState } from "react";
 import worldMapArt from "../assets/world-map.webp";
 import { getCharacterImage } from "../characterImages";
 import Modal from "./Modal";
+import { loadWorld } from "./worldApi";
 import "../styles/lore.css";
 
 // Mapa-múndi. Regiões, posições, textos, crônica e quem vem de cada região vêm
 // de `GET /world`; quais cartas o jogador já tem vêm de `GET /users/me/cards`.
 // Aqui fica só a apresentação (a ilustração e onde pôr os rótulos).
-
-let worldRequest = null;
-
-function loadWorld(apiUrl) {
-  if (!worldRequest) {
-    worldRequest = fetch(`${apiUrl}/world`)
-      .then((response) => {
-        if (!response.ok) throw new Error(`Failed to load the map (${response.status}).`);
-        return response.json();
-      })
-      .catch((error) => {
-        worldRequest = null;
-        throw error;
-      });
-  }
-  return worldRequest;
-}
 
 // Cartas que o jogador já tem (só para marcar quem foi descoberto).
 function useOwnedCards(apiUrl, session) {
@@ -144,7 +128,7 @@ function pinStyle(region) {
   };
 }
 
-function MapCanvas({ regions, selectedId, owned, collection, onSelect }) {
+function MapCanvas({ regions, selectedId, owned, collection, omenRegion, onSelect }) {
   return (
     <div className="world-map">
       <img
@@ -168,7 +152,7 @@ function MapCanvas({ regions, selectedId, owned, collection, onSelect }) {
             type="button"
             className={`world-region-pin${selected ? " is-selected" : ""}${
               mastered ? " is-mastered" : ""
-            }`}
+            }${region.id === omenRegion ? " is-omen" : ""}`}
             data-element={region.element ?? "rift"}
             style={pinStyle(region)}
             onClick={() => onSelect(region.id)}
@@ -217,7 +201,26 @@ function RegionCampaign({ progress, onCampaign }) {
   );
 }
 
-function RegionPanel({ region, owned, campaign, onCampaign, collection, children }) {
+// Boato da semana (região em destaque): texto e efeitos vêm de GET /world.
+export function OmenNote({ omen, compact = false }) {
+  if (!omen) return null;
+  const ends = new Date(omen.endsAt);
+  return (
+    <p className={`world-omen${compact ? " is-compact" : ""}`}>
+      <span>
+        ☾ This week in {omen.regionName}: {omen.title}
+      </span>
+      {!compact && omen.text}{" "}
+      <em>
+        Its champions are {omen.summonMultiplier}× likelier in summons and bring +
+        {omen.experienceBonusPercent}% XP in battle · until{" "}
+        {ends.toLocaleDateString(undefined, { weekday: "long" })}
+      </em>
+    </p>
+  );
+}
+
+function RegionPanel({ region, owned, campaign, onCampaign, collection, omen, children }) {
   const found = owned ? region.characters.filter((c) => owned.has(c.file_name)).length : null;
 
   return (
@@ -244,6 +247,7 @@ function RegionPanel({ region, owned, campaign, onCampaign, collection, children
         </p>
       )}
 
+      {omen?.region === region.id && <OmenNote omen={omen} />}
       <RegionCampaign progress={campaign?.[region.id]} onCampaign={onCampaign} />
       {collection && children}
 
@@ -387,6 +391,7 @@ function WorldModal({ apiUrl, session, onCampaign, onBalanceChange, onClose }) {
                 selectedId={selected?.id}
                 owned={owned}
                 collection={collection}
+                omenRegion={data.omen?.region}
                 onSelect={setSelectedId}
               />
               {selected && (
@@ -397,6 +402,7 @@ function WorldModal({ apiUrl, session, onCampaign, onBalanceChange, onClose }) {
                   campaign={campaign}
                   onCampaign={onCampaign}
                   collection={collection}
+                  omen={data.omen}
                 >
                   <RegionCollection
                     apiUrl={apiUrl}

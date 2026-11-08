@@ -823,3 +823,65 @@
   color: #ffdc8e;
   font-size: 10px;
 }
+
+/* Boato da semana */
+
+.world-omen {
+  margin: 0 0 16px;
+  padding: 10px 12px;
+  border: 1px solid rgba(180, 140, 255, 0.6);
+  border-radius: 10px;
+  background: linear-gradient(160deg, rgba(60, 30, 110, 0.6), rgba(20, 10, 40, 0.7));
+  color: #e9dcff;
+  font-size: 13px;
+  line-height: 1.5;
+  box-shadow: 0 0 16px rgba(160, 110, 255, 0.25);
+}
+
+.world-omen span {
+  display: block;
+  margin-bottom: 4px;
+  color: #d4b8ff;
+  font-size: 11px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+}
+
+.world-omen em {
+  display: block;
+  margin-top: 4px;
+  color: #ffdc8e;
+  font-size: 12px;
+  font-style: normal;
+}
+
+.world-omen.is-compact {
+  width: min(720px, calc(100% - 32px));
+  margin: 0 auto 12px;
+  text-align: center;
+}
+
+.world-omen.is-compact em {
+  margin-top: 0;
+}
+
+.world-region-pin.is-omen {
+  animation: omenPulse 2.4s ease-in-out infinite;
+}
+
+@keyframes omenPulse {
+  0%,
+  100% {
+    box-shadow: 0 0 4px rgba(180, 140, 255, 0.5);
+  }
+  50% {
+    box-shadow: 0 0 16px rgba(180, 140, 255, 0.95);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .world-region-pin.is-omen {
+    animation: none;
+    box-shadow: 0 0 12px rgba(180, 140, 255, 0.8);
+  }
+}

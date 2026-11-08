@@ -115,6 +115,9 @@ def db(monkeypatch):
     monkeypatch.setattr(play_battle, "USER_WALLET_TABLE", "wallet")
     monkeypatch.setattr(play_battle, "CARD_ASCENSIONS_TABLE", "ascensions")
     monkeypatch.setattr(play_battle, "REGION_PROGRESS_TABLE", "regions")
+    # Boato da semana fixo numa região sem cartas no time (não depende da data).
+    monkeypatch.setattr(play_battle, "public_omen",
+                        lambda: {"region": "riftheart", "title": "Quiet week"})
     monkeypatch.setattr(play_battle, "new_rng", lambda: random.Random(42))
     return fake
 
@@ -593,3 +596,19 @@ def test_campaign_reward_is_not_paid_twice_when_cleared_concurrently(
 
     assert data["result"]["campaign"]["firstClear"] is False
     assert USER not in db.tables["wallet"]
+
+
+def test_omen_of_the_week_boosts_experience(authenticated_event, db, monkeypatch):
+    # Rowan vem de Sylvaran.
+    monkeypatch.setattr(play_battle, "public_omen",
+                        lambda: {"region": "sylvaran", "title": "The Moonbloom"})
+    _, data = start(authenticated_event)
+    assert data["battle"]["omen"]["region"] == "sylvaran"
+    assert any(e["type"] == "omen" for e in data["events"])
+
+    force_win(db, monkeypatch)
+    _, data = act_once(authenticated_event, data["battle"]["battleId"])
+    base = battle.DIFFICULTIES["novice"]["experience"]
+    assert data["result"]["experienceGained"] == round(
+        base * (1 + play_battle.OMEN_EXPERIENCE_BONUS)
+    )
