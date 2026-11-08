@@ -16,6 +16,16 @@ Batalha por turnos entre dois times de 3 cartas. Regras principais:
 - Efeitos: queimadura, atordoamento, enfraquecer, expor, lentidão, escudo,
   provocação, regeneração, fortalecer, guarda e companheiro (o monstro dos
   Invocadores, que ataca no começo de cada turno da carta).
+- Laços: cartas com laço (`lore.BONDS`) no mesmo time ganham
+  BOND_STAT_BONUS nos atributos grandes por parceiro; quando uma cai, os
+  parceiros vivos ganham Fortalecer por BOND_GRIEF_TURNS turnos.
+- Ressonância de região: um time com as 3 cartas da mesma região
+  (`lore.REGION_RESONANCES`) ganha o efeito dela no começo da batalha.
+- Técnicas de dupla (DUO_TECHNIQUES): duas cartas com laço forte no mesmo
+  time aprendem um golpe em conjunto, usável enquanto as duas estão vivas.
+- Última fala: carta ascendida que cai diz uma frase (`lore.LAST_WORDS`).
+- Rivalidades: rivais (`lore.RIVALRIES`) em times opostos causam
+  RIVAL_DAMAGE_MULTIPLIER de dano um ao outro.
 - Provocação: golpes de alvo único precisam mirar quem está provocando.
 - Duelo online (mode "pvp"): as mesmas regras, mas os dois lados são
   jogadores. O lado "player" é quem desafiou e o "enemy" quem aceitou; cada
@@ -33,6 +43,15 @@ import random
 
 from .ascension import MAX_ASCENSION, bonus_skills, clamp_ascension
 from .cards import CHARACTERS
+from .lore import (
+    LAST_WORDS,
+    REGION_RESONANCES,
+    SECRET_UNLOCK_ASCENSION,
+    bond_between,
+    public_resonance,
+    region_of,
+    rivalry_between,
+)
 from .progression import MAX_LEVEL
 from .stats import ARCHETYPES, ELEMENTS, SCALED_STATS, battle_stats, element_multiplier
 
@@ -61,6 +80,15 @@ SLOW_MULTIPLIER = 0.6
 # Monstro companheiro dos Invocadores: golpe híbrido no começo de cada turno.
 COMPANION_MULTIPLIER = 0.75
 COMPANION_TURNS = 3
+
+# Laços (BONDS de lore.py) no mesmo time: cada parceiro de laço aumenta os
+# atributos grandes da carta; quando um parceiro cai, os que ficam ganham
+# Fortalecer por alguns turnos.
+BOND_STAT_BONUS = 0.06
+BOND_GRIEF_TURNS = 2
+# Rivalidades (RIVALRIES de lore.py) em times opostos: cada rival causa mais
+# dano ao outro.
+RIVAL_DAMAGE_MULTIPLIER = 1.2
 
 # Experiência de uma derrota: fração da experiência de vitória + bônus por
 # inimigo derrotado. Desistir não dá experiência.
@@ -264,6 +292,9 @@ def _deal_damage(attacker, defender, multiplier, kind, rng, events, pierce=0.0, 
         damage *= EXPOSE_MULTIPLIER
     if _has(defender, "guard"):
         damage *= GUARD_MULTIPLIER
+    rival = defender["id"] in attacker.get("rivals", ())
+    if rival:
+        damage *= RIVAL_DAMAGE_MULTIPLIER
 
     damage *= rng.uniform(1 - DAMAGE_VARIANCE, 1 + DAMAGE_VARIANCE)
     critical = rng.random() * 100 < stats_a["fate"]
@@ -281,7 +312,8 @@ def _deal_damage(attacker, defender, multiplier, kind, rng, events, pierce=0.0, 
         max(1, round(damage)),
         events,
         {"type": "damage", "source": attacker["id"], "critical": critical,
-         "effectiveness": effectiveness, "kind": kind, **(extra or {})},
+         "effectiveness": effectiveness, "kind": kind,
+         **({"rival": True} if rival else {}), **(extra or {})},
     )
 
 
@@ -585,6 +617,167 @@ SKILLS = {
     },
 }
 
+# ---------------------------------------------------------- duplas ---
+
+# Técnicas de dupla: duas cartas com laço forte no mesmo time aprendem um golpe
+# em conjunto (as duas recebem a habilidade). Só pode ser usado enquanto a
+# parceira estiver viva. Campos do efeito:
+#   hits: [(multiplicador, tipo)] em cada alvo inimigo
+#   pierce: fração da defesa ignorada
+#   foe_status: (status, turnos) em cada alvo atingido
+#   foe_slow: turnos de Lentidão em todos os inimigos
+#   heal: fração da vitalidade máx. curada em cada aliado
+#   cleanse: tira os efeitos negativos dos aliados
+#   team_status: [(status, turnos, fração da vitalidade máx. do escudo ou None)]
+DUO_AETHER_COST = 5
+
+DUO_TECHNIQUES = {
+    "falling_star_volley": {
+        "pair": ("astra.jfif", "lyra.png"),
+        "name": "Falling Star Volley",
+        "description": "Lyra fires, Astra pulls the stars down: magical blow to every foe "
+                       "(1.4x) that Exposes them for 2 turns.",
+        "target": "all_enemies", "role": "attack",
+        "hits": [(1.4, "magical")], "foe_status": ("expose", 2),
+    },
+    "last_laugh": {
+        "pair": ("malachar.jfif", "mortis.jfif"),
+        "name": "Last Laugh of Nocthaven",
+        "description": "The master reads, the jester laughs: magical blow to every foe "
+                       "(1.3x) that Weakens them for 2 turns.",
+        "target": "all_enemies", "role": "attack",
+        "hits": [(1.3, "magical")], "foe_status": ("weaken", 2),
+    },
+    "everfire_rekindled": {
+        "pair": ("ignis.jfif", "drakara.jfif"),
+        "name": "Everfire Rekindled",
+        "description": "Father and daughter breathe the same flame: hybrid blow to every "
+                       "foe (1.4x) that Burns them for 3 turns.",
+        "target": "all_enemies", "role": "attack",
+        "hits": [(1.4, "hybrid")], "foe_status": ("burn", 3),
+    },
+    "frostgate_stand": {
+        "pair": ("boreas.jfif", "glacius.jfif"),
+        "name": "Frostgate Stand",
+        "description": "Knight and squire hold the gate: the team gains a shield worth 25% "
+                       "of max vitality and every foe is Slowed for 2 turns.",
+        "target": "all_allies", "role": "buff",
+        "team_status": [("shield", 3, 0.25)], "foe_slow": 2,
+    },
+    "twin_petal_draw": {
+        "pair": ("kaito.jfif", "hayato.jfif"),
+        "name": "Twin Petal Draw",
+        "description": "Two rivals draw as one: two physical cuts on a foe (1.3x each) "
+                       "that ignore 30% of its bulwark.",
+        "target": "enemy", "role": "attack",
+        "hits": [(1.3, "physical"), (1.3, "physical")], "pierce": 0.3,
+    },
+    "ithrels_mercy": {
+        "pair": ("seraphiel.jfif", "annelise.jfif"),
+        "name": "Ithrel's Mercy",
+        "description": "The shelter opens its doors: heals every ally for 30% of max "
+                       "vitality, cleanses curses and grants Regen for 2 turns.",
+        "target": "all_allies", "role": "heal",
+        "heal": 0.3, "cleanse": True, "team_status": [("regen", 2, None)],
+    },
+    "moonbloom": {
+        "pair": ("elowen.jfif", "verdana.jfif"),
+        "name": "Moonbloom",
+        "description": "The moon flowers open for the child of the forest: heals every ally "
+                       "for 25% of max vitality and grants Regen for 3 turns.",
+        "target": "all_allies", "role": "heal",
+        "heal": 0.25, "team_status": [("regen", 3, None)],
+    },
+    "sky_guard_storm": {
+        "pair": ("vaelora.jfif", "kyrielle.jfif"),
+        "name": "Storm of the Sky Guard",
+        "description": "The empress calls the wind, her captain rides it: magical blow to "
+                       "every foe (1.3x) that Slows them for 2 turns.",
+        "target": "all_enemies", "role": "attack",
+        "hits": [(1.3, "magical")], "foe_status": ("slow", 2),
+    },
+    "gate_and_charge": {
+        "pair": ("aurelius.jfif", "valeria.jfif"),
+        "name": "Gate and Charge",
+        "description": "This time, both: physical blow to every foe (1.2x) and the team is "
+                       "Empowered for 2 turns.",
+        "target": "all_enemies", "role": "attack",
+        "hits": [(1.2, "physical")], "team_status": [("empower", 2, None)],
+    },
+    "family_arsenal": {
+        "pair": ("scarlett.jfif", "brina.jfif"),
+        "name": "Family Arsenal",
+        "description": "The cousins open the secret workshop: physical blow to every foe "
+                       "(1.3x) that Burns them for 2 turns.",
+        "target": "all_enemies", "role": "attack",
+        "hits": [(1.3, "physical")], "foe_status": ("burn", 2),
+    },
+}
+
+
+def _duo_partner(state, actor, skill_id):
+    """A parceira da técnica no time de `actor` (viva ou não), ou None."""
+    pair = DUO_TECHNIQUES[skill_id]["pair"]
+    for unit in state["units"]:
+        if (unit["side"] == actor["side"] and unit["id"] != actor["id"]
+                and unit["fileName"] in pair):
+            return unit
+    return None
+
+
+def _make_duo_effect(skill_id):
+    spec = DUO_TECHNIQUES[skill_id]
+
+    def effect(state, actor, targets, rng, events):
+        partner = _duo_partner(state, actor, skill_id)
+        events.append({"type": "duo", "actor": actor["id"], "target": partner["id"],
+                       "skillName": spec["name"]})
+        if spec["target"] in ("enemy", "all_enemies"):
+            for target in targets:
+                for multiplier, kind in spec.get("hits", []):
+                    if not _alive(target):
+                        break
+                    _deal_damage(actor, target, multiplier, kind, rng, events,
+                                 pierce=spec.get("pierce", 0.0))
+                if spec.get("foe_status"):
+                    _apply_status(state, target, *spec["foe_status"], events)
+        for ally in _team(state, actor["side"]):
+            if spec.get("heal"):
+                _heal(ally, ally["maxHp"] * spec["heal"], events, source=actor)
+            if spec.get("cleanse"):
+                _cleanse(ally, events)
+            for status, turns, shield in spec.get("team_status", []):
+                value = round(ally["maxHp"] * shield) if shield else None
+                _apply_status(state, ally, status, turns, events, value)
+        if spec.get("foe_slow"):
+            for foe in _team(state, _opponent(actor["side"])):
+                _apply_status(state, foe, "slow", spec["foe_slow"], events)
+
+    return effect
+
+
+for _duo_id, _duo in DUO_TECHNIQUES.items():
+    SKILLS[_duo_id] = {
+        "name": _duo["name"], "cost": DUO_AETHER_COST, "target": _duo["target"],
+        "role": _duo["role"], "description": _duo["description"],
+        "effect": _make_duo_effect(_duo_id), "duo": True,
+    }
+
+
+def duo_techniques_for(file_name):
+    """Ids das técnicas de dupla que a carta conhece."""
+    return [skill_id for skill_id, spec in DUO_TECHNIQUES.items() if file_name in spec["pair"]]
+
+
+def public_duos(character):
+    """Técnicas de dupla da carta, com a parceira (para a coleção e o Grimório)."""
+    duos = []
+    for skill_id in duo_techniques_for(character["file_name"]):
+        partner = next(f for f in DUO_TECHNIQUES[skill_id]["pair"] if f != character["file_name"])
+        duos.append({"partner": partner, "skill": public_skill(skill_id)})
+    return duos
+
+
 ARCHETYPE_SKILLS = {
     "vanguard": ("bastion_call", "tremor_slam", "unbreakable_oath"),
     "duelist": ("rending_flurry", "execution_arc", "thousand_cuts"),
@@ -626,6 +819,7 @@ def public_skill(skill_id):
         "description": skill["description"],
         "cost": skill["cost"],
         "target": skill["target"],
+        **({"duo": True} if skill.get("duo") else {}),
     }
 
 
@@ -658,6 +852,110 @@ def build_unit(character, side, index, level, power=1.0, ascension=0):
         "statuses": {},
         "skills": skills_for(character, ascension),
     }
+
+
+def _link_bonds(state, events):
+    """Liga laços (mesmo time, bônus de atributos) e rivalidades (times opostos)."""
+    for unit in state["units"]:
+        unit["bonds"] = []
+        unit["rivals"] = []
+    for i, unit in enumerate(state["units"]):
+        for other in state["units"][i + 1:]:
+            if other["side"] != unit["side"]:
+                lines = rivalry_between(unit["fileName"], other["fileName"])
+                if lines:
+                    unit["rivals"].append(other["id"])
+                    other["rivals"].append(unit["id"])
+                    events.append({"type": "rivalry", "actor": unit["id"],
+                                   "target": other["id"], "line": lines[0],
+                                   "reply": lines[1]})
+                    continue
+                # Laço dividido: duas cartas com laço em times opostos (só falas).
+                lines = bond_between(unit["fileName"], other["fileName"])
+                if lines:
+                    events.append({"type": "bondTorn", "actor": unit["id"],
+                                   "target": other["id"], "line": lines[0],
+                                   "reply": lines[1]})
+                continue
+            lines = bond_between(unit["fileName"], other["fileName"])
+            if not lines:
+                continue
+            unit["bonds"].append(other["id"])
+            other["bonds"].append(unit["id"])
+            events.append({"type": "bond", "actor": unit["id"], "target": other["id"],
+                           "line": lines[0], "reply": lines[1]})
+    for unit in state["units"]:
+        for skill_id in duo_techniques_for(unit["fileName"]):
+            if _duo_partner(state, unit, skill_id) and skill_id not in unit["skills"]:
+                unit["skills"].append(skill_id)
+    for unit in state["units"]:
+        if not unit["bonds"]:
+            continue
+        bonus = 1 + BOND_STAT_BONUS * len(unit["bonds"])
+        for stat in SCALED_STATS:
+            unit["stats"][stat] = round(unit["stats"][stat] * bonus)
+        unit["maxHp"] = unit["hp"] = unit["stats"]["vitality"]
+
+
+def _team_region(state, side):
+    """Região comum de todas as cartas do time, ou None."""
+    regions = {region_of(u["fileName"]) for u in state["units"] if u["side"] == side}
+    region = regions.pop() if len(regions) == 1 else None
+    return region if region in REGION_RESONANCES else None
+
+
+def _apply_resonances(state, events):
+    """Ressonância de região: time com as 3 cartas da mesma região (lore.py)."""
+    state["resonance"] = {}
+    for side in ("player", "enemy"):
+        region = _team_region(state, side)
+        state["resonance"][side] = region
+        if not region:
+            continue
+        team = [u for u in state["units"] if u["side"] == side]
+        foes = [u for u in state["units"] if u["side"] != side]
+        info = public_resonance(region)
+        events.append({"type": "resonance", "targets": [u["id"] for u in team],
+                       "region": region, "regionName": info["regionName"],
+                       "name": info["name"], "description": info["description"]})
+        for effect in REGION_RESONANCES[region]["effects"]:
+            kind = effect[0]
+            if kind == "stat":
+                _, stat, extra = effect
+                for unit in team:
+                    unit["stats"][stat] = round(unit["stats"][stat] * (1 + extra))
+                    if stat == "vitality":
+                        unit["maxHp"] = unit["hp"] = unit["stats"]["vitality"]
+            elif kind == "aether":
+                _gain_aether(state, side, effect[1])
+            elif kind == "team_status":
+                status, turns = effect[1], effect[2]
+                for unit in team:
+                    value = round(unit["maxHp"] * effect[3]) if len(effect) > 3 else None
+                    _apply_status(state, unit, status, turns, events, value)
+            elif kind == "foe_status":
+                for unit in foes:
+                    _apply_status(state, unit, effect[1], effect[2], events)
+
+
+def _bond_grief(state, events, start):
+    """Reações a quem caiu (nos eventos desde `start`).
+
+    Carta ascendida diz a última fala (ecoa o capítulo secreto) e os parceiros
+    de laço ganham Fortalecer.
+    """
+    fallen = [e["target"] for e in events[start:] if e["type"] == "defeated"]
+    for fallen_id in fallen:
+        unit = _unit(state, fallen_id)
+        line = LAST_WORDS.get(unit["fileName"])
+        if line and unit.get("ascension", 0) >= SECRET_UNLOCK_ASCENSION:
+            events.append({"type": "lastWords", "target": fallen_id, "line": line})
+        for partner_id in unit.get("bonds", []):
+            partner = _unit(state, partner_id)
+            if not _alive(partner):
+                continue
+            events.append({"type": "bondGrief", "target": partner_id, "source": fallen_id})
+            _apply_status(state, partner, "empower", BOND_GRIEF_TURNS, events)
 
 
 def enemy_level(player_level, difficulty):
@@ -751,6 +1049,57 @@ def create_battle(battle_id, player_team, player_level, difficulty, rng, enemy_t
         ],
     }
     events = []
+    _link_bonds(state, events)
+    _apply_resonances(state, events)
+    _advance(state, rng, events)
+    return state, events
+
+
+def create_campaign_battle(battle_id, player_team, player_level, setup, rng,
+                           ascensions=None):
+    """Batalha de uma fase da campanha (`setup` de campaign.stage_setup).
+
+    Os inimigos, o nível e a força vêm da fase. Devolve (estado, eventos).
+    """
+    if len(player_team) != TEAM_SIZE:
+        raise BattleError(f"Choose exactly {TEAM_SIZE} cards.")
+    if len({c["file_name"] for c in player_team}) != TEAM_SIZE:
+        raise BattleError("Choose different cards.")
+
+    state = {
+        "battleId": battle_id,
+        "difficulty": None,
+        "campaign": {
+            "region": setup["region"],
+            "stage": setup["stage"],
+            "boss": setup["boss"],
+            "label": setup["label"],
+            "experience": setup["experience"],
+        },
+        "status": "active",
+        "endReason": None,
+        "round": 0,
+        "queue": [],
+        "turn": None,
+        "acting": None,
+        "aether": {"player": STARTING_AETHER, "enemy": STARTING_AETHER},
+        "playerLevel": player_level,
+        "enemyLevel": setup["enemyLevel"],
+        "units": [
+            *(
+                build_unit(c, "player", i, player_level,
+                           ascension=(ascensions or {}).get(c["file_name"], 0))
+                for i, c in enumerate(player_team)
+            ),
+            *(
+                build_unit(c, "enemy", i, setup["enemyLevel"], setup["power"])
+                for i, c in enumerate(setup["enemies"])
+            ),
+        ],
+    }
+    events = []
+    _link_bonds(state, events)
+    _apply_resonances(state, events)
     _advance(state, rng, events)
     return state, events
 
@@ -796,6 +1145,8 @@ def create_pvp_battle(battle_id, challenger_team, challenger_level, opponent_tea
         ],
     }
     events = []
+    _link_bonds(state, events)
+    _apply_resonances(state, events)
     _advance(state, rng, events)
     return state, events
 
@@ -907,7 +1258,9 @@ def _advance(state, rng, events):
         if actor is None:
             return
         state["acting"] = actor["id"]
+        start = len(events)
         acts = _start_turn(state, actor, events, rng)
+        _bond_grief(state, events, start)
         if _check_end(state, events):
             return
         if not acts:
@@ -967,6 +1320,10 @@ def _resolve_targets(state, actor, skill_id, target_id):
 def skill_unavailable_reason(state, actor, skill_id):
     if skill_id not in actor["skills"]:
         return "This card does not know this skill."
+    if SKILLS[skill_id].get("duo"):
+        partner = _duo_partner(state, actor, skill_id)
+        if not partner or not _alive(partner):
+            return "Your partner has fallen."
     if state["aether"][actor["side"]] < SKILLS[skill_id]["cost"]:
         return "Not enough Aether."
     if not valid_targets(state, actor, skill_id):
@@ -981,7 +1338,9 @@ def _perform(state, actor, skill_id, target_id, rng, events):
     events.append({"type": "skill", "actor": actor["id"], "skill": skill_id,
                    "skillName": skill["name"], "targets": [t["id"] for t in targets],
                    "aether": dict(state["aether"])})
+    start = len(events)
     skill["effect"](state, actor, targets, rng, events)
+    _bond_grief(state, events, start)
 
 
 # --------------------------------------------------------------------- IA ---
@@ -1018,6 +1377,10 @@ def choose_action(state, actor, rng):
         return "sanctuary", None
     if "mending_light" in heals and wounded:
         return "mending_light", min(wounded, key=_hp_ratio)["id"]
+
+    duo_support = [s for s in usable if SKILLS[s].get("duo") and SKILLS[s]["role"] != "attack"]
+    if duo_support and any(_hp_ratio(u) < 0.6 for u in allies):
+        return duo_support[0], None
 
     if "bastion_call" in usable and not _has(actor, "taunt") and rng.random() < 0.7:
         return "bastion_call", None
@@ -1109,15 +1472,30 @@ def outcome_for(state, side="player"):
     return status
 
 
+def mark_omen(state, region_id, bonus, title):
+    """Boato da semana: se o time do jogador tem carta da região, mais experiência."""
+    team = [u for u in state["units"] if u["side"] == "player"]
+    heralds = [u["id"] for u in team if region_of(u["fileName"]) == region_id]
+    if not heralds:
+        return []
+    state["omen"] = {"region": region_id, "bonus": bonus, "title": title}
+    return [{"type": "omen", "targets": heralds, "title": title,
+             "bonusPercent": round(bonus * 100)}]
+
+
 def _win_experience(state):
     if is_pvp(state):
         return PVP["experience"]
+    if state.get("campaign"):
+        return state["campaign"]["experience"]
     return DIFFICULTIES[state["difficulty"]]["experience"]
 
 
 def battle_experience(state, side="player"):
     """Experiência ganha por `side` ao fim da batalha (0 se ainda estiver ativa)."""
     base = _win_experience(state)
+    if side == "player" and state.get("omen"):
+        base = round(base * (1 + state["omen"]["bonus"]))
     outcome = outcome_for(state, side)
     if outcome == "won":
         return base
@@ -1211,6 +1589,8 @@ def _public_unit(unit, viewer="player"):
         "archetypeLabel": ARCHETYPES[unit["archetype"]]["label"],
         "level": unit["level"],
         "ascension": unit.get("ascension", 0),
+        "bonds": [view_id(unit_id, viewer) for unit_id in unit.get("bonds", [])],
+        "rivals": [view_id(unit_id, viewer) for unit_id in unit.get("rivals", [])],
         "stats": unit["stats"],
         "maxHp": unit["maxHp"],
         "hp": unit["hp"],
@@ -1252,14 +1632,26 @@ def public_state(state, viewer="player"):
             )
 
     pvp = is_pvp(state)
+    campaign = state.get("campaign")
+    if pvp:
+        difficulty, difficulty_label = "pvp", PVP["label"]
+    elif campaign:
+        difficulty, difficulty_label = "campaign", campaign["label"]
+    else:
+        difficulty = state["difficulty"]
+        difficulty_label = DIFFICULTIES[difficulty]["label"]
     outcome = outcome_for(state, viewer)
     return {
         "battleId": state["battleId"],
         "mode": "pvp" if pvp else "pve",
         "status": outcome,
         "endReason": view_reason(state["endReason"], outcome),
-        "difficulty": "pvp" if pvp else state["difficulty"],
-        "difficultyLabel": PVP["label"] if pvp else DIFFICULTIES[state["difficulty"]]["label"],
+        "difficulty": difficulty,
+        "difficultyLabel": difficulty_label,
+        "campaign": (
+            {"region": campaign["region"], "stage": campaign["stage"], "boss": campaign["boss"]}
+            if campaign else None
+        ),
         "round": state["round"],
         "maxRounds": MAX_ROUNDS,
         "aether": _view_aether(state["aether"], viewer),
@@ -1273,6 +1665,11 @@ def public_state(state, viewer="player"):
         ],
         "units": [_public_unit(unit, viewer) for unit in state["units"]],
         "actions": actions,
+        "omen": state.get("omen"),
+        "resonance": {
+            _view_side(side, viewer): public_resonance(region) if region else None
+            for side, region in state.get("resonance", {}).items()
+        },
         "elementRiders": {
             key: ELEMENT_RIDERS[key] for key in {u["element"] for u in state["units"]}
         },

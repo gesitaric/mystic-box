@@ -17,7 +17,7 @@ class FakeDynamo:
 
     def __init__(self):
         self.tables = {"battles": {}, "cards": [], "progress": {}, "wallet": {},
-                       "pvp_players": {}, "ascensions": []}
+                       "pvp_players": {}, "ascensions": [], "regions": {}}
         self.fail_progress_condition = 0
 
     # --- leitura
@@ -65,6 +65,12 @@ class FakeDynamo:
                 if self.fail_progress_condition:
                     self.fail_progress_condition -= 1
                     ok = False
+            elif item["Update"]["TableName"] == "regions":
+                update = item["Update"]
+                attribute = update["ExpressionAttributeNames"]["#stage"]
+                row = self.tables["regions"].get(update["Key"]["userId"]["S"], {})
+                current = int(row.get(attribute, {"N": "0"})["N"])
+                ok = current < int(update["ExpressionAttributeValues"][":stage"]["N"])
             reasons.append({"Code": "None" if ok else "ConditionalCheckFailed"})
         if any(r["Code"] != "None" for r in reasons):
             raise ClientError(
@@ -84,7 +90,9 @@ class FakeDynamo:
             row = self.tables[update["TableName"]].setdefault(
                 user_id, {"userId": {"S": user_id}}
             )
-            if update["TableName"] == "progress":
+            if update["TableName"] == "regions":
+                row[update["ExpressionAttributeNames"]["#stage"]] = values[":stage"]
+            elif update["TableName"] == "progress":
                 row["experience"] = values[":new"]
                 for field in ("wins", "losses"):
                     old = int(row.get(field, {"N": "0"})["N"])
@@ -106,6 +114,10 @@ def db(monkeypatch):
     monkeypatch.setattr(play_battle, "USER_CARDS_TABLE", "cards")
     monkeypatch.setattr(play_battle, "USER_WALLET_TABLE", "wallet")
     monkeypatch.setattr(play_battle, "CARD_ASCENSIONS_TABLE", "ascensions")
+    monkeypatch.setattr(play_battle, "REGION_PROGRESS_TABLE", "regions")
+    # Boato da semana fixo numa região sem cartas no time (não depende da data).
+    monkeypatch.setattr(play_battle, "public_omen",
+                        lambda: {"region": "riftheart", "title": "Quiet week"})
     monkeypatch.setattr(play_battle, "new_rng", lambda: random.Random(42))
     return fake
 
@@ -448,3 +460,155 @@ def test_get_battle_points_to_active_duel(authenticated_event, db, status, expec
     _, data = call(get_battle, authenticated_event(httpMethod="GET"))
 
     assert data["pvpBattleId"] == expected
+
+
+# ---------- campanha ----------
+
+
+def start_campaign(authenticated_event, region="greenhollow", stage=1, team=TEAM):
+    return call(
+        play_battle,
+        start_event(authenticated_event,
+                    {"team": team, "campaign": {"region": region, "stage": stage}}),
+    )
+
+
+def test_campaign_stage_uses_the_stage_foes(authenticated_event, db):
+    from mystic_shared import campaign
+
+    status, data = start_campaign(authenticated_event)
+
+    assert status == 201
+    assert data["battle"]["difficulty"] == "campaign"
+    assert data["battle"]["campaign"] == {"region": "greenhollow", "stage": 1, "boss": False}
+    foes = [u["fileName"] for u in data["battle"]["units"] if u["side"] == "enemy"]
+    assert foes == campaign.CAMPAIGN["greenhollow"]["stages"][0]["enemies"]
+
+
+def test_campaign_stage_must_be_unlocked(authenticated_event, db):
+    status, data = start_campaign(authenticated_event, stage=2)
+    assert status == 400
+    assert data["message"] == "Clear the previous stage first."
+
+    db.tables["regions"][USER] = {"userId": {"S": USER}, "stage_greenhollow": {"N": "1"}}
+    status, _ = start_campaign(authenticated_event, stage=2)
+    assert status == 201
+
+
+@pytest.mark.parametrize("body", [
+    {"region": "greenhollow"},
+    {"region": "greenhollow", "stage": "1"},
+    {"region": "greenhollow", "stage": True},
+    "greenhollow",
+])
+def test_campaign_rejects_invalid_stage(authenticated_event, db, body):
+    status, _ = call(
+        play_battle, start_event(authenticated_event, {"team": TEAM, "campaign": body})
+    )
+    assert status == 400
+
+
+def test_campaign_rejects_unknown_stage(authenticated_event, db):
+    assert start_campaign(authenticated_event, region="riftheart")[0] == 400
+    assert start_campaign(authenticated_event, stage=9)[0] == 400
+
+
+def force_win(db, monkeypatch):
+    """Faz a próxima ação vencer a batalha (o motor é testado à parte)."""
+
+    def win(state, action, rng):
+        for unit in state["units"]:
+            if unit["side"] == "enemy":
+                unit["hp"] = 0
+        state["status"], state["endReason"], state["turn"] = "won", "victory", None
+        return []
+
+    monkeypatch.setattr(play_battle, "play_turn", win)
+
+
+def act_once(authenticated_event, battle_id):
+    return call(
+        play_battle,
+        action_event(authenticated_event, {"battleId": battle_id, "type": "auto"}),
+    )
+
+
+def test_first_campaign_win_pays_and_unlocks_the_next_stage(authenticated_event, db,
+                                                            monkeypatch):
+    from mystic_shared import campaign
+
+    _, data = start_campaign(authenticated_event)
+    force_win(db, monkeypatch)
+    _, data = act_once(authenticated_event, data["battle"]["battleId"])
+
+    reward = campaign.first_clear_reward(1)
+    assert data["result"]["campaign"] == {
+        "region": "greenhollow", "stage": 1, "boss": False, "firstClear": True,
+        "reward": reward, "epilogue": None,
+    }
+    assert data["result"]["experienceGained"] == campaign.STAGE_RULES[0]["experience"]
+    assert db.tables["regions"][USER]["stage_greenhollow"]["N"] == "1"
+    assert db.tables["wallet"][USER]["balance"]["N"] == str(reward)
+
+    # Repetir a fase dá experiência, mas não paga de novo.
+    _, data = start_campaign(authenticated_event)
+    _, data = act_once(authenticated_event, data["battle"]["battleId"])
+    assert data["result"]["campaign"]["firstClear"] is False
+    assert data["result"]["campaign"]["reward"] == 0
+    # Só a recompensa de nível (se subiu) entra no saldo.
+    assert db.tables["wallet"][USER]["balance"]["N"] == str(
+        reward + data["result"]["shardsReward"]
+    )
+
+
+def test_beating_the_boss_reveals_the_epilogue(authenticated_event, db, monkeypatch):
+    from mystic_shared import campaign
+
+    db.tables["regions"][USER] = {"userId": {"S": USER}, "stage_greenhollow": {"N": "2"}}
+    _, data = start_campaign(authenticated_event, stage=3)
+    force_win(db, monkeypatch)
+    _, data = act_once(authenticated_event, data["battle"]["battleId"])
+
+    assert data["result"]["campaign"]["boss"] is True
+    assert data["result"]["campaign"]["epilogue"] == campaign.epilogue("greenhollow")
+    assert db.tables["regions"][USER]["stage_greenhollow"]["N"] == "3"
+
+
+def test_campaign_reward_is_not_paid_twice_when_cleared_concurrently(
+    authenticated_event, db, monkeypatch
+):
+    _, data = start_campaign(authenticated_event)
+    force_win(db, monkeypatch)
+    real_progress = play_battle.get_campaign_progress
+    calls = {"n": 0}
+
+    def stale_then_fresh(user_id):
+        calls["n"] += 1
+        if calls["n"] == 1:
+            # Outra janela venceu a mesma fase entre a leitura e a gravação.
+            db.tables["regions"][USER] = {"userId": {"S": USER},
+                                          "stage_greenhollow": {"N": "1"}}
+            return {"greenhollow": 0}
+        return real_progress(user_id)
+
+    monkeypatch.setattr(play_battle, "get_campaign_progress", stale_then_fresh)
+    _, data = act_once(authenticated_event, data["battle"]["battleId"])
+
+    assert data["result"]["campaign"]["firstClear"] is False
+    assert USER not in db.tables["wallet"]
+
+
+def test_omen_of_the_week_boosts_experience(authenticated_event, db, monkeypatch):
+    # Rowan vem de Sylvaran.
+    monkeypatch.setattr(play_battle, "public_omen",
+                        lambda: {"region": "sylvaran", "title": "The Moonbloom"})
+    _, data = start(authenticated_event)
+    assert data["battle"]["omen"]["region"] == "sylvaran"
+    assert any(e["type"] == "omen" for e in data["events"])
+
+    force_win(db, monkeypatch)
+    _, data = act_once(authenticated_event, data["battle"]["battleId"])
+    base = battle.DIFFICULTIES["novice"]["experience"]
+    assert data["result"]["experienceGained"] == round(
+        base * (1 + play_battle.OMEN_EXPERIENCE_BONUS)
+    )

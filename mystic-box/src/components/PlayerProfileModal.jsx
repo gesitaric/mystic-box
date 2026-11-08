@@ -3,6 +3,7 @@ import Modal from "./Modal";
 
 const TABS = [
   { value: "name", label: "Your name" },
+  { value: "titles", label: "Titles" },
   { value: "search", label: "Find players" },
 ];
 
@@ -293,7 +294,10 @@ function PlayerSearch({ apiUrl, session, minLength, canChallenge, onSessionExpir
                 <span className="hud-level-label">LV</span>
                 {player.level}
               </span>
-              <span className="player-result-name">{player.username}</span>
+              <span className="player-result-name">
+                {player.username}
+                {player.title && <em className="player-title">{player.title}</em>}
+              </span>
               {player.isYou ? (
                 <span className="player-result-you">You</span>
               ) : (
@@ -312,6 +316,94 @@ function PlayerSearch({ apiUrl, session, minLength, canChallenge, onSessionExpir
           ))}
         </ul>
       )}
+    </div>
+  );
+}
+
+// Títulos: quais existem, quais foram conquistados e o escolhido vêm de
+// GET /users/me/profile; o servidor confere de novo ao escolher.
+function TitlePicker({ apiUrl, session, profile, onSessionExpired, onProfileChange }) {
+  const [saving, setSaving] = useState(null);
+  const [error, setError] = useState("");
+  if (!profile) {
+    return (
+      <p className="collection-status" role="status">
+        Loading...
+      </p>
+    );
+  }
+  const titles = profile.titles ?? [];
+  const current = profile.title?.id ?? null;
+  const earned = titles.filter((title) => title.earned).length;
+
+  async function choose(titleId) {
+    setSaving(titleId ?? "none");
+    setError("");
+    try {
+      const token = session.session.getIdToken().getJwtToken();
+      const response = await fetch(`${apiUrl}/users/me/title`, {
+        method: "POST",
+        headers: { Authorization: token, "Content-Type": "application/json" },
+        body: JSON.stringify({ titleId }),
+      });
+      if (response.status === 401) {
+        onSessionExpired();
+        return;
+      }
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok) {
+        setError(data.message ?? "Could not change your title.");
+        return;
+      }
+      onProfileChange?.({ title: data.title });
+    } catch (saveError) {
+      console.error(saveError);
+      setError("Could not change your title.");
+    } finally {
+      setSaving(null);
+    }
+  }
+
+  return (
+    <div className="title-picker">
+      <p className="auth-hint">
+        {earned}/{titles.length} titles earned. Your title appears on your profile, in player
+        search and in online duels.
+      </p>
+      {error && (
+        <p className="auth-error" role="alert">
+          {error}
+        </p>
+      )}
+      <ul className="title-list">
+        <li>
+          <button
+            type="button"
+            className={`title-option${current === null ? " is-active" : ""}`}
+            disabled={saving !== null}
+            onClick={() => void choose(null)}
+          >
+            <strong>No title</strong>
+          </button>
+        </li>
+        {titles.map((title) => (
+          <li key={title.id}>
+            <button
+              type="button"
+              className={`title-option${current === title.id ? " is-active" : ""}${
+                title.earned ? "" : " is-locked"
+              }`}
+              disabled={!title.earned || saving !== null}
+              onClick={() => void choose(title.id)}
+            >
+              <strong>
+                {title.earned ? "✦" : "🔒"} {title.name}
+              </strong>
+              <span>{title.description}</span>
+            </button>
+          </li>
+        ))}
+      </ul>
     </div>
   );
 }
@@ -354,7 +446,15 @@ function PlayerProfileModal({
       </div>
 
       <div id="player-panel" role="tabpanel" aria-labelledby={`player-tab-${tab}`}>
-        {tab === "name" ? (
+        {tab === "titles" ? (
+          <TitlePicker
+            apiUrl={apiUrl}
+            session={session}
+            profile={profile}
+            onSessionExpired={onSessionExpired}
+            onProfileChange={onProfileChange}
+          />
+        ) : tab === "name" ? (
           <UsernameForm
             key={profile ? "ready" : "loading"}
             apiUrl={apiUrl}

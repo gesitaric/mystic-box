@@ -203,6 +203,8 @@ def test_set_username_concurrent_change(authenticated_event, username_client):
 @pytest.fixture()
 def profile_client(monkeypatch):
     client = MagicMock()
+    # Ascensões (títulos dos capítulos secretos): nenhuma.
+    client.query.return_value = {"Items": []}
     monkeypatch.setattr(get_profile, "_client", client)
     monkeypatch.setattr(get_profile, "USER_PROGRESS_TABLE", "progress")
     monkeypatch.setattr(get_profile, "USER_PROFILES_TABLE", "profiles")
@@ -251,7 +253,10 @@ def search_client(monkeypatch):
         ]
     }
     client.batch_get_item.return_value = {
-        "Responses": {"progress": [{"userId": {"S": "user-456"}, "experience": {"N": "230"}}]}
+        "Responses": {
+            "progress": [{"userId": {"S": "user-456"}, "experience": {"N": "230"}}],
+            "profiles": [{"userId": {"S": "user-456"}, "title": {"S": "summoner"}}],
+        }
     }
     return client
 
@@ -278,8 +283,8 @@ def test_search_by_prefix(authenticated_event, search_client):
 
     assert ret["statusCode"] == 200
     assert data["players"] == [
-        {"username": "Lyra", "level": 1, "isYou": True},
-        {"username": "Lyrandor", "level": 3, "isYou": False},
+        {"username": "Lyra", "level": 1, "title": None, "isYou": True},
+        {"username": "Lyrandor", "level": 3, "title": "Summoner", "isYou": False},
     ]
     kwargs = search_client.query.call_args.kwargs
     assert kwargs["IndexName"] == "UsernameSearchIndex"

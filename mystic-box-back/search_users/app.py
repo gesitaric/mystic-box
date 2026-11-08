@@ -4,6 +4,7 @@ import os
 import boto3
 from botocore.exceptions import ClientError
 from mystic_shared.progression import level_for_experience
+from mystic_shared.titles import title_name
 from mystic_shared.usernames import (
     SEARCH_MAX_RESULTS,
     SEARCH_MIN_LENGTH,
@@ -47,6 +48,24 @@ def get_user_id(event):
         .get("claims", {})
     )
     return claims.get("sub")
+
+
+def get_titles(user_ids):
+    """Nome do título escolhido por cada jogador encontrado (ou None)."""
+    if not user_ids:
+        return {}
+    result = get_client().batch_get_item(
+        RequestItems={
+            USER_PROFILES_TABLE: {
+                "Keys": [{"userId": {"S": user_id}} for user_id in user_ids],
+                "ProjectionExpression": "userId, title",
+            }
+        }
+    )
+    return {
+        item["userId"]["S"]: title_name(item.get("title", {}).get("S"))
+        for item in result.get("Responses", {}).get(USER_PROFILES_TABLE, [])
+    }
 
 
 def get_levels(user_ids):
@@ -110,6 +129,7 @@ def lambda_handler(event, context):
             if "username" in item
         ]
         levels = get_levels([found_id for found_id, _ in found])
+        titles = get_titles([found_id for found_id, _ in found])
     except ClientError:
         return response(500, {"message": "Could not search for players."})
 
@@ -121,6 +141,7 @@ def lambda_handler(event, context):
                 {
                     "username": username,
                     "level": levels.get(found_id, 1),
+                    "title": titles.get(found_id),
                     "isYou": found_id == user_id,
                 }
                 for found_id, username in found

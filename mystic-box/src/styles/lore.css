@@ -1,0 +1,887 @@
+/* ---------- História da personagem (coleção) ---------- */
+
+.collection-card-story {
+  display: block;
+  width: 100%;
+  height: 100%;
+  padding: 0;
+  border: 0;
+  border-radius: 12px;
+  background: none;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+  transition: transform 0.2s ease, filter 0.2s ease;
+}
+
+.collection-card-story:hover {
+  transform: translateY(-3px);
+  filter: brightness(1.1);
+}
+
+.collection-card-story:focus-visible {
+  outline: 2px solid #ffdc8e;
+  outline-offset: 3px;
+}
+
+.auth-modal.story-modal {
+  width: min(560px, 94vw);
+}
+
+.story-hero {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+}
+
+.story-hero-art {
+  flex: 0 0 120px;
+  aspect-ratio: 13 / 18;
+}
+
+.story-hero .card-content {
+  border-radius: 12px;
+  box-shadow:
+    0 0 0 1px rgba(255, 255, 255, 0.08) inset,
+    0 0 18px var(--card-rarity-glow),
+    0 10px 24px rgba(0, 0, 0, 0.5);
+}
+
+.story-hero .rarity {
+  margin-top: 6px;
+  font-size: 11px;
+  letter-spacing: 2px;
+}
+
+.story-hero .name {
+  margin-top: 6px;
+  font-size: 12px;
+  letter-spacing: 1px;
+}
+
+.story-heading h2 {
+  margin: 4px 0;
+  color: #fff3d6;
+  font-size: 26px;
+  letter-spacing: 3px;
+}
+
+.story-region {
+  margin: 0;
+  color: #9fd2ff;
+  font-size: 12px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+}
+
+.story-title {
+  margin: 0;
+  color: #ffdc8e;
+  font-style: italic;
+  letter-spacing: 1px;
+}
+
+.story-text {
+  margin-top: 18px;
+  padding: 14px 16px;
+  border-left: 2px solid rgba(255, 220, 142, 0.45);
+  border-radius: 10px;
+  background: rgba(20, 10, 40, 0.6);
+  color: #e4d8f8;
+  font-size: 14px;
+  line-height: 1.65;
+  text-align: left;
+}
+
+.story-text p {
+  margin: 0 0 12px;
+}
+
+.story-text p:first-child::first-letter {
+  float: left;
+  margin: 4px 6px 0 0;
+  color: #ffdc8e;
+  font-size: 34px;
+  line-height: 0.9;
+}
+
+.story-text p:last-child {
+  margin-bottom: 0;
+}
+
+.story-bonds {
+  margin-top: 18px;
+  text-align: left;
+}
+
+.story-bonds h3,
+.world-region h4 {
+  margin: 0 0 10px;
+  color: #cbb6ee;
+  font-size: 12px;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+}
+
+.story-bonds ul,
+.world-residents {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.story-bonds li,
+.world-residents li {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 10px;
+  border-radius: 10px;
+  background: rgba(20, 10, 40, 0.6);
+}
+
+.story-bonds img,
+.world-residents img {
+  flex: 0 0 auto;
+  width: 40px;
+  height: 40px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 50%;
+  object-fit: cover;
+  object-position: top;
+}
+
+.story-bonds [data-rarity="5"] > img,
+.world-residents [data-rarity="5"] > img {
+  border-color: #ffd36e;
+  box-shadow: 0 0 8px rgba(255, 200, 90, 0.5);
+}
+
+.story-bonds [data-rarity="4"] > img,
+.world-residents [data-rarity="4"] > img {
+  border-color: #c99bff;
+}
+
+.story-bonds li div,
+.world-residents li div {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.story-bonds strong,
+.world-residents strong {
+  color: #fff3d6;
+  font-size: 13px;
+  letter-spacing: 1px;
+}
+
+.story-bonds span {
+  color: #d6c8ee;
+  font-size: 13px;
+  line-height: 1.4;
+}
+
+@media (max-width: 480px) {
+  .story-hero {
+    flex-direction: column;
+    text-align: center;
+  }
+}
+
+/* Elementos (cores de apresentação) */
+
+.story-element {
+  margin-left: 8px;
+  padding: 1px 8px;
+  border: 1px solid currentColor;
+  border-radius: 999px;
+  color: #cbb6ee;
+  font-size: 10px;
+  font-style: normal;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  vertical-align: middle;
+}
+
+[data-element="ember"] .story-element { color: #ff9b5e; }
+[data-element="gale"] .story-element { color: #9fe6c8; }
+[data-element="terra"] .story-element { color: #d9b77e; }
+[data-element="volt"] .story-element { color: #ffe25a; }
+[data-element="tide"] .story-element { color: #6fd0ff; }
+[data-element="lumen"] .story-element { color: #fff1a8; }
+[data-element="umbra"] .story-element { color: #c7a2ff; }
+
+/* Capítulo secreto */
+
+.story-secret {
+  margin-top: 18px;
+  padding: 14px 16px;
+  border: 1px dashed rgba(199, 162, 255, 0.5);
+  border-radius: 12px;
+  background: rgba(40, 18, 70, 0.55);
+  text-align: left;
+}
+
+.story-secret h3 {
+  margin: 0 0 8px;
+  color: #d9c2ff;
+  font-size: 13px;
+  letter-spacing: 1.5px;
+}
+
+.story-secret p {
+  margin: 0;
+  color: #eadfff;
+  font-size: 14px;
+  font-style: italic;
+  line-height: 1.65;
+}
+
+.story-secret .story-secret-locked {
+  color: #9d88c4;
+}
+
+.story-secret.is-unlocked {
+  border-style: solid;
+  border-color: rgba(255, 196, 120, 0.7);
+  background: linear-gradient(160deg, rgba(70, 36, 20, 0.6), rgba(40, 18, 70, 0.6));
+  box-shadow: 0 0 18px rgba(255, 170, 80, 0.25);
+  animation: secretReveal 0.8s ease;
+}
+
+.story-secret.is-unlocked h3 {
+  color: #ffc478;
+}
+
+@keyframes secretReveal {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+}
+
+/* Personagens que o jogador ainda não invocou */
+
+.story-bonds li.is-missing img,
+.world-residents li.is-missing img {
+  filter: grayscale(1) brightness(0.45);
+}
+
+.story-bonds li.is-missing strong,
+.world-residents li.is-missing strong {
+  color: #a597bf;
+}
+
+.story-bond-missing {
+  margin-left: 8px;
+  color: #8a7aa8;
+  font-size: 10px;
+  font-weight: 400;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+}
+
+/* ---------- Mapa-múndi ---------- */
+
+.auth-modal.world-modal {
+  width: min(1180px, 96vw);
+}
+
+.world-header p {
+  color: #cbb6ee;
+  font-style: italic;
+}
+
+.world-tabs {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.world-tabs button {
+  padding: 6px 18px;
+  border: 1px solid rgba(255, 220, 142, 0.3);
+  border-radius: 999px;
+  background: rgba(20, 10, 40, 0.7);
+  color: #cbb6ee;
+  font: inherit;
+  font-size: 13px;
+  letter-spacing: 1.5px;
+  cursor: pointer;
+}
+
+.world-tabs button.is-active {
+  border-color: #ffdc8e;
+  color: #ffdc8e;
+  box-shadow: 0 0 10px rgba(255, 220, 142, 0.3);
+}
+
+.world-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 2fr) minmax(260px, 1fr);
+  gap: 18px;
+  margin-top: 18px;
+  align-items: start;
+}
+
+.world-map {
+  position: relative;
+  aspect-ratio: 16 / 10;
+  overflow: hidden;
+  border-radius: 14px;
+  box-shadow:
+    0 0 0 1px rgba(255, 220, 142, 0.35),
+    0 14px 40px rgba(0, 0, 0, 0.55),
+    0 0 40px rgba(140, 90, 240, 0.25);
+}
+
+.world-map-art {
+  display: block;
+  width: 100%;
+  height: 100%;
+  user-select: none;
+}
+
+.world-region-pin {
+  position: absolute;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 9px;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  border-radius: 999px;
+  background: rgba(10, 6, 24, 0.8);
+  color: #f3e9ff;
+  font: inherit;
+  font-size: 11px;
+  letter-spacing: 0.5px;
+  white-space: nowrap;
+  cursor: pointer;
+  transform: translate(-50%, -50%);
+  transition: background 0.2s ease, border-color 0.2s ease, transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.world-region-pin::before {
+  content: "";
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--pin-color, #c08cff);
+  box-shadow: 0 0 6px var(--pin-color, #c08cff);
+}
+
+.world-region-pin[data-element="ember"] { --pin-color: #ff7a3a; }
+.world-region-pin[data-element="gale"] { --pin-color: #9fe6c8; }
+.world-region-pin[data-element="terra"] { --pin-color: #c9a066; }
+.world-region-pin[data-element="volt"] { --pin-color: #ffe25a; }
+.world-region-pin[data-element="tide"] { --pin-color: #5ec8ff; }
+.world-region-pin[data-element="lumen"] { --pin-color: #fff1a8; }
+.world-region-pin[data-element="umbra"] { --pin-color: #b48cff; }
+
+.world-region-pin:hover,
+.world-region-pin:focus-visible {
+  border-color: #ffdc8e;
+  outline: none;
+  transform: translate(-50%, -50%) scale(1.08);
+}
+
+.world-region-pin.is-selected {
+  border-color: #ffdc8e;
+  background: rgba(70, 40, 110, 0.94);
+  color: #fff3d6;
+  box-shadow: 0 0 14px rgba(255, 220, 142, 0.6);
+}
+
+.world-region-pin-count {
+  padding: 0 5px;
+  border-radius: 999px;
+  background: rgba(255, 220, 142, 0.2);
+  color: #ffdc8e;
+  font-size: 10px;
+}
+
+.world-region {
+  padding: 16px;
+  border-radius: 14px;
+  background: rgba(20, 10, 40, 0.6);
+  text-align: left;
+}
+
+.world-region header h3 {
+  margin: 2px 0 8px;
+  color: #fff3d6;
+  font-size: 20px;
+  letter-spacing: 2px;
+}
+
+.world-region-epithet {
+  margin: 0;
+  color: #9fd2ff;
+  font-size: 12px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+}
+
+.world-region-description {
+  margin: 0 0 12px;
+  color: #e4d8f8;
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+.world-whisper {
+  margin: 0 0 16px;
+  padding: 8px 12px;
+  border-left: 2px solid rgba(199, 162, 255, 0.6);
+  border-radius: 0 8px 8px 0;
+  background: rgba(60, 30, 100, 0.35);
+  color: #d9c8f5;
+  font-size: 13px;
+  font-style: italic;
+  line-height: 1.5;
+}
+
+.world-whisper span {
+  display: block;
+  margin-bottom: 2px;
+  color: #b48cff;
+  font-size: 10px;
+  font-style: normal;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+}
+
+.world-found {
+  float: right;
+  color: #ffdc8e;
+  letter-spacing: 1px;
+}
+
+.world-residents {
+  max-height: 320px;
+  overflow-y: auto;
+}
+
+.world-residents strong span {
+  color: #ffdc8e;
+  font-size: 10px;
+  letter-spacing: 1px;
+}
+
+.world-residents em {
+  color: #b9a8d8;
+  font-size: 12px;
+}
+
+.world-region-hint {
+  margin: 12px 0 0;
+  color: #9d88c4;
+  font-size: 12px;
+  font-style: italic;
+}
+
+/* Crônica */
+
+.world-chronicle {
+  max-width: 760px;
+  margin: 18px auto 0;
+}
+
+.world-timeline {
+  position: relative;
+  margin: 22px 0 0;
+  padding: 0 0 0 26px;
+  list-style: none;
+  text-align: left;
+}
+
+.world-timeline::before {
+  content: "";
+  position: absolute;
+  top: 6px;
+  bottom: 6px;
+  left: 8px;
+  width: 2px;
+  background: linear-gradient(#ffdc8e, #b48cff);
+  opacity: 0.6;
+}
+
+.world-timeline li {
+  position: relative;
+  margin-bottom: 18px;
+}
+
+.world-timeline li::before {
+  content: "✦";
+  position: absolute;
+  top: 0;
+  left: -25px;
+  color: #ffdc8e;
+  font-size: 14px;
+  text-shadow: 0 0 8px rgba(255, 220, 142, 0.8);
+}
+
+.world-timeline-era {
+  display: block;
+  color: #9fd2ff;
+  font-size: 11px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+}
+
+.world-timeline strong {
+  color: #fff3d6;
+  font-size: 16px;
+  letter-spacing: 1px;
+}
+
+.world-timeline p {
+  margin: 4px 0 0;
+  color: #e4d8f8;
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+@media (max-width: 860px) {
+  .world-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .world-region-pin {
+    padding: 2px 5px;
+    font-size: 8px;
+  }
+
+  .world-region-pin::before,
+  .world-region-pin-count {
+    display: none;
+  }
+}
+
+/* Aba de batalha no modal da carta */
+
+.story-tabs {
+  margin-top: 16px;
+}
+
+.story-battle {
+  margin-top: 16px;
+  text-align: left;
+}
+
+.story-battle h3 {
+  margin: 16px 0 8px;
+  color: #ffdc8e;
+  font-size: 13px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+}
+
+.story-battle-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.story-battle-tag {
+  padding: 3px 10px;
+  border: 1px solid var(--element, #cbb6ee);
+  border-radius: 999px;
+  background: rgba(20, 10, 40, 0.7);
+  color: #f3e9ff;
+  font-size: 12px;
+  letter-spacing: 1px;
+}
+
+.story-battle-tag.is-muted {
+  border-color: rgba(203, 182, 238, 0.35);
+  color: #cbb6ee;
+}
+
+.story-battle-desc {
+  margin: 10px 0 0;
+  color: #e4d8f8;
+  font-size: 14px;
+  line-height: 1.55;
+}
+
+.story-battle-ascension {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  margin: 14px 0 0;
+  padding: 8px 12px;
+  border: 1px solid rgba(255, 196, 120, 0.4);
+  border-radius: 10px;
+  background: rgba(70, 36, 20, 0.35);
+  color: #ffc478;
+  font-size: 16px;
+  letter-spacing: 2px;
+}
+
+.story-battle-ascension span {
+  color: #cbb6ee;
+  font-size: 11px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+}
+
+.story-battle-ascension em {
+  margin-left: auto;
+  color: #e4d8f8;
+  font-size: 12px;
+  font-style: normal;
+  letter-spacing: 0.5px;
+}
+
+.story-battle-note {
+  margin: 6px 0 0;
+  color: #9d88c4;
+  font-size: 12px;
+  font-style: italic;
+}
+
+.story-rivals h3 {
+  color: #ffb08a;
+}
+
+.story-rivals span {
+  font-style: italic;
+}
+
+.world-resonance {
+  margin: 0 0 16px;
+  padding: 8px 12px;
+  border-left: 2px solid rgba(159, 230, 255, 0.7);
+  border-radius: 0 8px 8px 0;
+  background: rgba(20, 60, 90, 0.35);
+  color: #d4f1ff;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.world-resonance span {
+  display: block;
+  margin-bottom: 2px;
+  color: #9fe6ff;
+  font-size: 10px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+}
+
+.story-duos {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.story-duos li {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  margin-bottom: 10px;
+  padding: 8px;
+  border: 1px solid rgba(255, 143, 200, 0.4);
+  border-radius: 10px;
+  background: rgba(90, 20, 60, 0.25);
+}
+
+.story-duos img {
+  width: 40px;
+  height: 52px;
+  object-fit: cover;
+  border-radius: 6px;
+}
+
+.story-duos div {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  font-size: 13px;
+  color: #f3e0ec;
+}
+
+.story-duos strong {
+  color: #ffd0ea;
+}
+
+.story-duos strong span {
+  color: #ffdc8e;
+  font-size: 11px;
+}
+
+.story-duos em {
+  color: #b99ab0;
+  font-size: 11px;
+}
+
+.world-campaign {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 0 0 16px;
+  padding: 10px 12px;
+  border: 1px solid rgba(255, 220, 142, 0.3);
+  border-radius: 10px;
+  background: rgba(30, 16, 50, 0.6);
+}
+
+.world-campaign p {
+  margin: 0;
+  color: #e4d8f8;
+  font-size: 13px;
+}
+
+.world-campaign p span {
+  display: block;
+  margin-bottom: 4px;
+  color: #ffdc8e;
+  font-size: 10px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+}
+
+.world-campaign .keep-button {
+  align-self: flex-start;
+}
+
+.world-campaign em {
+  margin-right: 4px;
+  color: #5d4e7a;
+  font-style: normal;
+}
+
+.world-campaign em.is-cleared {
+  color: #ffdc8e;
+  text-shadow: 0 0 6px rgba(255, 220, 142, 0.8);
+}
+
+.world-campaign .campaign-epilogue {
+  margin: 0;
+  padding: 8px 12px;
+  border-left: 2px solid rgba(255, 196, 120, 0.8);
+  background: rgba(70, 36, 20, 0.4);
+  color: #ffe8c8;
+  font-size: 13px;
+  font-style: italic;
+}
+
+.world-mastery {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 0 0 16px;
+  padding: 10px 12px;
+  border: 1px dashed rgba(255, 220, 142, 0.35);
+  border-radius: 10px;
+  background: rgba(30, 16, 50, 0.5);
+}
+
+.world-mastery p {
+  margin: 0;
+  color: #e4d8f8;
+  font-size: 13px;
+}
+
+.world-mastery p span {
+  display: block;
+  margin-bottom: 4px;
+  color: #ffdc8e;
+  font-size: 10px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+}
+
+.world-mastery .keep-button {
+  align-self: flex-start;
+}
+
+.world-mastery.is-claimed {
+  border-style: solid;
+  border-color: rgba(255, 220, 142, 0.8);
+  background: linear-gradient(160deg, rgba(80, 56, 16, 0.5), rgba(30, 16, 50, 0.6));
+  box-shadow: 0 0 16px rgba(255, 220, 142, 0.25);
+}
+
+.world-mastery-message {
+  color: #ffdc8e !important;
+}
+
+.world-region-pin.is-mastered {
+  border-color: #ffdc8e;
+  color: #fff3d6;
+  box-shadow: 0 0 12px rgba(255, 220, 142, 0.75);
+}
+
+.world-region-pin.is-mastered::after {
+  content: "★";
+  color: #ffdc8e;
+  font-size: 10px;
+}
+
+/* Boato da semana */
+
+.world-omen {
+  margin: 0 0 16px;
+  padding: 10px 12px;
+  border: 1px solid rgba(180, 140, 255, 0.6);
+  border-radius: 10px;
+  background: linear-gradient(160deg, rgba(60, 30, 110, 0.6), rgba(20, 10, 40, 0.7));
+  color: #e9dcff;
+  font-size: 13px;
+  line-height: 1.5;
+  box-shadow: 0 0 16px rgba(160, 110, 255, 0.25);
+}
+
+.world-omen span {
+  display: block;
+  margin-bottom: 4px;
+  color: #d4b8ff;
+  font-size: 11px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+}
+
+.world-omen em {
+  display: block;
+  margin-top: 4px;
+  color: #ffdc8e;
+  font-size: 12px;
+  font-style: normal;
+}
+
+.world-omen.is-compact {
+  width: min(720px, calc(100% - 32px));
+  margin: 0 auto 12px;
+  text-align: center;
+}
+
+.world-omen.is-compact em {
+  margin-top: 0;
+}
+
+.world-region-pin.is-omen {
+  animation: omenPulse 2.4s ease-in-out infinite;
+}
+
+@keyframes omenPulse {
+  0%,
+  100% {
+    box-shadow: 0 0 4px rgba(180, 140, 255, 0.5);
+  }
+  50% {
+    box-shadow: 0 0 16px rgba(180, 140, 255, 0.95);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .world-region-pin.is-omen {
+    animation: none;
+    box-shadow: 0 0 12px rgba(180, 140, 255, 0.8);
+  }
+}

@@ -27,6 +27,7 @@ from mystic_shared.ascension import read_ascensions
 from mystic_shared.battle import TEAM_SIZE, BattleError, create_pvp_battle, new_rng
 from mystic_shared.cards import get_character
 from mystic_shared.progression import level_for_experience
+from mystic_shared.titles import title_name
 from mystic_shared.usernames import normalize, validate_username
 
 CORS_HEADERS = {
@@ -136,6 +137,11 @@ def get_item(table, key):
 def get_username(user_id):
     item = get_item(USER_PROFILES_TABLE, {"userId": {"S": user_id}}) or {}
     return item.get("username", {}).get("S")
+
+
+def get_title_name(user_id):
+    item = get_item(USER_PROFILES_TABLE, {"userId": {"S": user_id}}) or {}
+    return title_name(item.get("title", {}).get("S"))
 
 
 def find_user_id(username):
@@ -478,8 +484,9 @@ def accept(user_id, body):
     pvp.start_online(state, events, now)
 
     players = {
-        "player": {"userId": challenger_id, "username": challenger_name},
-        "enemy": {"userId": user_id, "username": my_name},
+        "player": {"userId": challenger_id, "username": challenger_name,
+                   "title": get_title_name(challenger_id)},
+        "enemy": {"userId": user_id, "username": my_name, "title": get_title_name(user_id)},
     }
     transact_items = [
         {
