@@ -257,6 +257,19 @@ Resources:
         AttributeName: expiresAt
         Enabled: true
 
+  # Progresso de cada jogador nas regiões: fases da campanha vencidas
+  # (`stage_<região>`).
+  RegionProgressTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+      - AttributeName: userId
+        AttributeType: S
+      KeySchema:
+      - AttributeName: userId
+        KeyType: HASH
+
   # Tokens de sorteio já usados para guardar cartas (uso único). Os itens
   # somem sozinhos pelo TTL depois que o token expira.
   SummonTokensTable:
@@ -786,7 +799,10 @@ Resources:
           USER_PROGRESS_TABLE: !Ref UserProgressTable
           USER_WALLET_TABLE: !Ref UserWalletTable
           CARD_ASCENSIONS_TABLE: !Ref CardAscensionsTable
+          REGION_PROGRESS_TABLE: !Ref RegionProgressTable
       Policies:
+      - DynamoDBCrudPolicy:
+          TableName: !Ref RegionProgressTable
       - DynamoDBCrudPolicy:
           TableName: !Ref BattlesTable
       - DynamoDBReadPolicy:
@@ -825,6 +841,41 @@ Resources:
           Properties:
             RestApiId: !Ref MysticBoxApi
             Path: /battles/current/actions
+            Method: options
+
+  GetCampaignFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: get_campaign/
+      Handler: app.lambda_handler
+      Runtime: python3.14
+      Architectures:
+      - x86_64
+      Layers:
+      - !Ref SharedLayer
+      Environment:
+        Variables:
+          REGION_PROGRESS_TABLE: !Ref RegionProgressTable
+          USER_PROGRESS_TABLE: !Ref UserProgressTable
+      Policies:
+      - DynamoDBReadPolicy:
+          TableName: !Ref RegionProgressTable
+      - DynamoDBReadPolicy:
+          TableName: !Ref UserProgressTable
+      Events:
+        GetCampaign:
+          Type: Api
+          Properties:
+            RestApiId: !Ref MysticBoxApi
+            Path: /users/me/campaign
+            Method: get
+            Auth:
+              Authorizer: CognitoAuthorizer
+        GetCampaignOptions:
+          Type: Api
+          Properties:
+            RestApiId: !Ref MysticBoxApi
+            Path: /users/me/campaign
             Method: options
 
   GetBattleFunction:

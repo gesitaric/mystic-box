@@ -334,6 +334,8 @@ function App() {
   // Como a arena abre: null (normal), { challenge } vindo do sininho ou
   // { opponent } vindo da busca de jogadores.
   const [duelIntent, setDuelIntent] = useState(null);
+  // Região da campanha escolhida no mapa (abre a arena na aba da campanha).
+  const [campaignIntent, setCampaignIntent] = useState(null);
 
   const fetchDuels = useCallback(async (activeSession) => {
     if (!activeSession) return;
@@ -617,6 +619,7 @@ function App() {
           apiUrl={API_URL}
           session={session}
           duelIntent={duelIntent}
+          campaignIntent={campaignIntent}
           onExit={() => setScreen("home")}
           onSessionExpired={handleBattleSessionExpired}
           onProgressChange={handleBattleProgress}
@@ -645,6 +648,12 @@ function App() {
           onSummon={() => setScreen("summon")}
           onBattle={() => {
             setDuelIntent(null);
+            setCampaignIntent(null);
+            setScreen("battle");
+          }}
+          onCampaign={(region) => {
+            setDuelIntent(null);
+            setCampaignIntent({ region });
             setScreen("battle");
           }}
           onCollection={() => setCollectionOpen(true)}

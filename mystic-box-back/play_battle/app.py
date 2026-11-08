@@ -2,14 +2,17 @@
 
 Rotas:
 - POST /battles: {"team": [fileName x3], "difficulty"} começa uma batalha
-  nova (uma batalha ativa anterior é abandonada, sem experiência).
+  nova (uma batalha ativa anterior é abandonada, sem experiência). Com
+  {"team", "campaign": {"region", "stage"}} começa uma fase da campanha (só se
+  a fase anterior já foi vencida).
 - POST /battles/current/actions: {"battleId", "type": "skill"|"auto"|"forfeit",
   "skill"?, "target"?} executa o turno da carta da vez.
 
 O cliente só manda intenções e identificadores. Cartas, atributos, dano,
 sorteios e recompensas são calculados aqui (mystic_shared.battle). Quando a
-batalha acaba, gravar o resultado, somar a experiência e pagar a recompensa
-de nível acontecem na mesma transação.
+batalha acaba, gravar o resultado, somar a experiência, pagar a recompensa
+de nível e, na campanha, marcar a fase vencida e pagar a primeira vitória
+acontecem na mesma transação.
 """
 
 import json
@@ -25,11 +28,21 @@ from mystic_shared.battle import (
     BattleError,
     battle_experience,
     create_battle,
+    create_campaign_battle,
     new_rng,
     play_turn,
     public_state,
 )
 from mystic_shared.ascension import read_ascensions
+from mystic_shared.campaign import (
+    CampaignError,
+    check_stage,
+    epilogue,
+    first_clear_reward,
+    progress_from_item,
+    stage_attribute,
+    stage_setup,
+)
 from mystic_shared.cards import get_character
 from mystic_shared.progression import level_for_experience, level_up_reward, public_progress
 
@@ -44,6 +57,7 @@ USER_CARDS_TABLE = os.environ.get("USER_CARDS_TABLE")
 USER_PROGRESS_TABLE = os.environ.get("USER_PROGRESS_TABLE")
 USER_WALLET_TABLE = os.environ.get("USER_WALLET_TABLE")
 CARD_ASCENSIONS_TABLE = os.environ.get("CARD_ASCENSIONS_TABLE")
+REGION_PROGRESS_TABLE = os.environ.get("REGION_PROGRESS_TABLE")
 
 # Batalhas somem sozinhas (TTL) um dia depois da última ação.
 BATTLE_TTL_SECONDS = 24 * 60 * 60
@@ -161,6 +175,16 @@ def get_progress(user_id):
     )
 
 
+def get_campaign_progress(user_id):
+    """{região: fases vencidas} do jogador."""
+    item = get_client().get_item(
+        TableName=REGION_PROGRESS_TABLE,
+        Key={"userId": {"S": user_id}},
+        ConsistentRead=True,
+    ).get("Item")
+    return progress_from_item(item)
+
+
 def get_battle_item(user_id):
     return get_client().get_item(
         TableName=BATTLES_TABLE,
@@ -208,6 +232,7 @@ def finish_battle(user_id, state, expected_version):
     """Grava o fim da batalha e a experiência/recompensa numa só transação."""
     gained = battle_experience(state)
     won = state["status"] == "won"
+    campaign = state.get("campaign")
 
     for _ in range(FINISH_ATTEMPTS):
         old_experience, wins, losses, has_record = get_progress(user_id)
@@ -215,6 +240,13 @@ def finish_battle(user_id, state, expected_version):
         new_experience = old_experience + gained
         new_level, _ = level_for_experience(new_experience)
         shards = level_up_reward(old_level, new_level)
+
+        # Campanha: a primeira vitória numa fase paga a recompensa dela.
+        first_clear = False
+        if campaign and won:
+            cleared = get_campaign_progress(user_id).get(campaign["region"], 0)
+            first_clear = cleared < campaign["stage"]
+        campaign_reward = first_clear_reward(campaign["stage"]) if first_clear else 0
 
         progress_update = {
             "TableName": USER_PROGRESS_TABLE,
@@ -236,14 +268,39 @@ def finish_battle(user_id, state, expected_version):
             {"Put": battle_put(user_id, state, (expected_version or 0) + 1, expected_version)},
             {"Update": progress_update},
         ]
-        if shards:
+        if shards + campaign_reward:
             items.append(
                 {
                     "Update": {
                         "TableName": USER_WALLET_TABLE,
                         "Key": {"userId": {"S": user_id}},
                         "UpdateExpression": "ADD balance :shards",
-                        "ExpressionAttributeValues": {":shards": {"N": str(shards)}},
+                        "ExpressionAttributeValues": {
+                            ":shards": {"N": str(shards + campaign_reward)}
+                        },
+                    }
+                }
+            )
+        campaign_item = None
+        if first_clear:
+            campaign_item = len(items)
+            items.append(
+                {
+                    "Update": {
+                        "TableName": REGION_PROGRESS_TABLE,
+                        "Key": {"userId": {"S": user_id}},
+                        "UpdateExpression": "SET #stage = :stage",
+                        # Só a primeira vitória paga: se outra requisição já
+                        # marcou a fase, lê de novo (e não paga de novo).
+                        "ConditionExpression": (
+                            "attribute_not_exists(#stage) OR #stage < :stage"
+                        ),
+                        "ExpressionAttributeNames": {
+                            "#stage": stage_attribute(campaign["region"])
+                        },
+                        "ExpressionAttributeValues": {
+                            ":stage": {"N": str(campaign["stage"])}
+                        },
                     }
                 }
             )
@@ -254,7 +311,7 @@ def finish_battle(user_id, state, expected_version):
             failed = get_failed_conditions(error)
             if BATTLE_ITEM in failed:
                 raise BattleChanged() from error
-            if PROGRESS_ITEM in failed:
+            if PROGRESS_ITEM in failed or (campaign_item is not None and campaign_item in failed):
                 continue
             raise
 
@@ -266,6 +323,19 @@ def finish_battle(user_id, state, expected_version):
             "level": new_level,
             "leveledUp": new_level > old_level,
             "shardsReward": shards,
+            "campaign": (
+                {
+                    "region": campaign["region"],
+                    "stage": campaign["stage"],
+                    "boss": campaign["boss"],
+                    "firstClear": first_clear,
+                    "reward": campaign_reward,
+                    # Vencer o chefe revela o epílogo da região.
+                    "epilogue": epilogue(campaign["region"]) if won and campaign["boss"] else None,
+                }
+                if campaign
+                else None
+            ),
             "progress": public_progress(
                 new_experience,
                 wins=wins + (1 if won else 0),
@@ -295,13 +365,22 @@ def start(user_id, event):
 
     team = body.get("team")
     difficulty = body.get("difficulty")
+    campaign = body.get("campaign")
     if (
         not isinstance(team, list)
         or len(team) != TEAM_SIZE
         or not all(is_short_string(name) for name in team)
     ):
         return response(400, {"message": f"Choose exactly {TEAM_SIZE} cards."})
-    if not is_short_string(difficulty):
+    if campaign is not None:
+        if (
+            not isinstance(campaign, dict)
+            or not is_short_string(campaign.get("region"))
+            or not isinstance(campaign.get("stage"), int)
+            or isinstance(campaign.get("stage"), bool)
+        ):
+            return response(400, {"message": "Choose a campaign stage."})
+    elif not is_short_string(difficulty):
         return response(400, {"message": "Choose a difficulty."})
 
     # Só os identificadores vêm do cliente; as cartas são as do servidor.
@@ -313,6 +392,7 @@ def start(user_id, event):
         owned = get_owned_file_names(user_id)
         experience, _, _, _ = get_progress(user_id)
         ascensions = read_ascensions(get_client(), CARD_ASCENSIONS_TABLE, user_id)
+        campaign_progress = get_campaign_progress(user_id) if campaign is not None else {}
     except ClientError:
         return response(500, {"message": "Could not start the battle."})
 
@@ -324,11 +404,19 @@ def start(user_id, event):
 
     level, _ = level_for_experience(experience)
     try:
-        state, events = create_battle(
-            str(uuid.uuid4()), characters, level, difficulty, new_rng(),
-            ascensions=ascensions,
-        )
-    except BattleError as error:
+        if campaign is not None:
+            region, stage = campaign["region"], campaign["stage"]
+            check_stage(region, stage, campaign_progress.get(region, 0))
+            state, events = create_campaign_battle(
+                str(uuid.uuid4()), characters, level, stage_setup(region, stage, level),
+                new_rng(), ascensions=ascensions,
+            )
+        else:
+            state, events = create_battle(
+                str(uuid.uuid4()), characters, level, difficulty, new_rng(),
+                ascensions=ascensions,
+            )
+    except (BattleError, CampaignError) as error:
         return response(400, {"message": str(error)})
 
     try:

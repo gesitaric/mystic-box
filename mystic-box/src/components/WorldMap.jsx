@@ -49,6 +49,30 @@ function useOwnedCards(apiUrl, session) {
   return owned;
 }
 
+// Progresso da campanha (fases vencidas e epílogos), de GET /users/me/campaign.
+function useCampaign(apiUrl, session) {
+  const [campaign, setCampaign] = useState(null);
+
+  useEffect(() => {
+    if (!session) return undefined;
+    let cancelled = false;
+    const token = session.session.getIdToken().getJwtToken();
+    fetch(`${apiUrl}/users/me/campaign`, { headers: { Authorization: token } })
+      .then((response) => (response.ok ? response.json() : null))
+      .then((data) => {
+        if (!cancelled && data) {
+          setCampaign(Object.fromEntries(data.regions.map((r) => [r.region, r])));
+        }
+      })
+      .catch((error) => console.error(error));
+    return () => {
+      cancelled = true;
+    };
+  }, [apiUrl, session]);
+
+  return campaign;
+}
+
 // Rótulo um pouco abaixo do centro da região, para não cobrir o desenho dela.
 function pinStyle(region) {
   return {
@@ -97,7 +121,37 @@ function MapCanvas({ regions, selectedId, owned, onSelect }) {
   );
 }
 
-function RegionPanel({ region, owned }) {
+function RegionCampaign({ progress, onCampaign }) {
+  if (!progress) return null;
+  return (
+    <div className="world-campaign">
+      <p>
+        <span>Campaign</span>
+        {progress.stages.map((stage) => (
+          <em key={stage.stage} className={stage.cleared ? "is-cleared" : undefined}>
+            {stage.boss ? "♛" : "✦"}
+          </em>
+        ))}{" "}
+        {progress.complete
+          ? "Champion defeated"
+          : `${progress.cleared}/${progress.total} battles won`}
+      </p>
+      {progress.epilogue && (
+        <blockquote className="campaign-epilogue">
+          <span>Epilogue</span>
+          {progress.epilogue}
+        </blockquote>
+      )}
+      {onCampaign && (
+        <button type="button" className="keep-button" onClick={() => onCampaign(progress.region)}>
+          {progress.complete ? "Fight here again" : "Fight in this land"}
+        </button>
+      )}
+    </div>
+  );
+}
+
+function RegionPanel({ region, owned, campaign, onCampaign }) {
   const found = owned ? region.characters.filter((c) => owned.has(c.file_name)).length : null;
 
   return (
@@ -123,6 +177,8 @@ function RegionPanel({ region, owned }) {
           {region.resonance.description} (a team of 3 from this land)
         </p>
       )}
+
+      <RegionCampaign progress={campaign?.[region.id]} onCampaign={onCampaign} />
 
       {region.characters.length > 0 ? (
         <>
@@ -187,12 +243,13 @@ function Chronicle({ world, chronicle }) {
   );
 }
 
-function WorldModal({ apiUrl, session, onClose }) {
+function WorldModal({ apiUrl, session, onCampaign, onClose }) {
   const [state, setState] = useState({ data: null, error: "" });
   const [attempt, setAttempt] = useState(0);
   const [selectedId, setSelectedId] = useState("riftheart");
   const [tab, setTab] = useState("map");
   const owned = useOwnedCards(apiUrl, session);
+  const campaign = useCampaign(apiUrl, session);
 
   useEffect(() => {
     let cancelled = false;
@@ -264,7 +321,14 @@ function WorldModal({ apiUrl, session, onClose }) {
                 owned={owned}
                 onSelect={setSelectedId}
               />
-              {selected && <RegionPanel region={selected} owned={owned} />}
+              {selected && (
+                <RegionPanel
+                  region={selected}
+                  owned={owned}
+                  campaign={campaign}
+                  onCampaign={onCampaign}
+                />
+              )}
             </div>
           ) : (
             <Chronicle world={data.world} chronicle={data.chronicle ?? []} />
@@ -276,7 +340,7 @@ function WorldModal({ apiUrl, session, onClose }) {
 }
 
 // Atalho da tela inicial que abre o mapa-múndi.
-function WorldMap({ apiUrl, session }) {
+function WorldMap({ apiUrl, session, onCampaign }) {
   const [open, setOpen] = useState(false);
 
   return (
@@ -295,7 +359,14 @@ function WorldMap({ apiUrl, session }) {
         </svg>
         <span>World</span>
       </button>
-      {open && <WorldModal apiUrl={apiUrl} session={session} onClose={() => setOpen(false)} />}
+      {open && (
+        <WorldModal
+          apiUrl={apiUrl}
+          session={session}
+          onCampaign={onCampaign}
+          onClose={() => setOpen(false)}
+        />
+      )}
     </>
   );
 }

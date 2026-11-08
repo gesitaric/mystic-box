@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
+import CampaignPanel from "./CampaignPanel";
 import { getCharacterImage } from "../../characterImages";
 import { LevelBadge } from "../HomeScreen";
 import Grimoire from "../Grimoire";
@@ -34,6 +35,7 @@ const TURN_END_MARGIN_MS = 1000;
 
 const ARENA_TABS = [
   { value: "pve", label: "vs Computer" },
+  { value: "campaign", label: "Campaign" },
   { value: "pvp", label: "Online duel" },
 ];
 
@@ -214,6 +216,26 @@ function BattleUnit({
 
 const RESULT_TITLE = { won: "VICTORY", lost: "DEFEAT", draw: "DRAW" };
 
+function CampaignResult({ campaign }) {
+  if (!campaign) return null;
+  return (
+    <div className="battle-result-campaign">
+      {campaign.firstClear && (
+        <p className="battle-result-levelup">
+          {campaign.boss ? "Champion defeated!" : "Stage cleared!"}
+          {campaign.reward > 0 && <> You earned ✧ {campaign.reward}.</>}
+        </p>
+      )}
+      {campaign.epilogue && (
+        <blockquote className="campaign-epilogue">
+          <span>Epilogue</span>
+          {campaign.epilogue}
+        </blockquote>
+      )}
+    </div>
+  );
+}
+
 function BattleResult({ result, onAgain, onExit }) {
   const won = result.outcome === "won";
   return (
@@ -229,6 +251,7 @@ function BattleResult({ result, onAgain, onExit }) {
             {result.shardsReward > 0 && <> and earned ✧ {result.shardsReward}</>}.
           </p>
         )}
+        <CampaignResult campaign={result.campaign} />
         <LevelBadge progress={result.progress} />
         <div className="battle-result-actions">
           <button type="button" className="keep-button" onClick={onAgain}>
@@ -249,6 +272,7 @@ function BattleScreen({
   apiUrl,
   session,
   duelIntent,
+  campaignIntent,
   onExit,
   onSessionExpired,
   onProgressChange,
@@ -275,7 +299,9 @@ function BattleScreen({
   const [lastTeam, setLastTeam] = useState([]);
   const [showLevelUp, setShowLevelUp] = useState(false);
   // Aba da preparação: contra o computador ou duelo online.
-  const [arena, setArena] = useState(duelIntent ? "pvp" : "pve");
+  const [arena, setArena] = useState(duelIntent ? "pvp" : campaignIntent ? "campaign" : "pve");
+  // Fase da campanha escolhida (região e fase vindas de GET /users/me/campaign).
+  const [campaignStage, setCampaignStage] = useState(null);
   const [clock, setClock] = useState(() => Date.now());
   // Último lote de eventos do duelo já recebido.
   const seqRef = useRef(0);
@@ -552,7 +578,9 @@ function BattleScreen({
           setAutoMode(false);
           setResult(outcome);
           if (outcome.progress) callbacks.current.onProgressChange?.(outcome.progress);
-          if (outcome.shardsReward > 0) callbacks.current.onBalanceChange?.();
+          if (outcome.shardsReward > 0 || outcome.campaign?.reward > 0) {
+            callbacks.current.onBalanceChange?.();
+          }
         } else if (
           next.status === "active" &&
           next.turn &&
@@ -590,14 +618,14 @@ function BattleScreen({
   const closeLevelUp = useCallback(() => setShowLevelUp(false), []);
   const playLevelUpSound = useCallback((name, ...args) => audio.current?.[name]?.(...args), []);
 
-  async function startBattle(team, difficulty) {
+  async function startBattle(team, difficulty, campaign = null) {
     setStarting(true);
     setStartError("");
     setLastTeam(team);
     try {
       const { ok, data } = await request("/battles", {
         method: "POST",
-        body: JSON.stringify({ team, difficulty }),
+        body: JSON.stringify(campaign ? { team, campaign } : { team, difficulty }),
       });
       if (!ok) {
         setStartError(data.message ?? "Could not start the battle.");
@@ -898,6 +926,62 @@ function BattleScreen({
               onSessionExpired={onSessionExpired}
             />
           </>
+        ) : arena === "campaign" && !campaignStage ? (
+          <CampaignPanel
+            request={request}
+            initialRegion={campaignIntent?.region}
+            onChooseStage={(region, stage) => {
+              setStartError("");
+              setCampaignStage({ region, stage });
+            }}
+          />
+        ) : arena === "campaign" ? (
+          <TeamSetup
+            apiUrl={apiUrl}
+            session={session}
+            setup={{ teamSize: setup?.teamSize }}
+            initialTeam={lastTeam}
+            starting={starting}
+            startError={startError}
+            startLabel={campaignStage.stage.boss ? "Face the champion" : "Begin the battle"}
+            onStart={(team) =>
+              startBattle(team, null, {
+                region: campaignStage.region.region,
+                stage: campaignStage.stage.stage,
+              })
+            }
+            onSessionExpired={onSessionExpired}
+            cachedCards={rosterCards}
+            onCardsLoaded={setRosterCards}
+          >
+            <section className="battle-panel campaign-brief">
+              <button
+                type="button"
+                className="session-button"
+                onClick={() => setCampaignStage(null)}
+              >
+                ← {campaignStage.region.regionName}
+              </button>
+              <h2 className="battle-panel-title">
+                {campaignStage.stage.boss ? "♛ " : ""}
+                {campaignStage.stage.name}
+              </h2>
+              <p className="battle-inspect-desc">{campaignStage.stage.intro}</p>
+              <div className="campaign-stage-foes">
+                {campaignStage.stage.enemies.map((enemy) => (
+                  <img
+                    key={enemy.file_name}
+                    src={getCharacterImage(enemy.file_name)}
+                    alt={enemy.name}
+                    title={enemy.name}
+                  />
+                ))}
+                <span className="campaign-stage-meta">
+                  Foes Lv {campaignStage.stage.enemyLevel} · +{campaignStage.stage.experience} XP
+                </span>
+              </div>
+            </section>
+          </TeamSetup>
         ) : (
           <TeamSetup
             apiUrl={apiUrl}

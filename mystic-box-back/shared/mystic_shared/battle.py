@@ -1048,6 +1048,55 @@ def create_battle(battle_id, player_team, player_level, difficulty, rng, enemy_t
     return state, events
 
 
+def create_campaign_battle(battle_id, player_team, player_level, setup, rng,
+                           ascensions=None):
+    """Batalha de uma fase da campanha (`setup` de campaign.stage_setup).
+
+    Os inimigos, o nível e a força vêm da fase. Devolve (estado, eventos).
+    """
+    if len(player_team) != TEAM_SIZE:
+        raise BattleError(f"Choose exactly {TEAM_SIZE} cards.")
+    if len({c["file_name"] for c in player_team}) != TEAM_SIZE:
+        raise BattleError("Choose different cards.")
+
+    state = {
+        "battleId": battle_id,
+        "difficulty": None,
+        "campaign": {
+            "region": setup["region"],
+            "stage": setup["stage"],
+            "boss": setup["boss"],
+            "label": setup["label"],
+            "experience": setup["experience"],
+        },
+        "status": "active",
+        "endReason": None,
+        "round": 0,
+        "queue": [],
+        "turn": None,
+        "acting": None,
+        "aether": {"player": STARTING_AETHER, "enemy": STARTING_AETHER},
+        "playerLevel": player_level,
+        "enemyLevel": setup["enemyLevel"],
+        "units": [
+            *(
+                build_unit(c, "player", i, player_level,
+                           ascension=(ascensions or {}).get(c["file_name"], 0))
+                for i, c in enumerate(player_team)
+            ),
+            *(
+                build_unit(c, "enemy", i, setup["enemyLevel"], setup["power"])
+                for i, c in enumerate(setup["enemies"])
+            ),
+        ],
+    }
+    events = []
+    _link_bonds(state, events)
+    _apply_resonances(state, events)
+    _advance(state, rng, events)
+    return state, events
+
+
 def create_pvp_battle(battle_id, challenger_team, challenger_level, opponent_team,
                       opponent_level, rng, challenger_ascensions=None,
                       opponent_ascensions=None):
@@ -1419,6 +1468,8 @@ def outcome_for(state, side="player"):
 def _win_experience(state):
     if is_pvp(state):
         return PVP["experience"]
+    if state.get("campaign"):
+        return state["campaign"]["experience"]
     return DIFFICULTIES[state["difficulty"]]["experience"]
 
 
@@ -1561,14 +1612,26 @@ def public_state(state, viewer="player"):
             )
 
     pvp = is_pvp(state)
+    campaign = state.get("campaign")
+    if pvp:
+        difficulty, difficulty_label = "pvp", PVP["label"]
+    elif campaign:
+        difficulty, difficulty_label = "campaign", campaign["label"]
+    else:
+        difficulty = state["difficulty"]
+        difficulty_label = DIFFICULTIES[difficulty]["label"]
     outcome = outcome_for(state, viewer)
     return {
         "battleId": state["battleId"],
         "mode": "pvp" if pvp else "pve",
         "status": outcome,
         "endReason": view_reason(state["endReason"], outcome),
-        "difficulty": "pvp" if pvp else state["difficulty"],
-        "difficultyLabel": PVP["label"] if pvp else DIFFICULTIES[state["difficulty"]]["label"],
+        "difficulty": difficulty,
+        "difficultyLabel": difficulty_label,
+        "campaign": (
+            {"region": campaign["region"], "stage": campaign["stage"], "boss": campaign["boss"]}
+            if campaign else None
+        ),
         "round": state["round"],
         "maxRounds": MAX_ROUNDS,
         "aether": _view_aether(state["aether"], viewer),
