@@ -125,6 +125,12 @@ export function describeEvent(event, names) {
         text: `✦ ${event.regionName} resonance — ${event.name}: ${event.description}`,
         kind: "resonance",
       };
+    case "duo":
+      return {
+        text: `✦✦ ${name(event.actor)} and ${name(event.target)} unleash ${event.skillName}!`,
+        kind: "duo",
+        side: event.actor?.[0],
+      };
     case "rivalry":
       return {
         text: `⚔ ${name(event.actor)} vs ${name(event.target)}: “${event.line}” — “${event.reply}”`,
@@ -162,6 +168,8 @@ export function eventDelay(event) {
       return event.amount > 0 ? 380 : 0;
     case "resonance":
       return 1800;
+    case "duo":
+      return 900;
     case "bond":
     case "rivalry":
       return 2200;

@@ -5,7 +5,7 @@ import pytest
 from botocore.exceptions import ClientError
 from mystic_shared import cards
 from mystic_shared.ascension import public_ascension
-from mystic_shared.battle import ascension_unlocks_skill, public_skills
+from mystic_shared.battle import ascension_unlocks_skill, public_duos, public_skills
 from mystic_shared.lore import public_lore
 from mystic_shared.stats import public_battle_profile
 
@@ -84,6 +84,7 @@ def test_get_user_cards_groups_repeated_cards(authenticated_event, monkeypatch):
             "battle": {
                 **public_battle_profile(cards.get_character("astra.jfif")),
                 "skills": public_skills(cards.get_character("astra.jfif")),
+                "duos": public_duos(cards.get_character("astra.jfif")),
             },
             "lore": public_lore(cards.get_character("astra.jfif"), 0, {"astra.jfif", "rowan.jfif"}),
             "ascension": public_ascension(0, 3, False),
@@ -100,6 +101,7 @@ def test_get_user_cards_groups_repeated_cards(authenticated_event, monkeypatch):
             "battle": {
                 **public_battle_profile(cards.get_character("rowan.jfif")),
                 "skills": public_skills(cards.get_character("rowan.jfif")),
+                "duos": public_duos(cards.get_character("rowan.jfif")),
             },
             "lore": public_lore(cards.get_character("rowan.jfif"), 0, {"astra.jfif", "rowan.jfif"}),
             "ascension": public_ascension(0, 1, True),

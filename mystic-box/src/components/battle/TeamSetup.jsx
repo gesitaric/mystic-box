@@ -138,6 +138,16 @@ function TeamSetup({
   const topRegion = teamRegions.find((region) => region.id === topRegionId);
   const resonance = topRegion?.resonance ?? null;
   const resonanceActive = resonance && topCount === teamSize;
+  // Técnicas de dupla liberadas pelo time escolhido (vêm de `battle.duos`).
+  const teamDuos = [];
+  for (const name of team) {
+    const card = cards.find((c) => c.file_name === name);
+    for (const duo of card?.battle?.duos ?? []) {
+      if (team.includes(duo.partner) && !teamDuos.some((d) => d.skill.id === duo.skill.id)) {
+        teamDuos.push({ ...duo, owner: card.name });
+      }
+    }
+  }
   const resonanceHint =
     resonance && !resonanceActive && topCount >= 2 && team.length < teamSize
       ? teamSize - topCount
@@ -281,6 +291,12 @@ function TeamSetup({
           {inspectedCard.battle.skills && <SkillList skills={inspectedCard.battle.skills} />}
         </section>
       )}
+
+      {teamDuos.map((duo) => (
+        <p key={duo.skill.id} className="battle-setup-duo">
+          ✦✦ Duo technique: <strong>{duo.skill.name}</strong> — {duo.skill.description}
+        </p>
+      ))}
 
       {resonance && (resonanceActive || resonanceHint > 0) && (
         <p className={`battle-setup-resonance${resonanceActive ? " is-active" : ""}`}>

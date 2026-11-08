@@ -170,6 +170,13 @@ def _battle_rules():
         "resonances": [
             lore.public_resonance(region_id) for region_id in lore.REGION_RESONANCES
         ],
+        "duos": [
+            {
+                "pair": [cards.get_character(f)["name"] for f in spec["pair"]],
+                **battle.public_skill(skill_id),
+            }
+            for skill_id, spec in battle.DUO_TECHNIQUES.items()
+        ],
         "bonds": {
             "statBonusPercent": _percent(battle.BOND_STAT_BONUS),
             "griefStatus": battle.STATUSES["empower"]["label"],

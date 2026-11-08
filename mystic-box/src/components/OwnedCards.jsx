@@ -304,6 +304,26 @@ function BattleTab({ card }) {
           <SkillList skills={profile.skills} />
         </>
       )}
+
+      {profile.duos?.length > 0 && (
+        <>
+          <h3>✦✦ Duo techniques</h3>
+          <ul className="story-duos">
+            {profile.duos.map((duo) => (
+              <li key={duo.skill.id}>
+                <img src={getCharacterImage(duo.partner)} alt="" loading="lazy" />
+                <div>
+                  <strong>
+                    {duo.skill.name} <span>{duo.skill.cost} ✦</span>
+                  </strong>
+                  <span>{duo.skill.description}</span>
+                  <em>Learned in battle when both are in the team.</em>
+                </div>
+              </li>
+            ))}
+          </ul>
+        </>
+      )}
     </div>
   );
 }

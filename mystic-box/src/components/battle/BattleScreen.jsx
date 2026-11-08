@@ -427,6 +427,9 @@ function BattleScreen({
         case "resonance":
           sfx.status(true);
           break;
+        case "duo":
+          sfx.cast(unitsById[event.target]?.element, false);
+          break;
         case "aether":
           sfx.siphon();
           break;
@@ -505,6 +508,10 @@ function BattleScreen({
         case "bond":
           addFloat(event.actor, "♥", "bond");
           addFloat(event.target, "♥", "bond");
+          break;
+        case "duo":
+          setActingId(event.actor);
+          addFloat(event.target, "✦ Duo", "duo");
           break;
         case "resonance":
           for (const id of event.targets ?? []) addFloat(id, "✦", "resonance");
@@ -1050,12 +1057,17 @@ function BattleScreen({
                 <button
                   key={action.id}
                   type="button"
-                  className={`battle-skill${selectedSkill?.id === action.id ? " is-selected" : ""}`}
+                  className={`battle-skill${selectedSkill?.id === action.id ? " is-selected" : ""}${
+                    action.duo ? " is-duo" : ""
+                  }`}
                   disabled={!action.usable || busy || autoMode}
                   title={action.usable ? action.description : `${action.description} (${action.reason})`}
                   onClick={() => chooseSkill(action)}
                 >
-                  <span className="battle-skill-name">{action.name}</span>
+                  <span className="battle-skill-name">
+                    {action.duo && "✦✦ "}
+                    {action.name}
+                  </span>
                   <span className="battle-skill-meta">
                     {action.cost > 0 ? `${action.cost} ✦` : "Free"} ·{" "}
                     {TARGET_LABELS[action.target]}

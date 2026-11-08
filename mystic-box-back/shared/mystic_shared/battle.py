@@ -21,6 +21,8 @@ Batalha por turnos entre dois times de 3 cartas. Regras principais:
   parceiros vivos ganham Fortalecer por BOND_GRIEF_TURNS turnos.
 - Ressonância de região: um time com as 3 cartas da mesma região
   (`lore.REGION_RESONANCES`) ganha o efeito dela no começo da batalha.
+- Técnicas de dupla (DUO_TECHNIQUES): duas cartas com laço forte no mesmo
+  time aprendem um golpe em conjunto, usável enquanto as duas estão vivas.
 - Rivalidades: rivais (`lore.RIVALRIES`) em times opostos causam
   RIVAL_DAMAGE_MULTIPLIER de dano um ao outro.
 - Provocação: golpes de alvo único precisam mirar quem está provocando.
@@ -612,6 +614,167 @@ SKILLS = {
     },
 }
 
+# ---------------------------------------------------------- duplas ---
+
+# Técnicas de dupla: duas cartas com laço forte no mesmo time aprendem um golpe
+# em conjunto (as duas recebem a habilidade). Só pode ser usado enquanto a
+# parceira estiver viva. Campos do efeito:
+#   hits: [(multiplicador, tipo)] em cada alvo inimigo
+#   pierce: fração da defesa ignorada
+#   foe_status: (status, turnos) em cada alvo atingido
+#   foe_slow: turnos de Lentidão em todos os inimigos
+#   heal: fração da vitalidade máx. curada em cada aliado
+#   cleanse: tira os efeitos negativos dos aliados
+#   team_status: [(status, turnos, fração da vitalidade máx. do escudo ou None)]
+DUO_AETHER_COST = 5
+
+DUO_TECHNIQUES = {
+    "falling_star_volley": {
+        "pair": ("astra.jfif", "lyra.png"),
+        "name": "Falling Star Volley",
+        "description": "Lyra fires, Astra pulls the stars down: magical blow to every foe "
+                       "(1.4x) that Exposes them for 2 turns.",
+        "target": "all_enemies", "role": "attack",
+        "hits": [(1.4, "magical")], "foe_status": ("expose", 2),
+    },
+    "last_laugh": {
+        "pair": ("malachar.jfif", "mortis.jfif"),
+        "name": "Last Laugh of Nocthaven",
+        "description": "The master reads, the jester laughs: magical blow to every foe "
+                       "(1.3x) that Weakens them for 2 turns.",
+        "target": "all_enemies", "role": "attack",
+        "hits": [(1.3, "magical")], "foe_status": ("weaken", 2),
+    },
+    "everfire_rekindled": {
+        "pair": ("ignis.jfif", "drakara.jfif"),
+        "name": "Everfire Rekindled",
+        "description": "Father and daughter breathe the same flame: hybrid blow to every "
+                       "foe (1.4x) that Burns them for 3 turns.",
+        "target": "all_enemies", "role": "attack",
+        "hits": [(1.4, "hybrid")], "foe_status": ("burn", 3),
+    },
+    "frostgate_stand": {
+        "pair": ("boreas.jfif", "glacius.jfif"),
+        "name": "Frostgate Stand",
+        "description": "Knight and squire hold the gate: the team gains a shield worth 25% "
+                       "of max vitality and every foe is Slowed for 2 turns.",
+        "target": "all_allies", "role": "buff",
+        "team_status": [("shield", 3, 0.25)], "foe_slow": 2,
+    },
+    "twin_petal_draw": {
+        "pair": ("kaito.jfif", "hayato.jfif"),
+        "name": "Twin Petal Draw",
+        "description": "Two rivals draw as one: two physical cuts on a foe (1.3x each) "
+                       "that ignore 30% of its bulwark.",
+        "target": "enemy", "role": "attack",
+        "hits": [(1.3, "physical"), (1.3, "physical")], "pierce": 0.3,
+    },
+    "ithrels_mercy": {
+        "pair": ("seraphiel.jfif", "annelise.jfif"),
+        "name": "Ithrel's Mercy",
+        "description": "The shelter opens its doors: heals every ally for 30% of max "
+                       "vitality, cleanses curses and grants Regen for 2 turns.",
+        "target": "all_allies", "role": "heal",
+        "heal": 0.3, "cleanse": True, "team_status": [("regen", 2, None)],
+    },
+    "moonbloom": {
+        "pair": ("elowen.jfif", "verdana.jfif"),
+        "name": "Moonbloom",
+        "description": "The moon flowers open for the child of the forest: heals every ally "
+                       "for 25% of max vitality and grants Regen for 3 turns.",
+        "target": "all_allies", "role": "heal",
+        "heal": 0.25, "team_status": [("regen", 3, None)],
+    },
+    "sky_guard_storm": {
+        "pair": ("vaelora.jfif", "kyrielle.jfif"),
+        "name": "Storm of the Sky Guard",
+        "description": "The empress calls the wind, her captain rides it: magical blow to "
+                       "every foe (1.3x) that Slows them for 2 turns.",
+        "target": "all_enemies", "role": "attack",
+        "hits": [(1.3, "magical")], "foe_status": ("slow", 2),
+    },
+    "gate_and_charge": {
+        "pair": ("aurelius.jfif", "valeria.jfif"),
+        "name": "Gate and Charge",
+        "description": "This time, both: physical blow to every foe (1.2x) and the team is "
+                       "Empowered for 2 turns.",
+        "target": "all_enemies", "role": "attack",
+        "hits": [(1.2, "physical")], "team_status": [("empower", 2, None)],
+    },
+    "family_arsenal": {
+        "pair": ("scarlett.jfif", "brina.jfif"),
+        "name": "Family Arsenal",
+        "description": "The cousins open the secret workshop: physical blow to every foe "
+                       "(1.3x) that Burns them for 2 turns.",
+        "target": "all_enemies", "role": "attack",
+        "hits": [(1.3, "physical")], "foe_status": ("burn", 2),
+    },
+}
+
+
+def _duo_partner(state, actor, skill_id):
+    """A parceira da técnica no time de `actor` (viva ou não), ou None."""
+    pair = DUO_TECHNIQUES[skill_id]["pair"]
+    for unit in state["units"]:
+        if (unit["side"] == actor["side"] and unit["id"] != actor["id"]
+                and unit["fileName"] in pair):
+            return unit
+    return None
+
+
+def _make_duo_effect(skill_id):
+    spec = DUO_TECHNIQUES[skill_id]
+
+    def effect(state, actor, targets, rng, events):
+        partner = _duo_partner(state, actor, skill_id)
+        events.append({"type": "duo", "actor": actor["id"], "target": partner["id"],
+                       "skillName": spec["name"]})
+        if spec["target"] in ("enemy", "all_enemies"):
+            for target in targets:
+                for multiplier, kind in spec.get("hits", []):
+                    if not _alive(target):
+                        break
+                    _deal_damage(actor, target, multiplier, kind, rng, events,
+                                 pierce=spec.get("pierce", 0.0))
+                if spec.get("foe_status"):
+                    _apply_status(state, target, *spec["foe_status"], events)
+        for ally in _team(state, actor["side"]):
+            if spec.get("heal"):
+                _heal(ally, ally["maxHp"] * spec["heal"], events, source=actor)
+            if spec.get("cleanse"):
+                _cleanse(ally, events)
+            for status, turns, shield in spec.get("team_status", []):
+                value = round(ally["maxHp"] * shield) if shield else None
+                _apply_status(state, ally, status, turns, events, value)
+        if spec.get("foe_slow"):
+            for foe in _team(state, _opponent(actor["side"])):
+                _apply_status(state, foe, "slow", spec["foe_slow"], events)
+
+    return effect
+
+
+for _duo_id, _duo in DUO_TECHNIQUES.items():
+    SKILLS[_duo_id] = {
+        "name": _duo["name"], "cost": DUO_AETHER_COST, "target": _duo["target"],
+        "role": _duo["role"], "description": _duo["description"],
+        "effect": _make_duo_effect(_duo_id), "duo": True,
+    }
+
+
+def duo_techniques_for(file_name):
+    """Ids das técnicas de dupla que a carta conhece."""
+    return [skill_id for skill_id, spec in DUO_TECHNIQUES.items() if file_name in spec["pair"]]
+
+
+def public_duos(character):
+    """Técnicas de dupla da carta, com a parceira (para a coleção e o Grimório)."""
+    duos = []
+    for skill_id in duo_techniques_for(character["file_name"]):
+        partner = next(f for f in DUO_TECHNIQUES[skill_id]["pair"] if f != character["file_name"])
+        duos.append({"partner": partner, "skill": public_skill(skill_id)})
+    return duos
+
+
 ARCHETYPE_SKILLS = {
     "vanguard": ("bastion_call", "tremor_slam", "unbreakable_oath"),
     "duelist": ("rending_flurry", "execution_arc", "thousand_cuts"),
@@ -653,6 +816,7 @@ def public_skill(skill_id):
         "description": skill["description"],
         "cost": skill["cost"],
         "target": skill["target"],
+        **({"duo": True} if skill.get("duo") else {}),
     }
 
 
@@ -710,6 +874,10 @@ def _link_bonds(state, events):
             other["bonds"].append(unit["id"])
             events.append({"type": "bond", "actor": unit["id"], "target": other["id"],
                            "line": lines[0], "reply": lines[1]})
+    for unit in state["units"]:
+        for skill_id in duo_techniques_for(unit["fileName"]):
+            if _duo_partner(state, unit, skill_id) and skill_id not in unit["skills"]:
+                unit["skills"].append(skill_id)
     for unit in state["units"]:
         if not unit["bonds"]:
             continue
@@ -1086,6 +1254,10 @@ def _resolve_targets(state, actor, skill_id, target_id):
 def skill_unavailable_reason(state, actor, skill_id):
     if skill_id not in actor["skills"]:
         return "This card does not know this skill."
+    if SKILLS[skill_id].get("duo"):
+        partner = _duo_partner(state, actor, skill_id)
+        if not partner or not _alive(partner):
+            return "Your partner has fallen."
     if state["aether"][actor["side"]] < SKILLS[skill_id]["cost"]:
         return "Not enough Aether."
     if not valid_targets(state, actor, skill_id):
@@ -1139,6 +1311,10 @@ def choose_action(state, actor, rng):
         return "sanctuary", None
     if "mending_light" in heals and wounded:
         return "mending_light", min(wounded, key=_hp_ratio)["id"]
+
+    duo_support = [s for s in usable if SKILLS[s].get("duo") and SKILLS[s]["role"] != "attack"]
+    if duo_support and any(_hp_ratio(u) < 0.6 for u in allies):
+        return duo_support[0], None
 
     if "bastion_call" in usable and not _has(actor, "taunt") and rng.random() < 0.7:
         return "bastion_call", None

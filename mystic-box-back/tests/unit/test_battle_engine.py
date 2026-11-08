@@ -556,3 +556,66 @@ def test_mixed_team_has_no_resonance():
     state, events = new_battle()
     assert state["resonance"] == {"player": None, "enemy": None}
     assert not [e for e in events if e["type"] == "resonance"]
+
+
+# ---------- técnicas de dupla ----------
+
+
+def test_duo_technique_needs_both_partners_alive():
+    state, _ = battle.create_battle(
+        "battle-1", team("astra.jfif", "lyra.png", "rowan.jfif"), 1, "novice",
+        random.Random(1), enemy_team=team(*FOES),
+    )
+    astra, lyra, rowan = unit(state, "p0"), unit(state, "p1"), unit(state, "p2")
+    assert "falling_star_volley" in astra["skills"]
+    assert "falling_star_volley" in lyra["skills"]
+    assert "falling_star_volley" not in rowan["skills"]
+
+    state["aether"]["player"] = battle.DUO_AETHER_COST
+    assert battle.skill_unavailable_reason(state, astra, "falling_star_volley") is None
+    lyra["hp"] = 0
+    assert battle.skill_unavailable_reason(state, astra, "falling_star_volley") == (
+        "Your partner has fallen."
+    )
+
+
+def test_duo_technique_strikes_every_foe_together():
+    state, _ = battle.create_battle(
+        "battle-1", team("astra.jfif", "lyra.png", "rowan.jfif"), 1, "novice",
+        random.Random(1), enemy_team=team(*FOES),
+    )
+    astra = unit(state, "p0")
+    alive_foes = {u["id"] for u in state["units"] if u["side"] == "enemy" and u["hp"] > 0}
+    state["aether"]["player"] = battle.DUO_AETHER_COST
+    state["acting"] = "p0"
+    events = []
+    battle._perform(state, astra, "falling_star_volley", None, FixedRng(), events)
+
+    duo = next(e for e in events if e["type"] == "duo")
+    assert (duo["actor"], duo["target"]) == ("p0", "p1")
+    hit = {e["target"] for e in events if e["type"] == "damage"}
+    assert hit == alive_foes
+    assert state["aether"]["player"] == 0
+
+
+def test_duo_technique_is_not_learned_without_the_partner():
+    state, _ = new_battle(player=("astra.jfif", "tobin.jfif", "rowan.jfif"))
+    assert "falling_star_volley" not in unit(state, "p0")["skills"]
+
+
+def test_every_duo_is_a_bonded_pair():
+    from mystic_shared.lore import bond_between
+
+    for skill_id, spec in battle.DUO_TECHNIQUES.items():
+        assert bond_between(*spec["pair"]), skill_id
+        assert battle.SKILLS[skill_id]["duo"] is True
+
+
+def test_random_battles_with_duos_never_break():
+    for seed in range(20):
+        state, _ = battle.create_battle(
+            "battle-1", team("ignis.jfif", "drakara.jfif", "pyralis.jfif"), 5, "adept",
+            random.Random(seed),
+            enemy_team=team("seraphiel.jfif", "annelise.jfif", "elowen.jfif"),
+        )
+        play_until_end(state, seed=seed)

@@ -735,6 +735,30 @@ function EffectsPage({ battle }) {
               </ul>
             </>
           )}
+          {battle.duos?.length > 0 && (
+            <>
+              <h3 className="gr-heading">✦✦ Duo techniques</h3>
+              <p className="gr-lead">
+                Some bonded pairs share a technique. With both in the team, each of them can use
+                it while the other is still standing.
+              </p>
+              <ul className="gr-effects is-buff">
+                {battle.duos.map((duo) => (
+                  <li key={duo.id}>
+                    <span className="gr-effect-icon" aria-hidden="true">
+                      ✦✦
+                    </span>
+                    <span>
+                      <b>
+                        {duo.name} ({duo.pair.join(" & ")}) · {duo.cost} ✦
+                      </b>
+                      <span>{duo.description}</span>
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            </>
+          )}
           <h3 className="gr-heading">⚔ Rivalries</h3>
           <p className="gr-lead">
             Some champions cannot stand each other. When rivals meet on opposite sides, they

@@ -7,7 +7,7 @@ from boto3.dynamodb.conditions import Key
 from botocore.exceptions import ClientError
 from mystic_shared.ascension import public_ascension, read_ascensions
 from mystic_shared.cards import get_character, listing_price_range, max_listing_quantity
-from mystic_shared.battle import ascension_unlocks_skill, public_skills
+from mystic_shared.battle import ascension_unlocks_skill, public_duos, public_skills
 from mystic_shared.lore import public_lore
 from mystic_shared.stats import public_battle_profile
 
@@ -178,6 +178,8 @@ def battle_profile(character, ascension=0):
     return {
         **public_battle_profile(character, ascension=ascension),
         "skills": public_skills(character, ascension),
+        # Técnicas de dupla: só aparecem na batalha com a parceira no time.
+        "duos": public_duos(character),
     }
 
 
