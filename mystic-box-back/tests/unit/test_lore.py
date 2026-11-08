@@ -142,3 +142,21 @@ def test_unlocked_secret_title_only_on_the_unlocking_ascension():
     assert unlocked_secret_title(ignis, level - 1, level) == SECRETS["ignis.jfif"][0]
     assert unlocked_secret_title(ignis, level, level + 1) is None
     assert unlocked_secret_title(None, 0, 1) is None
+
+
+def test_rivalries_point_to_real_characters():
+    from mystic_shared.lore import RIVALRIES
+
+    pairs = set()
+    for a, b, a_line, b_line in RIVALRIES:
+        assert get_character(a) and get_character(b) and a != b, (a, b)
+        assert a_line.strip() and b_line.strip()
+        assert frozenset((a, b)) not in pairs
+        pairs.add(frozenset((a, b)))
+
+
+def test_public_lore_lists_rivals_with_their_lines():
+    rivals = public_lore(get_character("brannoc.jfif"))["rivals"]
+    gorvane = next(r for r in rivals if r["file_name"] == "gorvane.jfif")
+    assert gorvane["name"] == "Gorvane"
+    assert gorvane["line"].startswith("Not today, father")

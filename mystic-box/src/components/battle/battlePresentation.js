@@ -96,6 +96,7 @@ export function describeEvent(event, names) {
         event.effectiveness === "strong" && "super effective",
         event.effectiveness === "weak" && "resisted",
         event.absorbed > 0 && `${event.absorbed} absorbed`,
+        event.rival && "rivalry",
       ].filter(Boolean);
       const verb = event.chain ? "is struck by arcing lightning for" : "takes";
       return {
@@ -118,6 +119,11 @@ export function describeEvent(event, names) {
       return {
         text: `♥ ${name(event.actor)} & ${name(event.target)}: “${event.line}” — “${event.reply}”`,
         kind: "bond",
+      };
+    case "rivalry":
+      return {
+        text: `⚔ ${name(event.actor)} vs ${name(event.target)}: “${event.line}” — “${event.reply}”`,
+        kind: "rivalry",
       };
     case "bondGrief":
       return { text: `♥ ${name(event.target)} fights on for ${name(event.source)}!`, kind: "bond" };
@@ -150,6 +156,7 @@ export function eventDelay(event) {
     case "heal":
       return event.amount > 0 ? 380 : 0;
     case "bond":
+    case "rivalry":
       return 2200;
     case "bondGrief":
       return 700;

@@ -1569,3 +1569,34 @@
   letter-spacing: 1px;
   text-shadow: 0 0 6px rgba(255, 170, 80, 0.9);
 }
+
+/* Rivalidades */
+
+.battle-log-entry.is-rivalry {
+  color: #ffb08a;
+  font-style: italic;
+}
+
+.battle-float.is-rivalry {
+  top: 30%;
+  color: #ff9a6b;
+  font-size: 16px;
+  text-shadow:
+    0 0 10px rgba(255, 110, 60, 0.9),
+    0 2px 6px rgba(0, 0, 0, 0.9);
+}
+
+.battle-unit-rival {
+  position: absolute;
+  top: 20px;
+  right: 2px;
+  display: grid;
+  place-items: center;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: rgba(60, 20, 0, 0.85);
+  color: #ff9a6b;
+  font-size: 9px;
+  box-shadow: 0 0 6px rgba(255, 110, 60, 0.7);
+}

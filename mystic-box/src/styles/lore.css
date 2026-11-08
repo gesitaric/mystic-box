@@ -645,3 +645,11 @@
   font-size: 12px;
   font-style: italic;
 }
+
+.story-rivals h3 {
+  color: #ffb08a;
+}
+
+.story-rivals span {
+  font-style: italic;
+}

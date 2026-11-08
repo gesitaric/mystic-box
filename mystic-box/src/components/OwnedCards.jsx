@@ -357,6 +357,7 @@ function StoryModal({ card, onClose }) {
 function StoryTab({ card }) {
   const lore = card.lore;
   const bonds = lore.bonds ?? [];
+  const rivals = lore.rivals ?? [];
   const secret = lore.secret;
 
   return (
@@ -404,6 +405,23 @@ function StoryTab({ card }) {
                     {bond.owned === false && <em className="story-bond-missing">Not summoned yet</em>}
                   </strong>
                   <span>{bond.relation}</span>
+                </div>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
+
+      {rivals.length > 0 && (
+        <section className="story-bonds story-rivals" aria-label="Rivals">
+          <h3>⚔ Rivals</h3>
+          <ul>
+            {rivals.map((rival) => (
+              <li key={rival.file_name} data-rarity={rival.rarity}>
+                <img src={getCharacterImage(rival.file_name)} alt="" loading="lazy" />
+                <div>
+                  <strong>{rival.name}</strong>
+                  <span>“{rival.line}”</span>
                 </div>
               </li>
             ))}

@@ -477,3 +477,43 @@ def test_public_state_shows_bonds_from_each_side():
     assert next(u for u in view["units"] if u["id"] == "p0")["bonds"] == ["p1"]
     bond = next(e for e in battle.view_events(events, "enemy") if e["type"] == "bond")
     assert (bond["actor"], bond["target"]) == ("p0", "p1")
+
+
+# ---------- rivalidades ----------
+
+
+def test_rivals_on_opposite_sides_face_off_and_hit_harder():
+    from mystic_shared.lore import rivalry_between
+
+    state, events = battle.create_battle(
+        "battle-1", team("gorvane.jfif", "tobin.jfif", "kael.jfif"), 1, "novice",
+        random.Random(1), enemy_team=team("brannoc.jfif", "corvus.jfif", "rowan.jfif"),
+    )
+    assert unit(state, "p0")["rivals"] == ["e0"]
+    assert unit(state, "e0")["rivals"] == ["p0"]
+    assert unit(state, "p1")["rivals"] == []
+    clash = next(e for e in events if e["type"] == "rivalry")
+    assert (clash["actor"], clash["target"]) == ("p0", "e0")
+    assert (clash["line"], clash["reply"]) == rivalry_between("gorvane.jfif", "brannoc.jfif")
+
+    gorvane, brannoc, corvus = unit(state, "p0"), unit(state, "e0"), unit(state, "e1")
+    hits = []
+    battle._deal_damage(gorvane, brannoc, 1.0, "physical", FixedRng(), hits)
+    rival_hit = hits[0]
+    assert rival_hit["rival"] is True
+    plain = []
+    gorvane["rivals"] = []
+    brannoc["hp"] = brannoc["maxHp"]
+    battle._deal_damage(gorvane, brannoc, 1.0, "physical", FixedRng(), plain)
+    assert "rival" not in plain[0]
+    assert rival_hit["amount"] > plain[0]["amount"]
+    assert corvus["rivals"] == []
+
+
+def test_rivals_on_the_same_team_are_not_rivals_in_battle():
+    state, events = battle.create_battle(
+        "battle-1", team("gorvane.jfif", "brannoc.jfif", "kael.jfif"), 1, "novice",
+        random.Random(1), enemy_team=team(*FOES),
+    )
+    assert unit(state, "p0")["rivals"] == []
+    assert not [e for e in events if e["type"] == "rivalry"]

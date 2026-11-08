@@ -104,6 +104,7 @@ function BattleUnit({
   inspected,
   floats,
   bondNames,
+  rivalNames,
   onClick,
 }) {
   const element = ELEMENT_STYLE[unit.element];
@@ -153,6 +154,11 @@ function BattleUnit({
         {bondNames.length > 0 && (
           <span className="battle-unit-bond" title={`Bonded with ${bondNames.join(" and ")}`}>
             ♥
+          </span>
+        )}
+        {rivalNames.length > 0 && (
+          <span className="battle-unit-rival" title={`Rival of ${rivalNames.join(" and ")}`}>
+            ⚔
           </span>
         )}
         <span className="battle-unit-level">Lv {unit.level}</span>
@@ -405,6 +411,9 @@ function BattleScreen({
         case "bondGrief":
           sfx.status(true);
           break;
+        case "rivalry":
+          sfx.status(false);
+          break;
         case "aether":
           sfx.siphon();
           break;
@@ -453,7 +462,7 @@ function BattleScreen({
           addFloat(
             event.target,
             event.amount > 0
-              ? `-${event.amount}${event.critical ? "!" : ""}`
+              ? `${event.rival ? "⚔ " : ""}-${event.amount}${event.critical ? "!" : ""}`
               : `🛡 ${event.absorbed}`,
             event.amount > 0 ? "damage" : "shield"
           );
@@ -483,6 +492,10 @@ function BattleScreen({
         case "bond":
           addFloat(event.actor, "♥", "bond");
           addFloat(event.target, "♥", "bond");
+          break;
+        case "rivalry":
+          addFloat(event.actor, "⚔", "rivalry");
+          addFloat(event.target, "⚔", "rivalry");
           break;
         case "bondGrief":
           addFloat(event.target, "♥ Resolve", "bond");
@@ -918,6 +931,9 @@ function BattleScreen({
         inspected={inspectedId === unit.id}
         floats={floats.filter((float) => float.unitId === unit.id)}
         bondNames={(unit.bonds ?? [])
+          .map((id) => units.find((other) => other.id === id)?.name)
+          .filter(Boolean)}
+        rivalNames={(unit.rivals ?? [])
           .map((id) => units.find((other) => other.id === id)?.name)
           .filter(Boolean)}
         onClick={() => {

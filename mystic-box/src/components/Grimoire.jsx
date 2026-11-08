@@ -711,6 +711,12 @@ function EffectsPage({ battle }) {
             resolve. If one of them falls, the others gain {battle.bonds.griefStatus} for{" "}
             {battle.bonds.griefTurns} turns. Read the bonds in each card&apos;s story.
           </p>
+          <h3 className="gr-heading">⚔ Rivalries</h3>
+          <p className="gr-lead">
+            Some champions cannot stand each other. When rivals meet on opposite sides, they
+            deal +{battle.bonds.rivalDamagePercent}% damage to one another. The rivals are listed in
+            each card&apos;s story.
+          </p>
         </section>
       )}
     </>

@@ -6,6 +6,7 @@ Fonte única da história do jogo: o frontend só exibe o que a API devolve.
 - `STORIES`: de onde cada carta vem (`region`), o título e a história em
   parágrafos. Toda carta de `cards.py` precisa estar aqui (teste `test_lore.py`).
 - `BONDS`: laços entre duas personagens, com o que cada uma pensa da outra.
+- `RIVALRIES`: rivalidades, com o que cada uma diz ao encontrar a outra em batalha.
   `public_lore` devolve os laços de uma carta já com o nome da outra.
 """
 
@@ -1346,6 +1347,59 @@ BONDS = [
 ]
 
 
+# Rivalidades: quem não pode ver o outro do lado oposto de uma batalha. Cada
+# entrada: (a, b, o que a diz ao encontrar b, o que b responde).
+RIVALRIES = [
+    ("malachar.jfif", "zarathor.jfif",
+     "You would open the Box all the way? Then you will have to go through me.",
+     "The coward who opened it and then wept. Step aside, old man."),
+    ("zarathor.jfif", "morwen.jfif",
+     "You came, Morwen. I hoped you would.",
+     "For Edric. Whatever you did to him."),
+    ("vesper.jfif", "zarathor.jfif",
+     "The contract is signed. So is my own name, in your shadow.",
+     "My own conscience, come to collect. I have been waiting."),
+    ("uriel.jfif", "malachar.jfif",
+     "I gave you the key. Let me carry the rest of it.",
+     "Keep your pity, angel. It burns worse than the Hollow."),
+    ("ignis.jfif", "drakara.jfif",
+     "Not like this, little flame. Not against you.",
+     "You carry my family's fire, knight. Tell me why, or burn."),
+    ("gorvane.jfif", "brannoc.jfif",
+     "Show me you can do it, boy. The fifth time will not wait.",
+     "Not today, father. I am not ready to keep that promise."),
+    ("lyra.png", "faelyn.jfif",
+     "I wrote you a sky full of stars, you know.",
+     "You left without saying goodbye. Draw your bow."),
+    ("nyra.jfif", "corvus.jfif",
+     "Slow again tonight, enforcer?",
+     "Lower your blade. Please. Just this once."),
+    ("aurelius.jfif", "valeria.jfif",
+     "Still riding off alone, sister?",
+     "Still hiding behind gates, brother?"),
+    ("kaito.jfif", "hayato.jfif",
+     "Our hundredth duel.",
+     "And the first one either of us can lose."),
+    ("maren.jfif", "ophira.jfif",
+     "You are holding that tower up alone. Let me help or let me win.",
+     "You broke it. Do not pretend you came to fix it."),
+    ("scarlett.jfif", "dorian.jfif",
+     "Tenth try, Dorian?",
+     "Ten is a nice round number to finally catch you."),
+    ("seraphiel.jfif", "uriel.jfif",
+     "You have been searching for this light. It is in me.",
+     "I know. I was hoping you would say it first."),
+    ("eldric.png", "grizelda.jfif",
+     "The serpent told me your name, Warden.",
+     "Then it told you why I walked away. Mind your runes, boy."),
+    ("vexa.jfif", "lucan.jfif",
+     "Fifty gold says you lose.",
+     "Make it a hundred. I will pay you in IOUs."),
+    ("celestine.png", "odette.jfif",
+     "Give her back. She was the goddess of my temple.",
+     "She chose to leave. I only listened."),
+]
+
 # Elemento e boato ("whisper") de cada região: o que se ouve por lá hoje.
 REGION_FLAVOR = {
     "riftheart": (None, "On quiet nights the Box hums a lullaby. Grizelda says she taught it to the Wardens."),
@@ -1886,6 +1940,7 @@ def public_lore(character, ascension=0, owned=None):
         "story": list(lore["story"]),
         "region": {"id": region["id"], "name": region["name"], "element": region["element"]},
         "bonds": _bonds_of(file_name, owned),
+        "rivals": _rivals_of(file_name),
         "secret": {
             "title": secret_title,
             "unlockAscension": SECRET_UNLOCK_ASCENSION,
@@ -1947,6 +2002,28 @@ def bond_between(a, b):
         if (x, y) == (b, a):
             return y_about_x, x_about_y
     return None
+
+
+def rivalry_between(a, b):
+    """O que `a` diz a `b` e o que `b` responde numa rivalidade, ou None."""
+    for x, y, x_line, y_line in RIVALRIES:
+        if (x, y) == (a, b):
+            return x_line, y_line
+        if (x, y) == (b, a):
+            return y_line, x_line
+    return None
+
+
+def _rivals_of(file_name):
+    rivals = []
+    for a, b, a_line, b_line in RIVALRIES:
+        if file_name not in (a, b):
+            continue
+        other, line = (b, a_line) if a == file_name else (a, b_line)
+        character = get_character(other)
+        rivals.append({"name": character["name"], "file_name": other,
+                       "rarity": character["rarity"], "line": line})
+    return rivals
 
 
 def _bonds_of(file_name, owned=None):

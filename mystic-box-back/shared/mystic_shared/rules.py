@@ -171,6 +171,7 @@ def _battle_rules():
             "statBonusPercent": _percent(battle.BOND_STAT_BONUS),
             "griefStatus": battle.STATUSES["empower"]["label"],
             "griefTurns": battle.BOND_GRIEF_TURNS,
+            "rivalDamagePercent": _percent(battle.RIVAL_DAMAGE_MULTIPLIER - 1),
         },
         "rewards": {
             "lossExperiencePercent": _percent(battle.LOSS_EXPERIENCE_RATIO),

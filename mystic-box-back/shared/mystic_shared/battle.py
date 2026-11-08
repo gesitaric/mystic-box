@@ -19,6 +19,8 @@ Batalha por turnos entre dois times de 3 cartas. Regras principais:
 - Laços: cartas com laço (`lore.BONDS`) no mesmo time ganham
   BOND_STAT_BONUS nos atributos grandes por parceiro; quando uma cai, os
   parceiros vivos ganham Fortalecer por BOND_GRIEF_TURNS turnos.
+- Rivalidades: rivais (`lore.RIVALRIES`) em times opostos causam
+  RIVAL_DAMAGE_MULTIPLIER de dano um ao outro.
 - Provocação: golpes de alvo único precisam mirar quem está provocando.
 - Duelo online (mode "pvp"): as mesmas regras, mas os dois lados são
   jogadores. O lado "player" é quem desafiou e o "enemy" quem aceitou; cada
@@ -36,7 +38,7 @@ import random
 
 from .ascension import MAX_ASCENSION, bonus_skills, clamp_ascension
 from .cards import CHARACTERS
-from .lore import bond_between
+from .lore import bond_between, rivalry_between
 from .progression import MAX_LEVEL
 from .stats import ARCHETYPES, ELEMENTS, SCALED_STATS, battle_stats, element_multiplier
 
@@ -71,6 +73,9 @@ COMPANION_TURNS = 3
 # Fortalecer por alguns turnos.
 BOND_STAT_BONUS = 0.06
 BOND_GRIEF_TURNS = 2
+# Rivalidades (RIVALRIES de lore.py) em times opostos: cada rival causa mais
+# dano ao outro.
+RIVAL_DAMAGE_MULTIPLIER = 1.2
 
 # Experiência de uma derrota: fração da experiência de vitória + bônus por
 # inimigo derrotado. Desistir não dá experiência.
@@ -274,6 +279,9 @@ def _deal_damage(attacker, defender, multiplier, kind, rng, events, pierce=0.0, 
         damage *= EXPOSE_MULTIPLIER
     if _has(defender, "guard"):
         damage *= GUARD_MULTIPLIER
+    rival = defender["id"] in attacker.get("rivals", ())
+    if rival:
+        damage *= RIVAL_DAMAGE_MULTIPLIER
 
     damage *= rng.uniform(1 - DAMAGE_VARIANCE, 1 + DAMAGE_VARIANCE)
     critical = rng.random() * 100 < stats_a["fate"]
@@ -291,7 +299,8 @@ def _deal_damage(attacker, defender, multiplier, kind, rng, events, pierce=0.0, 
         max(1, round(damage)),
         events,
         {"type": "damage", "source": attacker["id"], "critical": critical,
-         "effectiveness": effectiveness, "kind": kind, **(extra or {})},
+         "effectiveness": effectiveness, "kind": kind,
+         **({"rival": True} if rival else {}), **(extra or {})},
     )
 
 
@@ -671,12 +680,20 @@ def build_unit(character, side, index, level, power=1.0, ascension=0):
 
 
 def _link_bonds(state, events):
-    """Liga as cartas de um mesmo time que têm laço e aplica o bônus de atributos."""
+    """Liga laços (mesmo time, bônus de atributos) e rivalidades (times opostos)."""
     for unit in state["units"]:
         unit["bonds"] = []
+        unit["rivals"] = []
     for i, unit in enumerate(state["units"]):
         for other in state["units"][i + 1:]:
             if other["side"] != unit["side"]:
+                lines = rivalry_between(unit["fileName"], other["fileName"])
+                if lines:
+                    unit["rivals"].append(other["id"])
+                    other["rivals"].append(unit["id"])
+                    events.append({"type": "rivalry", "actor": unit["id"],
+                                   "target": other["id"], "line": lines[0],
+                                   "reply": lines[1]})
                 continue
             lines = bond_between(unit["fileName"], other["fileName"])
             if not lines:
@@ -1265,6 +1282,7 @@ def _public_unit(unit, viewer="player"):
         "level": unit["level"],
         "ascension": unit.get("ascension", 0),
         "bonds": [view_id(unit_id, viewer) for unit_id in unit.get("bonds", [])],
+        "rivals": [view_id(unit_id, viewer) for unit_id in unit.get("rivals", [])],
         "stats": unit["stats"],
         "maxHp": unit["maxHp"],
         "hp": unit["hp"],
