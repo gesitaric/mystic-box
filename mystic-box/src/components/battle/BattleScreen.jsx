@@ -80,6 +80,16 @@ function freshView(view) {
   };
 }
 
+// Ressonância de região do time (calculada no servidor).
+function ResonanceChip({ resonance, side }) {
+  if (!resonance) return null;
+  return (
+    <p className={`battle-resonance is-${side}`} title={resonance.description}>
+      ✦ {resonance.regionName}: <strong>{resonance.name}</strong>
+    </p>
+  );
+}
+
 function AetherMeter({ label, value, max, side }) {
   return (
     <div className={`battle-aether is-${side}`} aria-label={`${label}: ${value} of ${max} Aether`}>
@@ -414,6 +424,9 @@ function BattleScreen({
         case "rivalry":
           sfx.status(false);
           break;
+        case "resonance":
+          sfx.status(true);
+          break;
         case "aether":
           sfx.siphon();
           break;
@@ -492,6 +505,9 @@ function BattleScreen({
         case "bond":
           addFloat(event.actor, "♥", "bond");
           addFloat(event.target, "♥", "bond");
+          break;
+        case "resonance":
+          for (const id of event.targets ?? []) addFloat(id, "✦", "resonance");
           break;
         case "rivalry":
           addFloat(event.actor, "⚔", "rivalry");
@@ -977,6 +993,7 @@ function BattleScreen({
         max={view.maxAether}
         side="enemy"
       />
+      <ResonanceChip resonance={view.resonance?.enemy} side="enemy" />
       <div className="battle-row is-enemy">{enemies.map(renderUnit)}</div>
 
       <div className="battle-center">
@@ -1005,6 +1022,7 @@ function BattleScreen({
       </div>
 
       <div className="battle-row is-player">{allies.map(renderUnit)}</div>
+      <ResonanceChip resonance={view.resonance?.player} side="player" />
       <AetherMeter label="Your Aether" value={aether.player} max={view.maxAether} side="player" />
 
       <div className="battle-actions">

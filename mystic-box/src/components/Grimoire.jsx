@@ -711,6 +711,30 @@ function EffectsPage({ battle }) {
             resolve. If one of them falls, the others gain {battle.bonds.griefStatus} for{" "}
             {battle.bonds.griefTurns} turns. Read the bonds in each card&apos;s story.
           </p>
+          {battle.resonances?.length > 0 && (
+            <>
+              <h3 className="gr-heading">✦ Region resonance</h3>
+              <p className="gr-lead">
+                A team of three champions from the same land awakens that land&apos;s power at
+                the start of the battle.
+              </p>
+              <ul className="gr-effects is-buff">
+                {battle.resonances.map((r) => (
+                  <li key={r.region}>
+                    <span className="gr-effect-icon" aria-hidden="true">
+                      ✦
+                    </span>
+                    <span>
+                      <b>
+                        {r.regionName}: {r.name}
+                      </b>
+                      <span>{r.description}</span>
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            </>
+          )}
           <h3 className="gr-heading">⚔ Rivalries</h3>
           <p className="gr-lead">
             Some champions cannot stand each other. When rivals meet on opposite sides, they

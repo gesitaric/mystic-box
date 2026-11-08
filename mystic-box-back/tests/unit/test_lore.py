@@ -55,7 +55,9 @@ def test_public_lore_shows_both_sides_of_a_bond():
     malachar = public_lore(get_character("malachar.jfif"))
     mortis = public_lore(get_character("mortis.jfif"))
 
-    assert malachar["region"] == {"id": "nocthaven", "name": "Nocthaven", "element": "umbra"}
+    assert malachar["region"]["id"] == "nocthaven"
+    assert malachar["region"]["element"] == "umbra"
+    assert malachar["region"]["resonance"]["name"] == "Grave Chill"
     to_mortis = next(b for b in malachar["bonds"] if b["file_name"] == "mortis.jfif")
     to_malachar = next(b for b in mortis["bonds"] if b["file_name"] == "malachar.jfif")
     assert to_mortis["name"] == "Mortis"
@@ -160,3 +162,14 @@ def test_public_lore_lists_rivals_with_their_lines():
     gorvane = next(r for r in rivals if r["file_name"] == "gorvane.jfif")
     assert gorvane["name"] == "Gorvane"
     assert gorvane["line"].startswith("Not today, father")
+
+
+def test_every_region_with_a_full_team_has_a_resonance():
+    from mystic_shared.lore import REGION_RESONANCES
+
+    world = public_world()
+    for region in world["regions"]:
+        if len(region["characters"]) >= 3:
+            assert region["id"] in REGION_RESONANCES, region["id"]
+            assert region["resonance"]["description"]
+    assert set(REGION_RESONANCES) <= REGION_IDS

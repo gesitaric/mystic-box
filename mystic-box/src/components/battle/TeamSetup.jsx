@@ -125,6 +125,23 @@ function TeamSetup({
 
   const inspectedCard = cards.find((card) => card.file_name === inspected);
   const ready = team.length === teamSize && !starting && canStart;
+  // Ressonância de região: a regra e o texto vêm da API (`lore.region.resonance`).
+  const teamRegions = team
+    .map((name) => cards.find((card) => card.file_name === name)?.lore?.region)
+    .filter(Boolean);
+  const regionCounts = {};
+  for (const region of teamRegions) {
+    regionCounts[region.id] = (regionCounts[region.id] ?? 0) + 1;
+  }
+  const [topRegionId, topCount = 0] =
+    Object.entries(regionCounts).sort((a, b) => b[1] - a[1])[0] ?? [];
+  const topRegion = teamRegions.find((region) => region.id === topRegionId);
+  const resonance = topRegion?.resonance ?? null;
+  const resonanceActive = resonance && topCount === teamSize;
+  const resonanceHint =
+    resonance && !resonanceActive && topCount >= 2 && team.length < teamSize
+      ? teamSize - topCount
+      : 0;
   const showDifficulty = Boolean(setup?.difficulties);
 
   return (
@@ -263,6 +280,15 @@ function TeamSetup({
           )}
           {inspectedCard.battle.skills && <SkillList skills={inspectedCard.battle.skills} />}
         </section>
+      )}
+
+      {resonance && (resonanceActive || resonanceHint > 0) && (
+        <p className={`battle-setup-resonance${resonanceActive ? " is-active" : ""}`}>
+          ✦ {resonance.regionName}: <strong>{resonance.name}</strong> —{" "}
+          {resonanceActive
+            ? resonance.description
+            : `add ${resonanceHint} more from ${resonance.regionName} to awaken it.`}
+        </p>
       )}
 
       <div className="battle-setup-actions">

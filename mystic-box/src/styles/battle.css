@@ -1600,3 +1600,46 @@
   font-size: 9px;
   box-shadow: 0 0 6px rgba(255, 110, 60, 0.7);
 }
+
+/* Ressonância de região */
+
+.battle-resonance {
+  margin: 2px auto;
+  color: #c9f0ff;
+  font-size: 11px;
+  letter-spacing: 1px;
+  text-align: center;
+  text-shadow: 0 0 8px rgba(120, 220, 255, 0.6);
+}
+
+.battle-resonance strong {
+  color: #fff3d6;
+}
+
+.battle-log-entry.is-resonance {
+  color: #a8e6ff;
+}
+
+.battle-float.is-resonance {
+  top: 40%;
+  color: #9fe6ff;
+  text-shadow: 0 0 10px rgba(120, 220, 255, 0.9);
+}
+
+.battle-setup-resonance {
+  margin: 10px 0 0;
+  padding: 8px 12px;
+  border: 1px dashed rgba(159, 230, 255, 0.4);
+  border-radius: 10px;
+  color: #a8c8d8;
+  font-size: 13px;
+  text-align: center;
+}
+
+.battle-setup-resonance.is-active {
+  border-style: solid;
+  border-color: rgba(159, 230, 255, 0.8);
+  background: rgba(20, 60, 90, 0.4);
+  color: #e0f7ff;
+  box-shadow: 0 0 14px rgba(120, 220, 255, 0.3);
+}

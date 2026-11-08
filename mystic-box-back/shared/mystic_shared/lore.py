@@ -1400,6 +1400,80 @@ RIVALRIES = [
      "She chose to leave. I only listened."),
 ]
 
+# Ressonância de região: um time com as 3 cartas da mesma região ganha o efeito
+# dela no começo da batalha (aplicado em battle.py). Efeitos:
+#   ("team_status", status, turnos[, fração da vitalidade máx. para o escudo])
+#   ("foe_status", status, turnos)
+#   ("stat", atributo, fração extra)
+#   ("aether", quantidade)
+REGION_RESONANCES = {
+    "hrimvald": {
+        "name": "Frostgate Howl",
+        "description": "The wind-wolves howl: every foe starts Slowed for 2 turns.",
+        "effects": [("foe_status", "slow", 2)],
+    },
+    "zephyrine": {
+        "name": "Tailwind",
+        "description": "The isles' winds carry the team: +20% celerity.",
+        "effects": [("stat", "celerity", 0.2)],
+    },
+    "nocthaven": {
+        "name": "Grave Chill",
+        "description": "The cold of the crypts seeps in: every foe starts Weakened for 2 turns.",
+        "effects": [("foe_status", "weaken", 2)],
+    },
+    "skyspire": {
+        "name": "Starlit Ward",
+        "description": "Starlight wraps the team in a shield worth 15% of max vitality.",
+        "effects": [("team_status", "shield", 3, 0.15)],
+    },
+    "greenhollow": {
+        "name": "Hearth and Harvest",
+        "description": "A taste of home: the team starts with Regen for 3 turns.",
+        "effects": [("team_status", "regen", 3)],
+    },
+    "sylvaran": {
+        "name": "Rootbound",
+        "description": "The roots lend their strength: +12% vitality.",
+        "effects": [("stat", "vitality", 0.12)],
+    },
+    "aurelian": {
+        "name": "Lion's Oath",
+        "description": "Shields locked like the old Order: +12% bulwark and resolve.",
+        "effects": [("stat", "bulwark", 0.12), ("stat", "resolve", 0.12)],
+    },
+    "hoshigane": {
+        "name": "First Petal",
+        "description": "The first cut decides the duel: the team starts Empowered for 2 turns.",
+        "effects": [("team_status", "empower", 2)],
+    },
+    "spirehollow": {
+        "name": "Rooftop Ambush",
+        "description": "Strike from the shadows: every foe starts Exposed for 2 turns.",
+        "effects": [("foe_status", "expose", 2)],
+    },
+    "ironfang": {
+        "name": "Clan Fury",
+        "description": "The war drums of the clans: +15% might.",
+        "effects": [("stat", "might", 0.15)],
+    },
+    "thalassar": {
+        "name": "Tide Hymn",
+        "description": "The drowned temples sing along: +15% arcana.",
+        "effects": [("stat", "arcana", 0.15)],
+    },
+    "cinderpeak": {
+        "name": "Everfire Spark",
+        "description": "The mountain's flame burns in the team: +3 starting Aether.",
+        "effects": [("aether", 3)],
+    },
+    "cogsreach": {
+        "name": "Overclock",
+        "description": "Gears spin up: +2 starting Aether and +10% celerity.",
+        "effects": [("aether", 2), ("stat", "celerity", 0.1)],
+    },
+}
+
 # Elemento e boato ("whisper") de cada região: o que se ouve por lá hoje.
 REGION_FLAVOR = {
     "riftheart": (None, "On quiet nights the Box hums a lullaby. Grizelda says she taught it to the Wardens."),
@@ -1938,7 +2012,8 @@ def public_lore(character, ascension=0, owned=None):
     return {
         "title": lore["title"],
         "story": list(lore["story"]),
-        "region": {"id": region["id"], "name": region["name"], "element": region["element"]},
+        "region": {"id": region["id"], "name": region["name"], "element": region["element"],
+                   "resonance": public_resonance(region["id"])},
         "bonds": _bonds_of(file_name, owned),
         "rivals": _rivals_of(file_name),
         "secret": {
@@ -1980,6 +2055,7 @@ def public_world():
         "regions": [
             {
                 **copy.deepcopy(region),
+                "resonance": public_resonance(region["id"]),
                 "characters": sorted(
                     residents[region["id"]],
                     key=lambda c: (-c["rarity"], c["name"]),
@@ -2002,6 +2078,21 @@ def bond_between(a, b):
         if (x, y) == (b, a):
             return y_about_x, x_about_y
     return None
+
+
+def region_of(file_name):
+    """Id da região de origem da carta, ou None."""
+    lore = STORIES.get(file_name)
+    return lore["region"] if lore else None
+
+
+def public_resonance(region_id):
+    """Nome e descrição da ressonância da região (None se não houver)."""
+    resonance = REGION_RESONANCES.get(region_id)
+    if not resonance:
+        return None
+    return {"region": region_id, "regionName": _region(region_id)["name"],
+            "name": resonance["name"], "description": resonance["description"]}
 
 
 def rivalry_between(a, b):

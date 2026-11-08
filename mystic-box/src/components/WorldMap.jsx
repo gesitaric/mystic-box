@@ -117,6 +117,13 @@ function RegionPanel({ region, owned }) {
         </blockquote>
       )}
 
+      {region.resonance && (
+        <p className="world-resonance">
+          <span>✦ Resonance · {region.resonance.name}</span>
+          {region.resonance.description} (a team of 3 from this land)
+        </p>
+      )}
+
       {region.characters.length > 0 ? (
         <>
           <h4>

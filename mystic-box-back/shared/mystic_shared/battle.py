@@ -19,6 +19,8 @@ Batalha por turnos entre dois times de 3 cartas. Regras principais:
 - Laços: cartas com laço (`lore.BONDS`) no mesmo time ganham
   BOND_STAT_BONUS nos atributos grandes por parceiro; quando uma cai, os
   parceiros vivos ganham Fortalecer por BOND_GRIEF_TURNS turnos.
+- Ressonância de região: um time com as 3 cartas da mesma região
+  (`lore.REGION_RESONANCES`) ganha o efeito dela no começo da batalha.
 - Rivalidades: rivais (`lore.RIVALRIES`) em times opostos causam
   RIVAL_DAMAGE_MULTIPLIER de dano um ao outro.
 - Provocação: golpes de alvo único precisam mirar quem está provocando.
@@ -38,7 +40,13 @@ import random
 
 from .ascension import MAX_ASCENSION, bonus_skills, clamp_ascension
 from .cards import CHARACTERS
-from .lore import bond_between, rivalry_between
+from .lore import (
+    REGION_RESONANCES,
+    bond_between,
+    public_resonance,
+    region_of,
+    rivalry_between,
+)
 from .progression import MAX_LEVEL
 from .stats import ARCHETYPES, ELEMENTS, SCALED_STATS, battle_stats, element_multiplier
 
@@ -711,6 +719,47 @@ def _link_bonds(state, events):
         unit["maxHp"] = unit["hp"] = unit["stats"]["vitality"]
 
 
+def _team_region(state, side):
+    """Região comum de todas as cartas do time, ou None."""
+    regions = {region_of(u["fileName"]) for u in state["units"] if u["side"] == side}
+    region = regions.pop() if len(regions) == 1 else None
+    return region if region in REGION_RESONANCES else None
+
+
+def _apply_resonances(state, events):
+    """Ressonância de região: time com as 3 cartas da mesma região (lore.py)."""
+    state["resonance"] = {}
+    for side in ("player", "enemy"):
+        region = _team_region(state, side)
+        state["resonance"][side] = region
+        if not region:
+            continue
+        team = [u for u in state["units"] if u["side"] == side]
+        foes = [u for u in state["units"] if u["side"] != side]
+        info = public_resonance(region)
+        events.append({"type": "resonance", "targets": [u["id"] for u in team],
+                       "region": region, "regionName": info["regionName"],
+                       "name": info["name"], "description": info["description"]})
+        for effect in REGION_RESONANCES[region]["effects"]:
+            kind = effect[0]
+            if kind == "stat":
+                _, stat, extra = effect
+                for unit in team:
+                    unit["stats"][stat] = round(unit["stats"][stat] * (1 + extra))
+                    if stat == "vitality":
+                        unit["maxHp"] = unit["hp"] = unit["stats"]["vitality"]
+            elif kind == "aether":
+                _gain_aether(state, side, effect[1])
+            elif kind == "team_status":
+                status, turns = effect[1], effect[2]
+                for unit in team:
+                    value = round(unit["maxHp"] * effect[3]) if len(effect) > 3 else None
+                    _apply_status(state, unit, status, turns, events, value)
+            elif kind == "foe_status":
+                for unit in foes:
+                    _apply_status(state, unit, effect[1], effect[2], events)
+
+
 def _bond_grief(state, events, start):
     """Parceiros de laço de quem caiu (nos eventos desde `start`) ganham Fortalecer."""
     fallen = [e["target"] for e in events[start:] if e["type"] == "defeated"]
@@ -816,6 +865,7 @@ def create_battle(battle_id, player_team, player_level, difficulty, rng, enemy_t
     }
     events = []
     _link_bonds(state, events)
+    _apply_resonances(state, events)
     _advance(state, rng, events)
     return state, events
 
@@ -862,6 +912,7 @@ def create_pvp_battle(battle_id, challenger_team, challenger_level, opponent_tea
     }
     events = []
     _link_bonds(state, events)
+    _apply_resonances(state, events)
     _advance(state, rng, events)
     return state, events
 
@@ -1345,6 +1396,10 @@ def public_state(state, viewer="player"):
         ],
         "units": [_public_unit(unit, viewer) for unit in state["units"]],
         "actions": actions,
+        "resonance": {
+            _view_side(side, viewer): public_resonance(region) if region else None
+            for side, region in state.get("resonance", {}).items()
+        },
         "elementRiders": {
             key: ELEMENT_RIDERS[key] for key in {u["element"] for u in state["units"]}
         },

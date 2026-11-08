@@ -120,6 +120,11 @@ export function describeEvent(event, names) {
         text: `♥ ${name(event.actor)} & ${name(event.target)}: “${event.line}” — “${event.reply}”`,
         kind: "bond",
       };
+    case "resonance":
+      return {
+        text: `✦ ${event.regionName} resonance — ${event.name}: ${event.description}`,
+        kind: "resonance",
+      };
     case "rivalry":
       return {
         text: `⚔ ${name(event.actor)} vs ${name(event.target)}: “${event.line}” — “${event.reply}”`,
@@ -155,6 +160,8 @@ export function eventDelay(event) {
       return 420;
     case "heal":
       return event.amount > 0 ? 380 : 0;
+    case "resonance":
+      return 1800;
     case "bond":
     case "rivalry":
       return 2200;

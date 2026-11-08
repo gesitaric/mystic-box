@@ -6,7 +6,7 @@ limites do mercado, curva de nível e as regras da batalha. Nada aqui é copiado
 regra nesses módulos muda o que o jogador lê.
 """
 
-from . import ascension, battle, cards, progression, pvp, stats
+from . import ascension, battle, cards, lore, progression, pvp, stats
 
 RARITIES = (5, 4, 3)
 
@@ -167,6 +167,9 @@ def _battle_rules():
             for key, s in battle.STATUSES.items()
         ],
         "difficulties": _difficulty_rules(),
+        "resonances": [
+            lore.public_resonance(region_id) for region_id in lore.REGION_RESONANCES
+        ],
         "bonds": {
             "statBonusPercent": _percent(battle.BOND_STAT_BONUS),
             "griefStatus": battle.STATUSES["empower"]["label"],

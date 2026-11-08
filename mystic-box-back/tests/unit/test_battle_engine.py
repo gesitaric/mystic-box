@@ -517,3 +517,42 @@ def test_rivals_on_the_same_team_are_not_rivals_in_battle():
     )
     assert unit(state, "p0")["rivals"] == []
     assert not [e for e in events if e["type"] == "rivalry"]
+
+
+# ---------- ressonância de região ----------
+
+
+CINDERPEAK = ("ignis.jfif", "pyralis.jfif", "torvin.jfif")
+NOCTHAVEN = ("malachar.jfif", "morwen.jfif", "nocturna.jfif")
+
+
+def test_team_from_one_region_gets_its_resonance():
+    state, events = battle.create_battle(
+        "battle-1", team(*CINDERPEAK), 1, "novice", random.Random(1), enemy_team=team(*FOES),
+    )
+    resonance = next(e for e in events if e["type"] == "resonance")
+    assert resonance["region"] == "cinderpeak"
+    assert resonance["targets"] == ["p0", "p1", "p2"]
+    assert state["resonance"] == {"player": "cinderpeak", "enemy": None}
+    # Aether extra no começo (antes dos turnos já jogados).
+    plain, _ = new_battle()
+    assert state["aether"]["player"] >= plain["aether"]["player"] + 3 - 1
+
+    view = battle.public_state(state)
+    assert view["resonance"]["player"]["name"] == "Everfire Spark"
+    assert view["resonance"]["enemy"] is None
+
+
+def test_resonance_can_curse_the_other_team():
+    state, _ = battle.create_battle(
+        "battle-1", team(*FOES), 1, "novice", random.Random(1), enemy_team=team(*NOCTHAVEN),
+    )
+    assert state["resonance"]["enemy"] == "nocthaven"
+    weakened = [u for u in state["units"] if u["side"] == "player" and "weaken" in u["statuses"]]
+    assert weakened  # pelo menos quem ainda não agiu continua enfraquecido
+
+
+def test_mixed_team_has_no_resonance():
+    state, events = new_battle()
+    assert state["resonance"] == {"player": None, "enemy": None}
+    assert not [e for e in events if e["type"] == "resonance"]

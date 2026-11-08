@@ -653,3 +653,23 @@
 .story-rivals span {
   font-style: italic;
 }
+
+.world-resonance {
+  margin: 0 0 16px;
+  padding: 8px 12px;
+  border-left: 2px solid rgba(159, 230, 255, 0.7);
+  border-radius: 0 8px 8px 0;
+  background: rgba(20, 60, 90, 0.35);
+  color: #d4f1ff;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.world-resonance span {
+  display: block;
+  margin-bottom: 2px;
+  color: #9fe6ff;
+  font-size: 10px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+}
