@@ -1,8 +1,11 @@
 import { useEffect, useState } from "react";
 import { getCharacterImage } from "../characterImages";
 import AscensionCeremony from "./AscensionCeremony";
+import { ELEMENT_STYLE } from "./battle/battlePresentation";
+import { SkillList, StatGrid } from "./battle/TeamSetup";
 import { CardFace } from "./GachaCard";
 import Modal from "./Modal";
+import "../styles/battle.css";
 import "../styles/lore.css";
 
 const SORT_FIELDS = [
@@ -259,30 +262,105 @@ function AscendModal({ card, ascending, error, onConfirm, onClose }) {
 
 // História da personagem (`card.lore`, vinda do servidor junto com a coleção):
 // de onde ela vem, a história e os laços com outras personagens.
-function StoryModal({ card, onClose }) {
-  const rarity = Number(card.rarity) || 0;
-  const lore = card.lore;
-  const bonds = lore.bonds ?? [];
-  const secret = lore.secret;
+// Aba de batalha: elemento, classe, ascensão, atributos e habilidades, tudo
+// como veio de `card.battle` e `card.ascension` (calculados no servidor).
+function BattleTab({ card }) {
+  const profile = card.battle;
+  const ascension = card.ascension;
+  const element = ELEMENT_STYLE[profile.element];
 
   return (
-    <Modal label={`Story of ${card.name}`} className="story-modal" onClose={onClose}>
+    <div className="story-battle" style={{ "--element": element?.color }}>
+      <div className="story-battle-tags">
+        <span className="story-battle-tag">
+          {element?.icon} {profile.elementLabel}
+        </span>
+        <span className="story-battle-tag">{profile.archetypeLabel}</span>
+        {profile.strongAgainst?.length > 0 && (
+          <span className="story-battle-tag is-muted">
+            Strong vs {profile.strongAgainst.map((id) => ELEMENT_STYLE[id]?.icon ?? id).join(" ")}
+          </span>
+        )}
+      </div>
+      <p className="story-battle-desc">{profile.archetypeDescription}</p>
+
+      {ascension && (
+        <p className="story-battle-ascension">
+          <span>Ascension</span>
+          {ascension.level > 0 ? ascensionMarks(ascension.level) : "—"}
+          <em>
+            {ascension.level}/{ascension.max} · +{ascension.statBonusPercent}% stats
+          </em>
+        </p>
+      )}
+
+      <h3>Stats</h3>
+      <StatGrid stats={profile.stats} />
+      <p className="story-battle-note">At level 1. Stats grow with your level in battle.</p>
+
+      {profile.skills?.length > 0 && (
+        <>
+          <h3>Skills</h3>
+          <SkillList skills={profile.skills} />
+        </>
+      )}
+    </div>
+  );
+}
+
+function StoryModal({ card, onClose }) {
+  const rarity = Number(card.rarity) || 0;
+  const lore = Array.isArray(card.lore?.story) ? card.lore : null;
+  const [tab, setTab] = useState(lore ? "story" : "battle");
+  const tabs = [lore && ["story", "Story"], card.battle && ["battle", "Battle"]].filter(Boolean);
+
+  return (
+    <Modal label={card.name} className="story-modal" onClose={onClose}>
       <div className="story-hero" data-rarity={rarity}>
         <div className="story-hero-art">
           <CardFace card={card} image={getCharacterImage(card.file_name)} rarity={rarity} />
         </div>
         <header className="story-heading">
-          {lore.region && (
+          {lore?.region && (
             <p className="story-region" data-element={lore.region.element ?? undefined}>
               ✦ {lore.region.name}
               {lore.region.element && <span className="story-element">{lore.region.element}</span>}
             </p>
           )}
           <h2>{card.name}</h2>
-          {lore.title && <p className="story-title">{lore.title}</p>}
+          {lore?.title && <p className="story-title">{lore.title}</p>}
         </header>
       </div>
 
+      {tabs.length > 1 && (
+        <div className="world-tabs story-tabs" role="tablist">
+          {tabs.map(([id, label]) => (
+            <button
+              key={id}
+              type="button"
+              role="tab"
+              aria-selected={tab === id}
+              className={tab === id ? "is-active" : undefined}
+              onClick={() => setTab(id)}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+      )}
+
+      {tab === "story" ? <StoryTab card={card} /> : <BattleTab card={card} />}
+    </Modal>
+  );
+}
+
+function StoryTab({ card }) {
+  const lore = card.lore;
+  const bonds = lore.bonds ?? [];
+  const secret = lore.secret;
+
+  return (
+    <>
       <div className="story-text">
         {lore.story.map((paragraph, index) => (
           <p key={index}>{paragraph}</p>
@@ -332,7 +410,7 @@ function StoryModal({ card, onClose }) {
           </ul>
         </section>
       )}
-    </Modal>
+    </>
   );
 }
 
@@ -623,7 +701,7 @@ function OwnedCards({ apiUrl, session, onSessionExpired, onListed, allowAscend =
               card.listingPriceRange != null && card.maxListingQuantity > 0;
             const ascension = card.ascension;
             const canOpenAscend = allowAscend && ascension?.nextCost != null;
-            const hasStory = Array.isArray(card.lore?.story) && card.lore.story.length > 0;
+            const hasDetails = Array.isArray(card.lore?.story) || Boolean(card.battle);
             const face = (
               <CardFace
                 card={card}
@@ -634,12 +712,12 @@ function OwnedCards({ apiUrl, session, onSessionExpired, onListed, allowAscend =
             return (
               <li key={key} className="collection-card" data-rarity={rarity}>
                 <div className="collection-card-art">
-                  {hasStory ? (
+                  {hasDetails ? (
                     <button
                       type="button"
                       className="collection-card-story"
                       onClick={() => setStoryCard(card)}
-                      aria-label={`Read the story of ${card.name}`}
+                      aria-label={`Open the story and battle details of ${card.name}`}
                     >
                       {face}
                     </button>

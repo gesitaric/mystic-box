@@ -122,6 +122,7 @@ function BattleUnit({
         targetable && "is-targetable",
         inspected && "is-inspected",
         hit && "is-hit",
+        unit.ascension > 0 && "is-ascended",
       ]
         .filter(Boolean)
         .join(" ")}
@@ -154,10 +155,12 @@ function BattleUnit({
             ♥
           </span>
         )}
-        <span className="battle-unit-level">
-          Lv {unit.level}
-          {unit.ascension > 0 && ` ${"✴".repeat(unit.ascension)}`}
-        </span>
+        <span className="battle-unit-level">Lv {unit.level}</span>
+        {unit.ascension > 0 && (
+          <span className="battle-unit-ascension" title={`Ascension ${unit.ascension}`}>
+            {"✴".repeat(unit.ascension)}
+          </span>
+        )}
       </div>
       <div className="battle-unit-body">
         <span className="battle-unit-name">{unit.name}</span>

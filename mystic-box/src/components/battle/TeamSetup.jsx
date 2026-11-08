@@ -184,6 +184,7 @@ function TeamSetup({
               const position = team.indexOf(card.file_name);
               const selected = position >= 0;
               const element = ELEMENT_STYLE[card.battle.element];
+              const ascended = card.ascension?.level ?? 0;
               const bonded = (card.lore?.bonds ?? []).some(
                 (bond) => bond.file_name !== card.file_name && team.includes(bond.file_name)
               );
@@ -191,7 +192,9 @@ function TeamSetup({
                 <li key={card.file_name}>
                   <button
                     type="button"
-                    className={`battle-roster-card${selected ? " is-selected" : ""}`}
+                    className={`battle-roster-card${selected ? " is-selected" : ""}${
+                      ascended > 0 ? " is-ascended" : ""
+                    }`}
                     data-rarity={card.rarity}
                     style={{ "--element": element?.color }}
                     aria-pressed={selected}
@@ -211,7 +214,18 @@ function TeamSetup({
                     <span className="battle-roster-meta">
                       {element?.icon} {card.battle.archetypeLabel}
                     </span>
-                    <span className="battle-roster-stars">{"✦".repeat(card.rarity)}</span>
+                    <span className="battle-roster-stars">
+                      {"✦".repeat(card.rarity)}
+                      {ascended > 0 && (
+                        <span
+                          className="battle-roster-ascension"
+                          title={`Ascension ${ascended}/${card.ascension.max} · +${card.ascension.statBonusPercent}% stats`}
+                        >
+                          {" "}
+                          {"✴".repeat(ascended)}
+                        </span>
+                      )}
+                    </span>
                   </button>
                 </li>
               );
@@ -227,6 +241,13 @@ function TeamSetup({
             <span className="battle-inspect-sub">
               {ELEMENT_STYLE[inspectedCard.battle.element]?.icon}{" "}
               {inspectedCard.battle.elementLabel} · {inspectedCard.battle.archetypeLabel}
+              {inspectedCard.ascension?.level > 0 && (
+                <span className="battle-inspect-ascension">
+                  {" "}
+                  · {"✴".repeat(inspectedCard.ascension.level)} +
+                  {inspectedCard.ascension.statBonusPercent}% stats
+                </span>
+              )}
             </span>
           </h2>
           <p className="battle-inspect-desc">{inspectedCard.battle.archetypeDescription}</p>
