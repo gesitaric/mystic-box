@@ -509,6 +509,9 @@ function BattleScreen({
           addFloat(event.actor, "♥", "bond");
           addFloat(event.target, "♥", "bond");
           break;
+        case "lastWords":
+          addFloat(event.target, "…", "lastWords");
+          break;
         case "duo":
           setActingId(event.actor);
           addFloat(event.target, "✦ Duo", "duo");

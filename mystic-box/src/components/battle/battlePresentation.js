@@ -131,6 +131,8 @@ export function describeEvent(event, names) {
         kind: "duo",
         side: event.actor?.[0],
       };
+    case "lastWords":
+      return { text: `${name(event.target)}: “${event.line}”`, kind: "lastWords" };
     case "rivalry":
       return {
         text: `⚔ ${name(event.actor)} vs ${name(event.target)}: “${event.line}” — “${event.reply}”`,
@@ -170,6 +172,8 @@ export function eventDelay(event) {
       return 1800;
     case "duo":
       return 900;
+    case "lastWords":
+      return 2000;
     case "bond":
     case "rivalry":
       return 2200;

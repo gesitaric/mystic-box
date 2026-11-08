@@ -1675,3 +1675,17 @@
   font-size: 13px;
   text-align: center;
 }
+
+/* Última fala */
+
+.battle-log-entry.is-lastWords {
+  color: #e9dcff;
+  font-style: italic;
+  text-shadow: 0 0 8px rgba(199, 162, 255, 0.6);
+}
+
+.battle-float.is-lastWords {
+  top: 35%;
+  color: #e9dcff;
+  font-size: 22px;
+}

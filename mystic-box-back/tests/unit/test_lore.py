@@ -96,6 +96,13 @@ def test_get_world_endpoint_is_public():
     assert json.loads(ret["body"]) == public_world()
 
 
+def test_every_character_has_last_words():
+    from mystic_shared.lore import LAST_WORDS
+
+    assert set(LAST_WORDS) == {c["file_name"] for c in CHARACTERS}
+    assert all(line.strip() for line in LAST_WORDS.values())
+
+
 def test_every_character_has_a_secret_chapter():
     assert set(SECRETS) == {c["file_name"] for c in CHARACTERS}
     for file_name, (title, text) in SECRETS.items():

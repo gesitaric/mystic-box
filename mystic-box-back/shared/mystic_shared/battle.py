@@ -23,6 +23,7 @@ Batalha por turnos entre dois times de 3 cartas. Regras principais:
   (`lore.REGION_RESONANCES`) ganha o efeito dela no começo da batalha.
 - Técnicas de dupla (DUO_TECHNIQUES): duas cartas com laço forte no mesmo
   time aprendem um golpe em conjunto, usável enquanto as duas estão vivas.
+- Última fala: carta ascendida que cai diz uma frase (`lore.LAST_WORDS`).
 - Rivalidades: rivais (`lore.RIVALRIES`) em times opostos causam
   RIVAL_DAMAGE_MULTIPLIER de dano um ao outro.
 - Provocação: golpes de alvo único precisam mirar quem está provocando.
@@ -43,7 +44,9 @@ import random
 from .ascension import MAX_ASCENSION, bonus_skills, clamp_ascension
 from .cards import CHARACTERS
 from .lore import (
+    LAST_WORDS,
     REGION_RESONANCES,
+    SECRET_UNLOCK_ASCENSION,
     bond_between,
     public_resonance,
     region_of,
@@ -929,10 +932,17 @@ def _apply_resonances(state, events):
 
 
 def _bond_grief(state, events, start):
-    """Parceiros de laço de quem caiu (nos eventos desde `start`) ganham Fortalecer."""
+    """Reações a quem caiu (nos eventos desde `start`).
+
+    Carta ascendida diz a última fala (ecoa o capítulo secreto) e os parceiros
+    de laço ganham Fortalecer.
+    """
     fallen = [e["target"] for e in events[start:] if e["type"] == "defeated"]
     for fallen_id in fallen:
         unit = _unit(state, fallen_id)
+        line = LAST_WORDS.get(unit["fileName"])
+        if line and unit.get("ascension", 0) >= SECRET_UNLOCK_ASCENSION:
+            events.append({"type": "lastWords", "target": fallen_id, "line": line})
         for partner_id in unit.get("bonds", []):
             partner = _unit(state, partner_id)
             if not _alive(partner):

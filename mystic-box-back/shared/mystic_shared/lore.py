@@ -1551,6 +1551,93 @@ CHRONICLE = [
 # de ascender a carta até SECRET_UNLOCK_ASCENSION.
 SECRET_UNLOCK_ASCENSION = 1
 
+# Última fala de cada carta quando cai em batalha. Só aparece depois que o
+# dono ascende a carta (SECRET_UNLOCK_ASCENSION), porque ecoa o capítulo secreto.
+LAST_WORDS = {
+    # Hrimvald
+    "boreas.jfif": "Fenric... the wind is yours now. Run with it.",
+    "glacius.jfif": "I never asked to see your face, my lady. I never needed to.",
+    "fenric.jfif": "The pack... is still sleeping. Someone wake them.",
+    # Zephyrine
+    "vaelora.jfif": "Keep smiling, Lirien. Do not let them see the isles drift.",
+    "draemir.jfif": "Ysmera... I am giving your heartbeat back.",
+    "kyrielle.jfif": "Aurvex, not yet. The lid can wait one more dream.",
+    # Nocthaven
+    "malachar.jfif": "Lira... forgive your father. I could not let you go.",
+    "mortis.jfif": "Funny. It finally landed.",
+    "zarathor.jfif": "Edric... I almost had your hand.",
+    "amethia.jfif": "The torn page... someone must find the torn page.",
+    "morwen.jfif": "Edric, you chose to go. Let me choose to follow.",
+    "nocturna.jfif": "Tell my sister... I opened one letter. Just one.",
+    "ravenna.png": "Lira, fly to your father. It is time he knew.",
+    # Skyspire
+    "astra.jfif": "The map is almost finished. Do not let the stars go out.",
+    "elysia.jfif": "The last verse... I almost remembered it.",
+    "uriel.jfif": "I gave him the key. Let this be my share of the price.",
+    "lyra.png": "Astra... it was my arrow. Your star was my fault.",
+    "stellara.jfif": "Throw the stars back, Lyra. Stitch the sky closed.",
+    # Greenhollow
+    "grizelda.jfif": "A lock only teaches the Hollow to wait. Remember that.",
+    "tobin.jfif": "I did not run, grandpa. I did not run.",
+    "maelis.jfif": "I will read the rest of the letter. I promise.",
+    "albin.jfif": "Tell my teacher... I kept every report in order too.",
+    "silas.jfif": "Worth it. The mushrooms were worth it.",
+    "wren.jfif": "Bloop, invite her to dinner. She should not eat alone.",
+    # Sylvaran
+    "sylva.jfif": "Verdana... the second heart. You have to know.",
+    "rosalind.jfif": "Faelyn, she did say goodbye. To me. I am sorry.",
+    "thalion.jfif": "Late again... no. Not this time.",
+    "elowen.jfif": "The moon flowers... someone water them for me.",
+    "faelyn.jfif": "I counted every one of your stars, Lyra.",
+    "verdana.jfif": "Puff, plant me somewhere the world can heal.",
+    "tavik.jfif": "Go north, Kesh. That is what family does.",
+    "rowan.jfif": "Tell the elf... it was not his fault.",
+    "liesel.jfif": "Ember, go to him. He is the one you were looking for.",
+    # Aurelian
+    "seraphiel.jfif": "Take the light back, Uriel. Ithrel will find its own.",
+    "leoric.jfif": "The boy is worthy. The old man's fear ends with me.",
+    "solara.jfif": "I can hear the hammer... keep hammering, Cassius.",
+    "aurelius.jfif": "Annelise... the golden knight was me.",
+    "valeria.jfif": "Father, we both only wanted you to be proud.",
+    "cassius.png": "Follow the grooves in the floor, Solara. I carved them for you.",
+    "annelise.jfif": "Golden knight, wherever you are, I never blamed you.",
+    # Hoshigane
+    "kaito.jfif": "The child from the well... I only wanted to say thank you.",
+    "hayato.jfif": "I let you draw once, Kaito. Only once.",
+    "kage.jfif": "Kaito... it was me at the well. It was my father.",
+    "ryuji.jfif": "I cut the petal, brother. I just never told you.",
+    # Spirehollow
+    "vesper.jfif": "Zarathor... your conscience is tired.",
+    "nyra.jfif": "Sorry, Jory. Sorry. Sorry.",
+    "lucan.jfif": "Grit, you look exhausted. Was it because of me?",
+    "corvus.jfif": "Nyra... it is Corin. I am sorry I waited.",
+    "jory.jfif": "That voice... it was you on the rooftops.",
+    "kael.jfif": "I should have read the last page.",
+    "vexa.jfif": "The bridge... tell them about the people who lived on it.",
+    # Ironfang
+    "gorvane.jfif": "Fifth time... Brannoc, keep your promise.",
+    "eldric.png": "The serpent told me her name. Grizelda... I wrote it down.",
+    "garrick.jfif": "I did it for the boy. I would do it again.",
+    "brannoc.jfif": "I am not ready, father. I am not ready.",
+    # Thalassar
+    "lunara.jfif": "Isolde, do not let me walk into the water again.",
+    "celestine.png": "Colette... tell her I finally understand.",
+    "isolde.jfif": "Twenty letters... someone send them to the sky.",
+    "maren.jfif": "The tower, Ophira. Let me help with the tower.",
+    "odette.jfif": "Colette, I never sent the letter. I am sorry.",
+    # Cinderpeak
+    "ignis.jfif": "My little flame... your father is still here.",
+    "drakara.jfif": "Mother's egg... keep it warm. Keep it warm.",
+    "pyralis.jfif": "The scar is burning... is the flame choosing me now?",
+    "torvin.jfif": "I said I would be standing beside you, Pyralis.",
+    # Cogsreach
+    "scarlett.jfif": "Tell the baron his daughter emptied the vault.",
+    "dorian.jfif": "Spark, find Ophira. She always asked about you.",
+    "ophira.jfif": "Maren was right. I should have asked.",
+    "brina.jfif": "The airship is almost done, cousin. Fly it without me.",
+}
+
+
 SECRETS = {
     # 5★
     "malachar.jfif": (

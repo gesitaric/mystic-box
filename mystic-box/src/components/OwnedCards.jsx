@@ -402,7 +402,8 @@ function StoryTab({ card }) {
           ) : (
             <p className="story-secret-locked">
               Reach ascension {"✴".repeat(secret.unlockAscension)} with this card to reveal
-              what {card.name} has never told anyone.
+              what {card.name} has never told anyone, and the last words {card.name} says when
+              falling in battle.
             </p>
           )}
         </section>

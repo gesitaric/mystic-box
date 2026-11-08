@@ -619,3 +619,30 @@ def test_random_battles_with_duos_never_break():
             enemy_team=team("seraphiel.jfif", "annelise.jfif", "elowen.jfif"),
         )
         play_until_end(state, seed=seed)
+
+
+# ---------- última fala ----------
+
+
+def _fall(state, unit_id):
+    target = unit(state, unit_id)
+    events = []
+    battle._lose_hp(target, target["hp"], events, {"type": "damage"})
+    battle._bond_grief(state, events, 0)
+    return events
+
+
+def test_ascended_card_says_its_last_words_when_it_falls():
+    from mystic_shared.lore import LAST_WORDS
+
+    state, _ = battle.create_battle(
+        "battle-1", team(*PLAYER), 1, "novice", random.Random(1), enemy_team=team(*FOES),
+        ascensions={"rowan.jfif": 1},
+    )
+    words = [e for e in _fall(state, "p0") if e["type"] == "lastWords"]
+    assert words == [{"type": "lastWords", "target": "p0", "line": LAST_WORDS["rowan.jfif"]}]
+
+
+def test_card_without_ascension_falls_in_silence():
+    state, _ = new_battle()
+    assert not [e for e in _fall(state, "p0") if e["type"] == "lastWords"]
