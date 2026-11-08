@@ -691,11 +691,17 @@ Resources:
         Variables:
           USER_PROGRESS_TABLE: !Ref UserProgressTable
           USER_PROFILES_TABLE: !Ref UserProfilesTable
+          REGION_PROGRESS_TABLE: !Ref RegionProgressTable
+          CARD_ASCENSIONS_TABLE: !Ref CardAscensionsTable
       Policies:
       - DynamoDBReadPolicy:
           TableName: !Ref UserProgressTable
       - DynamoDBReadPolicy:
           TableName: !Ref UserProfilesTable
+      - DynamoDBReadPolicy:
+          TableName: !Ref RegionProgressTable
+      - DynamoDBReadPolicy:
+          TableName: !Ref CardAscensionsTable
       Events:
         GetProfile:
           Type: Api
@@ -917,6 +923,47 @@ Resources:
           Properties:
             RestApiId: !Ref MysticBoxApi
             Path: /users/me/regions/claim
+            Method: options
+
+  SetTitleFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: set_title/
+      Handler: app.lambda_handler
+      Runtime: python3.14
+      Architectures:
+      - x86_64
+      Layers:
+      - !Ref SharedLayer
+      Environment:
+        Variables:
+          USER_PROFILES_TABLE: !Ref UserProfilesTable
+          USER_PROGRESS_TABLE: !Ref UserProgressTable
+          REGION_PROGRESS_TABLE: !Ref RegionProgressTable
+          CARD_ASCENSIONS_TABLE: !Ref CardAscensionsTable
+      Policies:
+      - DynamoDBCrudPolicy:
+          TableName: !Ref UserProfilesTable
+      - DynamoDBReadPolicy:
+          TableName: !Ref UserProgressTable
+      - DynamoDBReadPolicy:
+          TableName: !Ref RegionProgressTable
+      - DynamoDBReadPolicy:
+          TableName: !Ref CardAscensionsTable
+      Events:
+        SetTitle:
+          Type: Api
+          Properties:
+            RestApiId: !Ref MysticBoxApi
+            Path: /users/me/title
+            Method: post
+            Auth:
+              Authorizer: CognitoAuthorizer
+        SetTitleOptions:
+          Type: Api
+          Properties:
+            RestApiId: !Ref MysticBoxApi
+            Path: /users/me/title
             Method: options
 
   GetBattleFunction:

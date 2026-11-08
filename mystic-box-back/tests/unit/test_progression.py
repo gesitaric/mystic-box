@@ -48,6 +48,8 @@ def test_public_progress():
 @pytest.fixture()
 def profile_client(monkeypatch):
     client = MagicMock()
+    # Ascensões (títulos dos capítulos secretos): nenhuma.
+    client.query.return_value = {"Items": []}
     monkeypatch.setattr(get_profile, "_client", client)
     monkeypatch.setattr(get_profile, "USER_PROGRESS_TABLE", "progress")
     return client

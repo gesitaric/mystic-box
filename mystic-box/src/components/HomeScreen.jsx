@@ -83,6 +83,7 @@ function ProfileChip({ email, progress, onClick }) {
           {name}
           {progress && !username && <span className="hud-name-hint">Set name</span>}
         </span>
+        {progress?.title && <span className="hud-title">{progress.title.name}</span>}
         <span className="hud-xp-bar">
           <span className="hud-xp-fill" style={{ width: `${percent}%` }} />
         </span>

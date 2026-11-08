@@ -5,6 +5,7 @@ import time
 import boto3
 from botocore.exceptions import ClientError
 from mystic_shared.progression import public_progress
+from mystic_shared.titles import load_earned_titles, public_titles, title_name
 from mystic_shared.usernames import change_status, public_rules
 
 CORS_HEADERS = {
@@ -15,6 +16,8 @@ CORS_HEADERS = {
 
 USER_PROGRESS_TABLE = os.environ.get("USER_PROGRESS_TABLE")
 USER_PROFILES_TABLE = os.environ.get("USER_PROFILES_TABLE")
+REGION_PROGRESS_TABLE = os.environ.get("REGION_PROGRESS_TABLE")
+CARD_ASCENSIONS_TABLE = os.environ.get("CARD_ASCENSIONS_TABLE")
 
 # Criado uma vez por container e reaproveitado entre invocações.
 _client = None
@@ -63,6 +66,10 @@ def lambda_handler(event, context):
             Key={"userId": {"S": user_id}},
             ConsistentRead=True,
         ).get("Item", {})
+        _, earned = load_earned_titles(
+            get_client(), user_id, USER_PROGRESS_TABLE, REGION_PROGRESS_TABLE,
+            CARD_ASCENSIONS_TABLE,
+        )
     except ClientError:
         return response(500, {"message": "Could not load your profile."})
 
@@ -85,5 +92,12 @@ def lambda_handler(event, context):
             "username": username,
             "usernameChange": change_status(changed_at, time.time()),
             "usernameRules": public_rules(),
+            # Título escolhido (conferido ao escolher) e todos os títulos.
+            "title": (
+                {"id": profile["title"]["S"], "name": title_name(profile["title"]["S"])}
+                if title_name(profile.get("title", {}).get("S"))
+                else None
+            ),
+            "titles": public_titles(earned),
         },
     )

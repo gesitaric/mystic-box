@@ -1077,7 +1077,10 @@ function BattleScreen({
           ← Home
         </button>
         <span className="battle-round">
-          {duel ? `Duel vs ${rivalName}` : view.difficultyLabel} · Round {view.round}/
+          {duel
+            ? `Duel vs ${rivalName}${view.opponent?.title ? `, ${view.opponent.title}` : ""}`
+            : view.difficultyLabel}{" "}
+          · Round {view.round}/
           {view.maxRounds}
         </span>
         <SoundButton on={soundOn} onToggle={() => setSoundOn((on) => !on)} />
