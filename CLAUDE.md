@@ -35,6 +35,7 @@ Isso significa:
   - `usernames.py`: regras do nome de usuário (tamanho, caracteres, 30 dias de espera entre trocas) e da busca de jogadores.
   - `rules.py`: monta a explicação das regras para o jogador (`GET /rules`) a partir das constantes dos módulos acima. Não duplica valores: mudar uma regra lá muda o que a ajuda mostra.
 - Uma Lambda nova que precise dessas regras deve declarar `Layers: [!Ref SharedLayer]` no `template.yaml` e importar de `mystic_shared`. Não copie as definições para outra Lambda nem para o frontend.
+- Toda Lambda nova precisa do seu grupo de log: `LoggingConfig: LogGroup: !Ref <Nome>LogGroup` na função e o recurso `AWS::Logs::LogGroup` (com `RetentionInDays`) junto dos outros no fim dos `Resources`. Sem isso a Lambda cria um grupo que nunca expira. O nível de log é global (`SystemLogLevel: WARN` tira as linhas START/END/REPORT); X-Ray fica desligado.
 
 ## Fluxos atuais
 

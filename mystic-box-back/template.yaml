@@ -16,8 +16,14 @@ Globals:
     # X-Ray desligado: quase não é usado e cobra por rastro (o duelo online
     # faz muitas consultas). Para investigar algo, volte para Active.
     Tracing: PassThrough
+    # SystemLogLevel WARN tira as linhas START/END/REPORT de cada chamada (o
+    # duelo online consulta o tempo todo e isso só aumentava o custo de logs).
+    # Cada Lambda aponta para o próprio grupo de log (LogGroup), criado no fim
+    # dos Resources com retenção; sem isso a Lambda cria um que nunca expira.
     LoggingConfig:
       LogFormat: JSON
+      ApplicationLogLevel: INFO
+      SystemLogLevel: WARN
   Api:
     TracingEnabled: false
 Resources:
@@ -345,6 +351,8 @@ Resources:
       CodeUri: open_box/
       Handler: app.lambda_handler
       Runtime: python3.14
+      LoggingConfig:
+        LogGroup: !Ref OpenBoxFunctionLogGroup
       Architectures:
       - x86_64
       Layers:
@@ -375,6 +383,8 @@ Resources:
       CodeUri: get_user_cards/
       Handler: app.lambda_handler
       Runtime: python3.14
+      LoggingConfig:
+        LogGroup: !Ref GetUserCardsFunctionLogGroup
       Architectures:
       - x86_64
       Layers:
@@ -410,6 +420,8 @@ Resources:
       CodeUri: ascend_card/
       Handler: app.lambda_handler
       Runtime: python3.14
+      LoggingConfig:
+        LogGroup: !Ref AscendCardFunctionLogGroup
       Architectures:
       - x86_64
       Layers:
@@ -445,6 +457,8 @@ Resources:
       CodeUri: save_user_card/
       Handler: app.lambda_handler
       Runtime: python3.14
+      LoggingConfig:
+        LogGroup: !Ref SaveUserCardFunctionLogGroup
       Architectures:
       - x86_64
       Layers:
@@ -480,6 +494,8 @@ Resources:
       CodeUri: get_summon_status/
       Handler: app.lambda_handler
       Runtime: python3.14
+      LoggingConfig:
+        LogGroup: !Ref GetSummonStatusFunctionLogGroup
       Architectures:
       - x86_64
       Environment:
@@ -510,6 +526,8 @@ Resources:
       CodeUri: get_wallet/
       Handler: app.lambda_handler
       Runtime: python3.14
+      LoggingConfig:
+        LogGroup: !Ref GetWalletFunctionLogGroup
       Architectures:
       - x86_64
       Environment:
@@ -540,6 +558,8 @@ Resources:
       CodeUri: shop_listings/
       Handler: app.lambda_handler
       Runtime: python3.14
+      LoggingConfig:
+        LogGroup: !Ref GetShopListingsFunctionLogGroup
       Architectures:
       - x86_64
       Layers:
@@ -575,6 +595,8 @@ Resources:
       CodeUri: create_listing/
       Handler: app.lambda_handler
       Runtime: python3.14
+      LoggingConfig:
+        LogGroup: !Ref CreateListingFunctionLogGroup
       Architectures:
       - x86_64
       Layers:
@@ -607,6 +629,8 @@ Resources:
       CodeUri: buy_listing/
       Handler: app.lambda_handler
       Runtime: python3.14
+      LoggingConfig:
+        LogGroup: !Ref BuyListingFunctionLogGroup
       Architectures:
       - x86_64
       Layers:
@@ -645,6 +669,8 @@ Resources:
       CodeUri: cancel_listing/
       Handler: app.lambda_handler
       Runtime: python3.14
+      LoggingConfig:
+        LogGroup: !Ref CancelListingFunctionLogGroup
       Architectures:
       - x86_64
       Layers:
@@ -683,6 +709,8 @@ Resources:
       CodeUri: get_profile/
       Handler: app.lambda_handler
       Runtime: python3.14
+      LoggingConfig:
+        LogGroup: !Ref GetProfileFunctionLogGroup
       Architectures:
       - x86_64
       Layers:
@@ -724,6 +752,8 @@ Resources:
       CodeUri: set_username/
       Handler: app.lambda_handler
       Runtime: python3.14
+      LoggingConfig:
+        LogGroup: !Ref SetUsernameFunctionLogGroup
       Architectures:
       - x86_64
       Layers:
@@ -759,6 +789,8 @@ Resources:
       CodeUri: search_users/
       Handler: app.lambda_handler
       Runtime: python3.14
+      LoggingConfig:
+        LogGroup: !Ref SearchUsersFunctionLogGroup
       Architectures:
       - x86_64
       Layers:
@@ -794,6 +826,8 @@ Resources:
       CodeUri: play_battle/
       Handler: app.lambda_handler
       Runtime: python3.14
+      LoggingConfig:
+        LogGroup: !Ref PlayBattleFunctionLogGroup
       Architectures:
       - x86_64
       Layers:
@@ -855,6 +889,8 @@ Resources:
       CodeUri: get_campaign/
       Handler: app.lambda_handler
       Runtime: python3.14
+      LoggingConfig:
+        LogGroup: !Ref GetCampaignFunctionLogGroup
       Architectures:
       - x86_64
       Layers:
@@ -893,6 +929,8 @@ Resources:
       CodeUri: claim_region/
       Handler: app.lambda_handler
       Runtime: python3.14
+      LoggingConfig:
+        LogGroup: !Ref ClaimRegionFunctionLogGroup
       Architectures:
       - x86_64
       Layers:
@@ -931,6 +969,8 @@ Resources:
       CodeUri: set_title/
       Handler: app.lambda_handler
       Runtime: python3.14
+      LoggingConfig:
+        LogGroup: !Ref SetTitleFunctionLogGroup
       Architectures:
       - x86_64
       Layers:
@@ -972,6 +1012,8 @@ Resources:
       CodeUri: get_battle/
       Handler: app.lambda_handler
       Runtime: python3.14
+      LoggingConfig:
+        LogGroup: !Ref GetBattleFunctionLogGroup
       Architectures:
       - x86_64
       Layers:
@@ -1010,6 +1052,8 @@ Resources:
       CodeUri: pvp_challenges/
       Handler: app.lambda_handler
       Runtime: python3.14
+      LoggingConfig:
+        LogGroup: !Ref PvpChallengesFunctionLogGroup
       Architectures:
       - x86_64
       Layers:
@@ -1119,6 +1163,8 @@ Resources:
       CodeUri: pvp_battle/
       Handler: app.lambda_handler
       Runtime: python3.14
+      LoggingConfig:
+        LogGroup: !Ref PvpBattleFunctionLogGroup
       Architectures:
       - x86_64
       Layers:
@@ -1174,6 +1220,8 @@ Resources:
       CodeUri: get_rules/
       Handler: app.lambda_handler
       Runtime: python3.14
+      LoggingConfig:
+        LogGroup: !Ref GetRulesFunctionLogGroup
       Architectures:
       - x86_64
       Layers:
@@ -1198,6 +1246,8 @@ Resources:
       CodeUri: get_world/
       Handler: app.lambda_handler
       Runtime: python3.14
+      LoggingConfig:
+        LogGroup: !Ref GetWorldFunctionLogGroup
       Architectures:
       - x86_64
       Layers:
@@ -1215,6 +1265,142 @@ Resources:
             RestApiId: !Ref MysticBoxApi
             Path: /world
             Method: options
+
+  # Grupos de log das Lambdas (LoggingConfig.LogGroup de cada uma), com
+  # retenção para os logs não ficarem guardados para sempre.
+  # Uma Lambda nova precisa do seu grupo aqui.
+  OpenBoxFunctionLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub "/aws/lambda/${AWS::StackName}/OpenBoxFunction"
+      RetentionInDays: 14
+
+  GetUserCardsFunctionLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub "/aws/lambda/${AWS::StackName}/GetUserCardsFunction"
+      RetentionInDays: 14
+
+  AscendCardFunctionLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub "/aws/lambda/${AWS::StackName}/AscendCardFunction"
+      RetentionInDays: 14
+
+  SaveUserCardFunctionLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub "/aws/lambda/${AWS::StackName}/SaveUserCardFunction"
+      RetentionInDays: 14
+
+  GetSummonStatusFunctionLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub "/aws/lambda/${AWS::StackName}/GetSummonStatusFunction"
+      RetentionInDays: 14
+
+  GetWalletFunctionLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub "/aws/lambda/${AWS::StackName}/GetWalletFunction"
+      RetentionInDays: 14
+
+  GetShopListingsFunctionLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub "/aws/lambda/${AWS::StackName}/GetShopListingsFunction"
+      RetentionInDays: 14
+
+  CreateListingFunctionLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub "/aws/lambda/${AWS::StackName}/CreateListingFunction"
+      RetentionInDays: 14
+
+  BuyListingFunctionLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub "/aws/lambda/${AWS::StackName}/BuyListingFunction"
+      RetentionInDays: 14
+
+  CancelListingFunctionLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub "/aws/lambda/${AWS::StackName}/CancelListingFunction"
+      RetentionInDays: 14
+
+  GetProfileFunctionLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub "/aws/lambda/${AWS::StackName}/GetProfileFunction"
+      RetentionInDays: 14
+
+  SetUsernameFunctionLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub "/aws/lambda/${AWS::StackName}/SetUsernameFunction"
+      RetentionInDays: 14
+
+  SearchUsersFunctionLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub "/aws/lambda/${AWS::StackName}/SearchUsersFunction"
+      RetentionInDays: 14
+
+  PlayBattleFunctionLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub "/aws/lambda/${AWS::StackName}/PlayBattleFunction"
+      RetentionInDays: 14
+
+  GetBattleFunctionLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub "/aws/lambda/${AWS::StackName}/GetBattleFunction"
+      RetentionInDays: 14
+
+  PvpChallengesFunctionLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub "/aws/lambda/${AWS::StackName}/PvpChallengesFunction"
+      RetentionInDays: 14
+
+  PvpBattleFunctionLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub "/aws/lambda/${AWS::StackName}/PvpBattleFunction"
+      RetentionInDays: 14
+
+  GetRulesFunctionLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub "/aws/lambda/${AWS::StackName}/GetRulesFunction"
+      RetentionInDays: 14
+
+  GetCampaignFunctionLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub "/aws/lambda/${AWS::StackName}/GetCampaignFunction"
+      RetentionInDays: 14
+
+  ClaimRegionFunctionLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub "/aws/lambda/${AWS::StackName}/ClaimRegionFunction"
+      RetentionInDays: 14
+
+  SetTitleFunctionLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub "/aws/lambda/${AWS::StackName}/SetTitleFunction"
+      RetentionInDays: 14
+
+  GetWorldFunctionLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub "/aws/lambda/${AWS::StackName}/GetWorldFunction"
+      RetentionInDays: 14
+
 
 Outputs:
   OpenBoxApi:
