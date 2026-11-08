@@ -2,6 +2,8 @@
 
 Regiões, fases (inimigos, nível, experiência e recompensa calculados no
 servidor), quais fases já foram vencidas e o epílogo das regiões completas.
+Também traz `collection`: quantos personagens de cada região o jogador tem e
+se a recompensa da coleção já foi recebida.
 """
 
 import json
@@ -10,6 +12,7 @@ import os
 import boto3
 from botocore.exceptions import ClientError
 from mystic_shared.campaign import progress_from_item, public_campaign
+from mystic_shared.mastery import claimed_from_item, public_collection
 from mystic_shared.progression import level_for_experience
 
 CORS_HEADERS = {
@@ -20,6 +23,7 @@ CORS_HEADERS = {
 
 REGION_PROGRESS_TABLE = os.environ.get("REGION_PROGRESS_TABLE")
 USER_PROGRESS_TABLE = os.environ.get("USER_PROGRESS_TABLE")
+USER_CARDS_TABLE = os.environ.get("USER_CARDS_TABLE")
 
 # Criado uma vez por container e reaproveitado entre invocações.
 _client = None
@@ -57,6 +61,25 @@ def get_item(table, user_id):
     ).get("Item")
 
 
+def get_owned_file_names(user_id):
+    names = set()
+    query_kwargs = {
+        "TableName": USER_CARDS_TABLE,
+        "KeyConditionExpression": "userId = :userId",
+        "ProjectionExpression": "file_name",
+        "ExpressionAttributeValues": {":userId": {"S": user_id}},
+    }
+    while True:
+        result = get_client().query(**query_kwargs)
+        names.update(
+            item["file_name"]["S"] for item in result.get("Items", []) if "file_name" in item
+        )
+        last_key = result.get("LastEvaluatedKey")
+        if not last_key:
+            return names
+        query_kwargs["ExclusiveStartKey"] = last_key
+
+
 def lambda_handler(event, context):
     if event.get("httpMethod") == "OPTIONS":
         return response(200, {})
@@ -68,6 +91,7 @@ def lambda_handler(event, context):
     try:
         region_item = get_item(REGION_PROGRESS_TABLE, user_id)
         progress_item = get_item(USER_PROGRESS_TABLE, user_id) or {}
+        owned = get_owned_file_names(user_id)
     except ClientError:
         return response(500, {"message": "Could not load the campaign."})
 
@@ -75,5 +99,9 @@ def lambda_handler(event, context):
     level, _ = level_for_experience(experience)
     return response(
         200,
-        {"regions": public_campaign(progress_from_item(region_item), level), "level": level},
+        {
+            "regions": public_campaign(progress_from_item(region_item), level),
+            "collection": public_collection(owned, claimed_from_item(region_item)),
+            "level": level,
+        },
     )

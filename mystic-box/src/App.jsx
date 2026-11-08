@@ -651,6 +651,7 @@ function App() {
             setCampaignIntent(null);
             setScreen("battle");
           }}
+          onBalanceChange={handleBalanceChange}
           onCampaign={(region) => {
             setDuelIntent(null);
             setCampaignIntent({ region });

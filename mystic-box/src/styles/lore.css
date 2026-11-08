@@ -770,3 +770,56 @@
   font-size: 13px;
   font-style: italic;
 }
+
+.world-mastery {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 0 0 16px;
+  padding: 10px 12px;
+  border: 1px dashed rgba(255, 220, 142, 0.35);
+  border-radius: 10px;
+  background: rgba(30, 16, 50, 0.5);
+}
+
+.world-mastery p {
+  margin: 0;
+  color: #e4d8f8;
+  font-size: 13px;
+}
+
+.world-mastery p span {
+  display: block;
+  margin-bottom: 4px;
+  color: #ffdc8e;
+  font-size: 10px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+}
+
+.world-mastery .keep-button {
+  align-self: flex-start;
+}
+
+.world-mastery.is-claimed {
+  border-style: solid;
+  border-color: rgba(255, 220, 142, 0.8);
+  background: linear-gradient(160deg, rgba(80, 56, 16, 0.5), rgba(30, 16, 50, 0.6));
+  box-shadow: 0 0 16px rgba(255, 220, 142, 0.25);
+}
+
+.world-mastery-message {
+  color: #ffdc8e !important;
+}
+
+.world-region-pin.is-mastered {
+  border-color: #ffdc8e;
+  color: #fff3d6;
+  box-shadow: 0 0 12px rgba(255, 220, 142, 0.75);
+}
+
+.world-region-pin.is-mastered::after {
+  content: "★";
+  color: #ffdc8e;
+  font-size: 10px;
+}

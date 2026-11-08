@@ -109,6 +109,7 @@ function HomeScreen({
   onSummon,
   onBattle,
   onCampaign,
+  onBalanceChange,
   onCollection,
   onShop,
   onProfile,
@@ -252,7 +253,12 @@ function HomeScreen({
           </svg>
           <span>Players</span>
         </button>
-        <WorldMap apiUrl={apiUrl} session={session} onCampaign={onCampaign} />
+        <WorldMap
+          apiUrl={apiUrl}
+          session={session}
+          onCampaign={onCampaign}
+          onBalanceChange={onBalanceChange}
+        />
         <Grimoire apiUrl={apiUrl} variant="dock" />
       </nav>
     </section>

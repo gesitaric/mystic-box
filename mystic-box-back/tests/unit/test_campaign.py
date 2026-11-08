@@ -55,12 +55,17 @@ def test_public_campaign_hides_epilogue_until_the_boss_falls():
 
 
 def test_get_campaign_endpoint(apigw_event, authenticated_event, monkeypatch):
-    fake = FakeDynamo({"regions": ("userId", None), "progress": ("userId", None)})
+    fake = FakeDynamo({"regions": ("userId", None), "progress": ("userId", None),
+                       "cards": ("userId", "ownedCardId")})
     fake.tables["regions"][("user-123", None)] = {"userId": {"S": "user-123"},
                                                   "stage_cinderpeak": {"N": "2"}}
     monkeypatch.setattr(get_campaign, "_client", fake)
     monkeypatch.setattr(get_campaign, "REGION_PROGRESS_TABLE", "regions")
     monkeypatch.setattr(get_campaign, "USER_PROGRESS_TABLE", "progress")
+    monkeypatch.setattr(get_campaign, "USER_CARDS_TABLE", "cards")
+    fake.tables["cards"][("user-123", "c1")] = {"userId": {"S": "user-123"},
+                                                 "ownedCardId": {"S": "c1"},
+                                                 "file_name": {"S": "ignis.jfif"}}
 
     assert get_campaign.lambda_handler(apigw_event, "")["statusCode"] == 401
     ret = get_campaign.lambda_handler(authenticated_event(httpMethod="GET"), "")
@@ -69,3 +74,5 @@ def test_get_campaign_endpoint(apigw_event, authenticated_event, monkeypatch):
     assert ret["statusCode"] == 200
     assert cinderpeak["cleared"] == 2
     assert body["level"] == 1
+    collection = next(r for r in body["collection"] if r["region"] == "cinderpeak")
+    assert collection["owned"] == 1 and collection["complete"] is False

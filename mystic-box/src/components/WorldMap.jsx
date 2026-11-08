@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 // Imagem pronta (WebP em 2x) desenhada a partir de `world-map.svg`: desenhar o
 // SVG com tantos brilhos e desfoques no navegador deixa o mapa pesado.
 import worldMapArt from "../assets/world-map.webp";
@@ -49,9 +49,11 @@ function useOwnedCards(apiUrl, session) {
   return owned;
 }
 
-// Progresso da campanha (fases vencidas e epílogos), de GET /users/me/campaign.
+// Progresso da campanha (fases vencidas e epílogos) e da coleção de cada
+// região, de GET /users/me/campaign.
 function useCampaign(apiUrl, session) {
   const [campaign, setCampaign] = useState(null);
+  const [collection, setCollection] = useState(null);
 
   useEffect(() => {
     if (!session) return undefined;
@@ -62,6 +64,7 @@ function useCampaign(apiUrl, session) {
       .then((data) => {
         if (!cancelled && data) {
           setCampaign(Object.fromEntries(data.regions.map((r) => [r.region, r])));
+          setCollection(Object.fromEntries((data.collection ?? []).map((r) => [r.region, r])));
         }
       })
       .catch((error) => console.error(error));
@@ -70,7 +73,67 @@ function useCampaign(apiUrl, session) {
     };
   }, [apiUrl, session]);
 
-  return campaign;
+  // Recebida a recompensa, marca a região (o servidor já gravou).
+  const markClaimed = useCallback((regionId) => {
+    setCollection((current) =>
+      current ? { ...current, [regionId]: { ...current[regionId], claimed: true } } : current
+    );
+  }, []);
+
+  return { campaign, collection, markClaimed };
+}
+
+// Coleção da região: completar paga uma recompensa única (valor do servidor).
+function RegionCollection({ apiUrl, session, mastery, onClaimed }) {
+  const [claiming, setClaiming] = useState(false);
+  const [message, setMessage] = useState("");
+  if (!mastery) return null;
+
+  async function claim() {
+    setClaiming(true);
+    setMessage("");
+    try {
+      const token = session.session.getIdToken().getJwtToken();
+      const response = await fetch(`${apiUrl}/users/me/regions/claim`, {
+        method: "POST",
+        headers: { Authorization: token, "Content-Type": "application/json" },
+        body: JSON.stringify({ regionId: mastery.region }),
+      });
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok) {
+        setMessage(data.message ?? "Could not claim the reward.");
+        return;
+      }
+      onClaimed(mastery.region);
+      setMessage(`You earned ✧ ${data.reward}.`);
+    } catch (error) {
+      console.error(error);
+      setMessage("Could not claim the reward.");
+    } finally {
+      setClaiming(false);
+    }
+  }
+
+  return (
+    <div className={`world-mastery${mastery.claimed ? " is-claimed" : ""}`}>
+      <p>
+        <span>Collection</span>
+        {mastery.claimed
+          ? "Every champion of this land answered your call. The land shines for you."
+          : `${mastery.owned}/${mastery.total} champions summoned · complete it for ✧ ${mastery.reward}`}
+      </p>
+      {mastery.complete && !mastery.claimed && (
+        <button type="button" className="keep-button" disabled={claiming} onClick={claim}>
+          {claiming ? "Claiming..." : `Claim ✧ ${mastery.reward}`}
+        </button>
+      )}
+      {message && (
+        <p className="world-mastery-message" role="status">
+          {message}
+        </p>
+      )}
+    </div>
+  );
 }
 
 // Rótulo um pouco abaixo do centro da região, para não cobrir o desenho dela.
@@ -81,7 +144,7 @@ function pinStyle(region) {
   };
 }
 
-function MapCanvas({ regions, selectedId, owned, onSelect }) {
+function MapCanvas({ regions, selectedId, owned, collection, onSelect }) {
   return (
     <div className="world-map">
       <img
@@ -98,11 +161,14 @@ function MapCanvas({ regions, selectedId, owned, onSelect }) {
           ? region.characters.filter((c) => owned.has(c.file_name)).length
           : null;
         const selected = region.id === selectedId;
+        const mastered = Boolean(collection?.[region.id]?.claimed);
         return (
           <button
             key={region.id}
             type="button"
-            className={`world-region-pin${selected ? " is-selected" : ""}`}
+            className={`world-region-pin${selected ? " is-selected" : ""}${
+              mastered ? " is-mastered" : ""
+            }`}
             data-element={region.element ?? "rift"}
             style={pinStyle(region)}
             onClick={() => onSelect(region.id)}
@@ -151,7 +217,7 @@ function RegionCampaign({ progress, onCampaign }) {
   );
 }
 
-function RegionPanel({ region, owned, campaign, onCampaign }) {
+function RegionPanel({ region, owned, campaign, onCampaign, collection, children }) {
   const found = owned ? region.characters.filter((c) => owned.has(c.file_name)).length : null;
 
   return (
@@ -179,6 +245,7 @@ function RegionPanel({ region, owned, campaign, onCampaign }) {
       )}
 
       <RegionCampaign progress={campaign?.[region.id]} onCampaign={onCampaign} />
+      {collection && children}
 
       {region.characters.length > 0 ? (
         <>
@@ -243,13 +310,13 @@ function Chronicle({ world, chronicle }) {
   );
 }
 
-function WorldModal({ apiUrl, session, onCampaign, onClose }) {
+function WorldModal({ apiUrl, session, onCampaign, onBalanceChange, onClose }) {
   const [state, setState] = useState({ data: null, error: "" });
   const [attempt, setAttempt] = useState(0);
   const [selectedId, setSelectedId] = useState("riftheart");
   const [tab, setTab] = useState("map");
   const owned = useOwnedCards(apiUrl, session);
-  const campaign = useCampaign(apiUrl, session);
+  const { campaign, collection, markClaimed } = useCampaign(apiUrl, session);
 
   useEffect(() => {
     let cancelled = false;
@@ -319,15 +386,28 @@ function WorldModal({ apiUrl, session, onCampaign, onClose }) {
                 regions={regions}
                 selectedId={selected?.id}
                 owned={owned}
+                collection={collection}
                 onSelect={setSelectedId}
               />
               {selected && (
                 <RegionPanel
+                  key={selected.id}
                   region={selected}
                   owned={owned}
                   campaign={campaign}
                   onCampaign={onCampaign}
-                />
+                  collection={collection}
+                >
+                  <RegionCollection
+                    apiUrl={apiUrl}
+                    session={session}
+                    mastery={collection?.[selected.id]}
+                    onClaimed={(regionId) => {
+                      markClaimed(regionId);
+                      onBalanceChange?.();
+                    }}
+                  />
+                </RegionPanel>
               )}
             </div>
           ) : (
@@ -340,7 +420,7 @@ function WorldModal({ apiUrl, session, onCampaign, onClose }) {
 }
 
 // Atalho da tela inicial que abre o mapa-múndi.
-function WorldMap({ apiUrl, session, onCampaign }) {
+function WorldMap({ apiUrl, session, onCampaign, onBalanceChange }) {
   const [open, setOpen] = useState(false);
 
   return (
@@ -364,6 +444,7 @@ function WorldMap({ apiUrl, session, onCampaign }) {
           apiUrl={apiUrl}
           session={session}
           onCampaign={onCampaign}
+          onBalanceChange={onBalanceChange}
           onClose={() => setOpen(false)}
         />
       )}

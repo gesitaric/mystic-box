@@ -857,11 +857,14 @@ Resources:
         Variables:
           REGION_PROGRESS_TABLE: !Ref RegionProgressTable
           USER_PROGRESS_TABLE: !Ref UserProgressTable
+          USER_CARDS_TABLE: !Ref UserCardsTable
       Policies:
       - DynamoDBReadPolicy:
           TableName: !Ref RegionProgressTable
       - DynamoDBReadPolicy:
           TableName: !Ref UserProgressTable
+      - DynamoDBReadPolicy:
+          TableName: !Ref UserCardsTable
       Events:
         GetCampaign:
           Type: Api
@@ -876,6 +879,44 @@ Resources:
           Properties:
             RestApiId: !Ref MysticBoxApi
             Path: /users/me/campaign
+            Method: options
+
+  ClaimRegionFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: claim_region/
+      Handler: app.lambda_handler
+      Runtime: python3.14
+      Architectures:
+      - x86_64
+      Layers:
+      - !Ref SharedLayer
+      Environment:
+        Variables:
+          USER_CARDS_TABLE: !Ref UserCardsTable
+          REGION_PROGRESS_TABLE: !Ref RegionProgressTable
+          USER_WALLET_TABLE: !Ref UserWalletTable
+      Policies:
+      - DynamoDBReadPolicy:
+          TableName: !Ref UserCardsTable
+      - DynamoDBCrudPolicy:
+          TableName: !Ref RegionProgressTable
+      - DynamoDBCrudPolicy:
+          TableName: !Ref UserWalletTable
+      Events:
+        ClaimRegion:
+          Type: Api
+          Properties:
+            RestApiId: !Ref MysticBoxApi
+            Path: /users/me/regions/claim
+            Method: post
+            Auth:
+              Authorizer: CognitoAuthorizer
+        ClaimRegionOptions:
+          Type: Api
+          Properties:
+            RestApiId: !Ref MysticBoxApi
+            Path: /users/me/regions/claim
             Method: options
 
   GetBattleFunction:
