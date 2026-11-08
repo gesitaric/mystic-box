@@ -23,7 +23,7 @@ Isso significa:
   - `cards.py`: **fonte única** das definições das cartas (`name`, `rarity`, `file_name`), das regras do mercado (`LISTING_PRICE_LIMITS`, `MAX_LISTING_QUANTITY`, `MAX_ACTIVE_LISTINGS`, `listing_price_range`) e das regras do sorteio (pesos por raridade, tamanho da invocação). Para achar uma carta, use `get_character(file_name)`.
   - `summon_token.py`: token assinado (HMAC, chave no Secrets Manager) que comprova que um sorteio foi feito pelo servidor.
   - `stats.py`: atributos de batalha (vitality, might, arcana, bulwark, resolve, celerity, fate), elementos e arquétipos. Os atributos saem da raridade, do arquétipo e do nível; elemento e arquétipo de cada carta ficam em `cards.py`.
-  - `battle.py`: motor da batalha contra o computador (turnos, Aether, habilidades, efeitos, IA, dificuldades e experiência ganha).
+  - `battle.py`: motor da batalha contra o computador (turnos, Aether, habilidades, efeitos, IA, dificuldades e experiência ganha). Também aplica os laços (`BONDS` de `lore.py`) entre cartas do mesmo time: bônus de atributos por parceiro (`BOND_STAT_BONUS`), evento `bond` com as falas no começo e Fortalecer (`BOND_GRIEF_TURNS`) para os parceiros de quem cai (evento `bondGrief`). Cada combatente traz `bonds` (ids dos parceiros).
   - `pvp.py`: regras do duelo online (validade do desafio, limite de desafios, tempo de turno, vezes perdidas até abandonar, histórico de eventos). A batalha em si é a de `battle.py` com `mode: "pvp"`.
   - `progression.py`: curva de experiência, nível máximo e Fragmentos Arcanos ganhos ao subir de nível.
   - `ascension.py`: ascensão das cartas com cópias repetidas (custo em cópias por nível, bônus de atributos, nível que libera mais uma habilidade do arquétipo).

@@ -702,6 +702,17 @@ function EffectsPage({ battle }) {
           </ul>
         </section>
       ))}
+      {battle.bonds && (
+        <section>
+          <h3 className="gr-heading">♥ Bonds</h3>
+          <p className="gr-lead">
+            Champions who share a bond in their story fight harder side by side: each bonded
+            teammate grants +{battle.bonds.statBonusPercent}% vitality, might, arcana, bulwark and
+            resolve. If one of them falls, the others gain {battle.bonds.griefStatus} for{" "}
+            {battle.bonds.griefTurns} turns. Read the bonds in each card&apos;s story.
+          </p>
+        </section>
+      )}
     </>
   );
 }

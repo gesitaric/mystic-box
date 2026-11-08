@@ -16,6 +16,9 @@ Batalha por turnos entre dois times de 3 cartas. Regras principais:
 - Efeitos: queimadura, atordoamento, enfraquecer, expor, lentidão, escudo,
   provocação, regeneração, fortalecer, guarda e companheiro (o monstro dos
   Invocadores, que ataca no começo de cada turno da carta).
+- Laços: cartas com laço (`lore.BONDS`) no mesmo time ganham
+  BOND_STAT_BONUS nos atributos grandes por parceiro; quando uma cai, os
+  parceiros vivos ganham Fortalecer por BOND_GRIEF_TURNS turnos.
 - Provocação: golpes de alvo único precisam mirar quem está provocando.
 - Duelo online (mode "pvp"): as mesmas regras, mas os dois lados são
   jogadores. O lado "player" é quem desafiou e o "enemy" quem aceitou; cada
@@ -33,6 +36,7 @@ import random
 
 from .ascension import MAX_ASCENSION, bonus_skills, clamp_ascension
 from .cards import CHARACTERS
+from .lore import bond_between
 from .progression import MAX_LEVEL
 from .stats import ARCHETYPES, ELEMENTS, SCALED_STATS, battle_stats, element_multiplier
 
@@ -61,6 +65,12 @@ SLOW_MULTIPLIER = 0.6
 # Monstro companheiro dos Invocadores: golpe híbrido no começo de cada turno.
 COMPANION_MULTIPLIER = 0.75
 COMPANION_TURNS = 3
+
+# Laços (BONDS de lore.py) no mesmo time: cada parceiro de laço aumenta os
+# atributos grandes da carta; quando um parceiro cai, os que ficam ganham
+# Fortalecer por alguns turnos.
+BOND_STAT_BONUS = 0.06
+BOND_GRIEF_TURNS = 2
 
 # Experiência de uma derrota: fração da experiência de vitória + bônus por
 # inimigo derrotado. Desistir não dá experiência.
@@ -660,6 +670,43 @@ def build_unit(character, side, index, level, power=1.0, ascension=0):
     }
 
 
+def _link_bonds(state, events):
+    """Liga as cartas de um mesmo time que têm laço e aplica o bônus de atributos."""
+    for unit in state["units"]:
+        unit["bonds"] = []
+    for i, unit in enumerate(state["units"]):
+        for other in state["units"][i + 1:]:
+            if other["side"] != unit["side"]:
+                continue
+            lines = bond_between(unit["fileName"], other["fileName"])
+            if not lines:
+                continue
+            unit["bonds"].append(other["id"])
+            other["bonds"].append(unit["id"])
+            events.append({"type": "bond", "actor": unit["id"], "target": other["id"],
+                           "line": lines[0], "reply": lines[1]})
+    for unit in state["units"]:
+        if not unit["bonds"]:
+            continue
+        bonus = 1 + BOND_STAT_BONUS * len(unit["bonds"])
+        for stat in SCALED_STATS:
+            unit["stats"][stat] = round(unit["stats"][stat] * bonus)
+        unit["maxHp"] = unit["hp"] = unit["stats"]["vitality"]
+
+
+def _bond_grief(state, events, start):
+    """Parceiros de laço de quem caiu (nos eventos desde `start`) ganham Fortalecer."""
+    fallen = [e["target"] for e in events[start:] if e["type"] == "defeated"]
+    for fallen_id in fallen:
+        unit = _unit(state, fallen_id)
+        for partner_id in unit.get("bonds", []):
+            partner = _unit(state, partner_id)
+            if not _alive(partner):
+                continue
+            events.append({"type": "bondGrief", "target": partner_id, "source": fallen_id})
+            _apply_status(state, partner, "empower", BOND_GRIEF_TURNS, events)
+
+
 def enemy_level(player_level, difficulty):
     offset = DIFFICULTIES[difficulty]["levelOffset"]
     return max(1, min(MAX_LEVEL, player_level + offset))
@@ -751,6 +798,7 @@ def create_battle(battle_id, player_team, player_level, difficulty, rng, enemy_t
         ],
     }
     events = []
+    _link_bonds(state, events)
     _advance(state, rng, events)
     return state, events
 
@@ -796,6 +844,7 @@ def create_pvp_battle(battle_id, challenger_team, challenger_level, opponent_tea
         ],
     }
     events = []
+    _link_bonds(state, events)
     _advance(state, rng, events)
     return state, events
 
@@ -907,7 +956,9 @@ def _advance(state, rng, events):
         if actor is None:
             return
         state["acting"] = actor["id"]
+        start = len(events)
         acts = _start_turn(state, actor, events, rng)
+        _bond_grief(state, events, start)
         if _check_end(state, events):
             return
         if not acts:
@@ -981,7 +1032,9 @@ def _perform(state, actor, skill_id, target_id, rng, events):
     events.append({"type": "skill", "actor": actor["id"], "skill": skill_id,
                    "skillName": skill["name"], "targets": [t["id"] for t in targets],
                    "aether": dict(state["aether"])})
+    start = len(events)
     skill["effect"](state, actor, targets, rng, events)
+    _bond_grief(state, events, start)
 
 
 # --------------------------------------------------------------------- IA ---
@@ -1211,6 +1264,7 @@ def _public_unit(unit, viewer="player"):
         "archetypeLabel": ARCHETYPES[unit["archetype"]]["label"],
         "level": unit["level"],
         "ascension": unit.get("ascension", 0),
+        "bonds": [view_id(unit_id, viewer) for unit_id in unit.get("bonds", [])],
         "stats": unit["stats"],
         "maxHp": unit["maxHp"],
         "hp": unit["hp"],

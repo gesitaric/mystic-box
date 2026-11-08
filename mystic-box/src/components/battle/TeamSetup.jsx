@@ -184,6 +184,9 @@ function TeamSetup({
               const position = team.indexOf(card.file_name);
               const selected = position >= 0;
               const element = ELEMENT_STYLE[card.battle.element];
+              const bonded = (card.lore?.bonds ?? []).some(
+                (bond) => bond.file_name !== card.file_name && team.includes(bond.file_name)
+              );
               return (
                 <li key={card.file_name}>
                   <button
@@ -199,6 +202,11 @@ function TeamSetup({
                   >
                     <img src={getCharacterImage(card.file_name)} alt="" />
                     {selected && <span className="battle-roster-order">{position + 1}</span>}
+                    {bonded && (
+                      <span className="battle-roster-bond" title="Bonded with a card in your team">
+                        ♥
+                      </span>
+                    )}
                     <span className="battle-roster-name">{card.name}</span>
                     <span className="battle-roster-meta">
                       {element?.icon} {card.battle.archetypeLabel}
@@ -223,6 +231,15 @@ function TeamSetup({
           </h2>
           <p className="battle-inspect-desc">{inspectedCard.battle.archetypeDescription}</p>
           <StatGrid stats={inspectedCard.battle.stats} />
+          {inspectedCard.lore?.bonds?.some((bond) => bond.owned) && (
+            <p className="battle-inspect-bonds">
+              <span>♥ Bonds</span>
+              {inspectedCard.lore.bonds
+                .filter((bond) => bond.owned)
+                .map((bond) => bond.name)
+                .join(" · ")}
+            </p>
+          )}
           {inspectedCard.battle.skills && <SkillList skills={inspectedCard.battle.skills} />}
         </section>
       )}

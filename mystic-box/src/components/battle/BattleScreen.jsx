@@ -94,7 +94,18 @@ function AetherMeter({ label, value, max, side }) {
   );
 }
 
-function BattleUnit({ unit, hp, alive, active, acting, targetable, inspected, floats, onClick }) {
+function BattleUnit({
+  unit,
+  hp,
+  alive,
+  active,
+  acting,
+  targetable,
+  inspected,
+  floats,
+  bondNames,
+  onClick,
+}) {
   const element = ELEMENT_STYLE[unit.element];
   const percent = Math.max(0, Math.min(100, (hp / unit.maxHp) * 100));
   const hit = floats.some((float) => float.kind === "damage");
@@ -138,6 +149,11 @@ function BattleUnit({ unit, hp, alive, active, acting, targetable, inspected, fl
         <span className="battle-unit-element" title={unit.elementLabel}>
           {element?.icon}
         </span>
+        {bondNames.length > 0 && (
+          <span className="battle-unit-bond" title={`Bonded with ${bondNames.join(" and ")}`}>
+            ♥
+          </span>
+        )}
         <span className="battle-unit-level">
           Lv {unit.level}
           {unit.ascension > 0 && ` ${"✴".repeat(unit.ascension)}`}
@@ -382,6 +398,10 @@ function BattleScreen({
         case "revive":
           sfx.revive();
           break;
+        case "bond":
+        case "bondGrief":
+          sfx.status(true);
+          break;
         case "aether":
           sfx.siphon();
           break;
@@ -456,6 +476,13 @@ function BattleScreen({
           break;
         case "stunned":
           addFloat(event.target, "Stunned", "status");
+          break;
+        case "bond":
+          addFloat(event.actor, "♥", "bond");
+          addFloat(event.target, "♥", "bond");
+          break;
+        case "bondGrief":
+          addFloat(event.target, "♥ Resolve", "bond");
           break;
         case "companion":
           setActingId(event.actor);
@@ -887,6 +914,9 @@ function BattleScreen({
         targetable={targetable}
         inspected={inspectedId === unit.id}
         floats={floats.filter((float) => float.unitId === unit.id)}
+        bondNames={(unit.bonds ?? [])
+          .map((id) => units.find((other) => other.id === id)?.name)
+          .filter(Boolean)}
         onClick={() => {
           if (targetable) {
             audio.current?.select();

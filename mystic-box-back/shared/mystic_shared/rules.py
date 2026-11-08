@@ -167,6 +167,11 @@ def _battle_rules():
             for key, s in battle.STATUSES.items()
         ],
         "difficulties": _difficulty_rules(),
+        "bonds": {
+            "statBonusPercent": _percent(battle.BOND_STAT_BONUS),
+            "griefStatus": battle.STATUSES["empower"]["label"],
+            "griefTurns": battle.BOND_GRIEF_TURNS,
+        },
         "rewards": {
             "lossExperiencePercent": _percent(battle.LOSS_EXPERIENCE_RATIO),
             "lossExperiencePerDefeat": battle.LOSS_EXPERIENCE_PER_DEFEAT,

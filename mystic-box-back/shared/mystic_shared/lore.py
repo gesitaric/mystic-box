@@ -1939,6 +1939,16 @@ def _region(region_id):
     return next(region for region in REGIONS if region["id"] == region_id)
 
 
+def bond_between(a, b):
+    """O que `a` pensa de `b` e o que `b` pensa de `a`, ou None se não há laço."""
+    for x, y, x_about_y, y_about_x in BONDS:
+        if (x, y) == (a, b):
+            return x_about_y, y_about_x
+        if (x, y) == (b, a):
+            return y_about_x, x_about_y
+    return None
+
+
 def _bonds_of(file_name, owned=None):
     bonds = []
     for a, b, a_about_b, b_about_a in BONDS:

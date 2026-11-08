@@ -686,6 +686,35 @@
   font-weight: 700;
 }
 
+.battle-log-entry.is-bond {
+  color: #ffb3d9;
+  font-style: italic;
+}
+
+.battle-float.is-bond {
+  top: 30%;
+  color: #ff8fc8;
+  font-size: 16px;
+  text-shadow:
+    0 0 10px rgba(255, 110, 180, 0.9),
+    0 2px 6px rgba(0, 0, 0, 0.9);
+}
+
+.battle-unit-bond {
+  position: absolute;
+  top: 2px;
+  right: 2px;
+  display: grid;
+  place-items: center;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: rgba(60, 10, 40, 0.85);
+  color: #ff8fc8;
+  font-size: 10px;
+  box-shadow: 0 0 6px rgba(255, 110, 180, 0.7);
+}
+
 .battle-log-end {
   height: 1px;
 }
@@ -1478,4 +1507,35 @@
 .pvp-refresh {
   display: flex;
   justify-content: flex-end;
+}
+
+/* Laços na escolha do time */
+
+.battle-roster-bond {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  display: grid;
+  place-items: center;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: rgba(60, 10, 40, 0.85);
+  color: #ff8fc8;
+  font-size: 11px;
+  box-shadow: 0 0 8px rgba(255, 110, 180, 0.8);
+}
+
+.battle-inspect-bonds {
+  margin: 6px 0;
+  color: #ffc4e1;
+  font-size: 12px;
+}
+
+.battle-inspect-bonds span {
+  margin-right: 8px;
+  color: #ff8fc8;
+  font-size: 10px;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
 }

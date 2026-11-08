@@ -114,6 +114,13 @@ export function describeEvent(event, names) {
       return { text: `${name(event.target)} returns to the fight!`, kind: "heal" };
     case "defeated":
       return { text: `${name(event.target)} has fallen.`, kind: "defeat" };
+    case "bond":
+      return {
+        text: `♥ ${name(event.actor)} & ${name(event.target)}: “${event.line}” — “${event.reply}”`,
+        kind: "bond",
+      };
+    case "bondGrief":
+      return { text: `♥ ${name(event.target)} fights on for ${name(event.source)}!`, kind: "bond" };
     case "stunned":
       return { text: `${name(event.target)} is stunned and loses the turn.`, kind: "status" };
     case "aether":
@@ -142,6 +149,10 @@ export function eventDelay(event) {
       return 420;
     case "heal":
       return event.amount > 0 ? 380 : 0;
+    case "bond":
+      return 2200;
+    case "bondGrief":
+      return 700;
     case "defeated":
     case "revive":
     case "stunned":

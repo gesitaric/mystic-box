@@ -412,3 +412,68 @@ def test_public_state_lists_actions_for_current_card():
     assert strike["usable"] and set(strike["targets"]) == {"e0", "e1", "e2"}
     assert len(view["units"]) == 6
     json.dumps(view)
+
+
+# ---------- laços ----------
+
+
+BONDED = ("malachar.jfif", "mortis.jfif", "rowan.jfif")
+
+
+def test_bonded_cards_on_the_same_team_get_stronger():
+    from mystic_shared.lore import bond_between
+
+    assert bond_between("rowan.jfif", "malachar.jfif") is None
+    plain, _ = new_battle(player=("tobin.jfif", "kael.jfif", "rowan.jfif"))
+    bonded, events = battle.create_battle(
+        "battle-1", team(*BONDED), 1, "novice", random.Random(1), enemy_team=team(*FOES),
+    )
+
+    malachar, mortis = unit(bonded, "p0"), unit(bonded, "p1")
+    assert malachar["bonds"] == ["p1"] and mortis["bonds"] == ["p0"]
+    assert unit(bonded, "p2")["bonds"] == []
+    base = battle.battle_stats(cards.get_character("malachar.jfif"), 1, 0)
+    assert malachar["stats"]["might"] == round(base["might"] * (1 + battle.BOND_STAT_BONUS))
+    assert malachar["maxHp"] == malachar["stats"]["vitality"]
+    # Rowan não tem laço com ninguém deste time: atributos iguais aos de sempre.
+    assert unit(bonded, "p2")["stats"] == unit(plain, "p2")["stats"]
+
+    bond = next(e for e in events if e["type"] == "bond")
+    assert (bond["actor"], bond["target"]) == ("p0", "p1")
+    assert (bond["line"], bond["reply"]) == bond_between("malachar.jfif", "mortis.jfif")
+
+
+def test_bonds_only_link_cards_on_the_same_side():
+    state, events = battle.create_battle(
+        "battle-1", team("malachar.jfif", "tobin.jfif", "kael.jfif"), 1, "novice",
+        random.Random(1), enemy_team=team("mortis.jfif", "corvus.jfif", "rowan.jfif"),
+    )
+    assert unit(state, "p0")["bonds"] == []
+    assert unit(state, "e0")["bonds"] == []
+    assert not [e for e in events if e["type"] == "bond"]
+
+
+def test_partner_is_empowered_when_a_bonded_ally_falls():
+    state, _ = battle.create_battle(
+        "battle-1", team(*BONDED), 1, "novice", random.Random(1), enemy_team=team(*FOES),
+    )
+    mortis = unit(state, "p1")
+    events = []
+    battle._lose_hp(mortis, mortis["hp"], events, {"type": "damage"})
+    battle._bond_grief(state, events, 0)
+
+    grief = next(e for e in events if e["type"] == "bondGrief")
+    assert (grief["target"], grief["source"]) == ("p0", "p1")
+    assert "empower" in unit(state, "p0")["statuses"]
+    assert "empower" not in unit(state, "p2")["statuses"]
+
+
+def test_public_state_shows_bonds_from_each_side():
+    state, events = battle.create_pvp_battle(
+        "duel-1", team("tobin.jfif", "kael.jfif", "corvus.jfif"), 1,
+        team(*BONDED), 1, random.Random(1),
+    )
+    view = battle.public_state(state, viewer="enemy")
+    assert next(u for u in view["units"] if u["id"] == "p0")["bonds"] == ["p1"]
+    bond = next(e for e in battle.view_events(events, "enemy") if e["type"] == "bond")
+    assert (bond["actor"], bond["target"]) == ("p0", "p1")
