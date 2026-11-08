@@ -646,3 +646,24 @@ def test_ascended_card_says_its_last_words_when_it_falls():
 def test_card_without_ascension_falls_in_silence():
     state, _ = new_battle()
     assert not [e for e in _fall(state, "p0") if e["type"] == "lastWords"]
+
+
+# ---------- leitura do duelo ----------
+
+
+def test_bonded_cards_on_opposite_sides_only_exchange_words():
+    from mystic_shared.lore import bond_between
+
+    state, events = battle.create_pvp_battle(
+        "duel-1", team("malachar.jfif", "tobin.jfif", "kael.jfif"), 1,
+        team("mortis.jfif", "corvus.jfif", "rowan.jfif"), 1, random.Random(1),
+    )
+    torn = next(e for e in events if e["type"] == "bondTorn")
+    assert (torn["actor"], torn["target"]) == ("p0", "e0")
+    assert (torn["line"], torn["reply"]) == bond_between("malachar.jfif", "mortis.jfif")
+    # Sem bônus: o laço só vale no mesmo time.
+    assert unit(state, "p0")["bonds"] == [] and unit(state, "e0")["bonds"] == []
+
+    seen_by_rival = next(e for e in battle.view_events(events, "enemy")
+                         if e["type"] == "bondTorn")
+    assert (seen_by_rival["actor"], seen_by_rival["target"]) == ("e0", "p0")

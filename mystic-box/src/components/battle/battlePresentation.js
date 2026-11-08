@@ -138,6 +138,11 @@ export function describeEvent(event, names) {
       };
     case "lastWords":
       return { text: `${name(event.target)}: “${event.line}”`, kind: "lastWords" };
+    case "bondTorn":
+      return {
+        text: `💔 ${name(event.actor)} faces ${name(event.target)}: “${event.line}” — “${event.reply}”`,
+        kind: "bond",
+      };
     case "rivalry":
       return {
         text: `⚔ ${name(event.actor)} vs ${name(event.target)}: “${event.line}” — “${event.reply}”`,
@@ -181,6 +186,7 @@ export function eventDelay(event) {
     case "lastWords":
       return 2000;
     case "bond":
+    case "bondTorn":
     case "rivalry":
       return 2200;
     case "bondGrief":

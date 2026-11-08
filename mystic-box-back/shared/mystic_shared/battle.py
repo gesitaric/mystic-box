@@ -869,6 +869,13 @@ def _link_bonds(state, events):
                     events.append({"type": "rivalry", "actor": unit["id"],
                                    "target": other["id"], "line": lines[0],
                                    "reply": lines[1]})
+                    continue
+                # Laço dividido: duas cartas com laço em times opostos (só falas).
+                lines = bond_between(unit["fileName"], other["fileName"])
+                if lines:
+                    events.append({"type": "bondTorn", "actor": unit["id"],
+                                   "target": other["id"], "line": lines[0],
+                                   "reply": lines[1]})
                 continue
             lines = bond_between(unit["fileName"], other["fileName"])
             if not lines:

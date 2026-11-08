@@ -214,6 +214,73 @@ function BattleUnit({
   );
 }
 
+// Leitura do duelo: laços, rivalidades e ressonâncias que o servidor revelou
+// no começo do duelo, mostrados antes da primeira jogada.
+const READING_TYPES = ["bond", "bondTorn", "rivalry", "resonance"];
+const READING_ICON = { bond: "♥", bondTorn: "💔", rivalry: "⚔", resonance: "✦" };
+
+function duelReading(events, units) {
+  const names = Object.fromEntries(units.map((unit) => [unit.id, unit.name]));
+  const firstRound = events.findIndex((event) => event.type === "round");
+  const opening = firstRound === -1 ? events : events.slice(0, firstRound);
+  return opening
+    .filter((event) => READING_TYPES.includes(event.type))
+    .map((event, index) => {
+      const mine = (id) => id?.startsWith("p");
+      if (event.type === "resonance") {
+        return {
+          id: index,
+          kind: event.type,
+          side: mine(event.targets?.[0]) ? "yours" : "theirs",
+          title: `${event.regionName}: ${event.name}`,
+          text: event.description,
+        };
+      }
+      const titles = {
+        bond: `${names[event.actor]} & ${names[event.target]} fight together`,
+        bondTorn: `${names[event.actor]} must face ${names[event.target]}`,
+        rivalry: `${names[event.actor]} vs ${names[event.target]}`,
+      };
+      return {
+        id: index,
+        kind: event.type,
+        side: event.type === "bond" ? (mine(event.actor) ? "yours" : "theirs") : "both",
+        title: titles[event.type],
+        text: `“${event.line}” — “${event.reply}”`,
+      };
+    });
+}
+
+function DuelReading({ entries, rivalName, onClose }) {
+  return (
+    <div className="battle-result" role="dialog" aria-modal="true" aria-label="Duel reading">
+      <div className="battle-result-card battle-reading">
+        <span className="auth-ornament">✦ ✧ ✦</span>
+        <h2>THE READING</h2>
+        <p className="battle-result-reason">
+          The Box reads the threads between your champions and {rivalName}&apos;s.
+        </p>
+        <ul className="battle-reading-list">
+          {entries.map((entry) => (
+            <li key={entry.id} className={`is-${entry.kind} is-${entry.side}`}>
+              <strong>
+                {READING_ICON[entry.kind]} {entry.title}
+                {entry.side === "theirs" && <em> · {rivalName}</em>}
+              </strong>
+              <span>{entry.text}</span>
+            </li>
+          ))}
+        </ul>
+        <div className="battle-result-actions">
+          <button type="button" className="keep-button" onClick={onClose}>
+            Begin the duel
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 const RESULT_TITLE = { won: "VICTORY", lost: "DEFEAT", draw: "DRAW" };
 
 function CampaignResult({ campaign }) {
@@ -288,6 +355,8 @@ function BattleScreen({
   const [floats, setFloats] = useState([]);
   const [log, setLog] = useState([]);
   const [result, setResult] = useState(null);
+  // Leitura do duelo mostrada ao entrar num duelo que acabou de começar.
+  const [reading, setReading] = useState(null);
   const [error, setError] = useState("");
   const [startError, setStartError] = useState("");
   const [starting, setStarting] = useState(false);
@@ -548,6 +617,10 @@ function BattleScreen({
         case "resonance":
           for (const id of event.targets ?? []) addFloat(id, "✦", "resonance");
           break;
+        case "bondTorn":
+          addFloat(event.actor, "💔", "bond");
+          addFloat(event.target, "💔", "bond");
+          break;
         case "rivalry":
           addFloat(event.actor, "⚔", "rivalry");
           addFloat(event.target, "⚔", "rivalry");
@@ -667,6 +740,10 @@ function BattleScreen({
       audio.current?.start();
       setView(freshView(data.battle));
       setPlayback({ events: data.events ?? [], next: received(data.battle), outcome: data.result });
+      if ((data.battle.round ?? 0) <= 1 && !data.result) {
+        const entries = duelReading(data.events ?? [], data.battle.units ?? []);
+        setReading(entries.length > 0 ? entries : null);
+      }
       setPhase("battle");
     } catch (enterError) {
       if (enterError instanceof SessionExpired) return;
@@ -1265,6 +1342,14 @@ function BattleScreen({
           )}
           <SkillList skills={inspectedUnit.skills} />
         </aside>
+      )}
+
+      {reading && !result && (
+        <DuelReading
+          entries={reading}
+          rivalName={rivalName}
+          onClose={() => setReading(null)}
+        />
       )}
 
       {result && <BattleResult result={result} onAgain={backToSetup} onExit={onExit} />}

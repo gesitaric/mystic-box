@@ -1894,3 +1894,62 @@
   gap: 10px;
   margin: 8px 0;
 }
+
+/* Leitura do duelo */
+
+.battle-reading {
+  max-height: 86vh;
+  overflow-y: auto;
+}
+
+.battle-reading-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 12px 0;
+  padding: 0;
+  list-style: none;
+  text-align: left;
+}
+
+.battle-reading-list li {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 8px 12px;
+  border-left: 3px solid rgba(203, 182, 238, 0.6);
+  border-radius: 0 10px 10px 0;
+  background: rgba(20, 10, 40, 0.6);
+}
+
+.battle-reading-list strong {
+  color: #fff3d6;
+  font-size: 14px;
+}
+
+.battle-reading-list strong em {
+  color: #ff9a6b;
+  font-size: 12px;
+}
+
+.battle-reading-list span {
+  color: #e4d8f8;
+  font-size: 13px;
+  font-style: italic;
+}
+
+.battle-reading-list li.is-bond {
+  border-left-color: #ff8fc8;
+}
+
+.battle-reading-list li.is-bondTorn {
+  border-left-color: #c77dff;
+}
+
+.battle-reading-list li.is-rivalry {
+  border-left-color: #ff9a6b;
+}
+
+.battle-reading-list li.is-resonance {
+  border-left-color: #9fe6ff;
+}
