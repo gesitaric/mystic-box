@@ -114,7 +114,7 @@ function App() {
   const [authOpen, setAuthOpen] = useState(false);
   // Tela e painel abertos vêm do endereço (ver routes.js). Sem login a tela
   // de invocação é sempre a exibida.
-  const { route, data: routeData } = useRoute();
+  const { route } = useRoute();
   const overlay = route.overlay;
   // Sorteio ainda não guardado: { cards, summonToken }.
   const [pendingSummon, setPendingSummon] = useState(null);
@@ -332,20 +332,6 @@ function App() {
   // tela inicial e quando o jogador abre/atualiza o sininho.
   const [duels, setDuels] = useState(null);
   const [duelsLoading, setDuelsLoading] = useState(false);
-  // Como a arena abre, lido do endereço: { challenge } vindo do sininho ou
-  // { opponent } vindo da busca de jogadores; região da campanha escolhida no mapa.
-  const duelIntent =
-    route.screen === "arena" && route.arena === "pvp"
-      ? {
-          challenge: route.duel === "accept" ? routeData?.challenge : undefined,
-          opponent:
-            route.duel === "challenge"
-              ? (routeData?.opponent ?? (route.vs ? { username: route.vs } : undefined))
-              : undefined,
-        }
-      : null;
-  const campaignIntent =
-    route.screen === "arena" && route.arena === "campaign" ? { region: route.region } : null;
 
   const fetchDuels = useCallback(async (activeSession) => {
     if (!activeSession) return;
@@ -631,8 +617,6 @@ function App() {
         <BattleScreen
           apiUrl={API_URL}
           session={session}
-          duelIntent={duelIntent}
-          campaignIntent={campaignIntent}
           onExit={() => exitTo("/")}
           onSessionExpired={handleBattleSessionExpired}
           onProgressChange={handleBattleProgress}

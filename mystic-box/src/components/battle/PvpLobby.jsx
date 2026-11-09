@@ -2,8 +2,13 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import TeamSetup from "./TeamSetup";
 import { SessionExpired } from "./arenaApi";
 import Countdown from "../Countdown";
+import { exitTo, navigate } from "../../router";
+
+const DUEL_LIST = { screen: "arena", arena: "pvp", duel: "list" };
 
 function LevelTag({ level }) {
+  // Rival vindo de um link (/arena/duel/challenge?vs=nome): o nível não é conhecido.
+  if (level == null) return null;
   return (
     <span className="player-result-level" aria-label={`Level ${level}`}>
       <span className="hud-level-label">LV</span>
@@ -122,11 +127,11 @@ function PvpLobby({
   apiUrl,
   session,
   request,
+  route,
+  routeData,
   initialTeam,
-  initialChallenge,
   cachedCards,
   onCardsLoaded,
-  initialOpponent,
   onTeamChosen,
   onEnterDuel,
   onSessionExpired,
@@ -134,12 +139,29 @@ function PvpLobby({
   const [lobby, setLobby] = useState(null);
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
-  // list | challenge | accept
-  const [view, setView] = useState(() => {
-    if (initialChallenge) return { name: "accept", challenge: initialChallenge };
-    if (initialOpponent) return { name: "challenge", opponent: initialOpponent };
-    return { name: "list" };
-  });
+  // Tela do lobby, lida do endereço: list | challenge | accept.
+  let view = { name: "list" };
+  if (route.duel === "challenge") {
+    const opponent =
+      routeData?.opponent?.username === route.vs && route.vs
+        ? routeData.opponent
+        : route.vs
+          ? { username: route.vs, level: null }
+          : null;
+    view = { name: "challenge", opponent };
+  } else if (route.duel === "accept") {
+    // O desafio vem do sininho junto com o endereço; num link direto, da lista.
+    const challenge =
+      (routeData?.challenge?.challengeId === route.challengeId ? routeData.challenge : null) ??
+      lobby?.incoming?.find((entry) => entry.challengeId === route.challengeId);
+    if (challenge) view = { name: "accept", challenge };
+  }
+  const missingChallenge = route.duel === "accept" && Boolean(lobby) && view.name !== "accept";
+
+  // Desafio que não existe mais (expirou, foi cancelado): volta à lista.
+  useEffect(() => {
+    if (missingChallenge) navigate(DUEL_LIST, { replace: true });
+  }, [missingChallenge]);
   const [refreshing, setRefreshing] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState("");
@@ -194,7 +216,7 @@ function PvpLobby({
       setNotice(
         `Challenge sent to ${data.challenge.username}. Press Refresh to see if they accepted before time runs out.`
       );
-      setView({ name: "list" });
+      exitTo("/arena/duel");
       void refresh();
     } catch (sendError) {
       if (sendError instanceof SessionExpired) return;
@@ -251,7 +273,24 @@ function PvpLobby({
   function openView(next) {
     setSubmitError("");
     setNotice("");
-    setView(next);
+    if (next.name === "list") {
+      exitTo("/arena/duel");
+    } else if (next.name === "accept") {
+      navigate(
+        { ...DUEL_LIST, duel: "accept", challengeId: next.challenge.challengeId },
+        { data: { challenge: next.challenge } }
+      );
+    } else {
+      navigate({ ...DUEL_LIST, duel: "challenge", vs: null });
+    }
+  }
+
+  // Rival escolhido (ou trocado) fica no endereço da mesma tela.
+  function selectOpponent(opponent) {
+    navigate(
+      { ...DUEL_LIST, duel: "challenge", vs: opponent?.username ?? null },
+      { replace: true, data: opponent ? { opponent } : null }
+    );
   }
 
   if (!lobby) {
@@ -298,7 +337,7 @@ function PvpLobby({
           <OpponentSearch
             request={request}
             selected={view.opponent}
-            onSelect={(opponent) => setView({ name: "challenge", opponent })}
+            onSelect={selectOpponent}
           />
         )}
       </TeamSetup>
