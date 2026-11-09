@@ -412,14 +412,14 @@ function PlayerProfileModal({
   apiUrl,
   session,
   profile,
-  initialTab = "name",
+  tab = "name",
+  onTabChange,
   onClose,
   onSessionExpired,
   onProfileChange,
   onChallenge,
 }) {
-  const [tab, setTab] = useState(initialTab);
-
+  // A aba vem do endereço (/players, /players/titles, /players/search).
   return (
     <Modal label="Players" className="player-modal" onClose={onClose}>
       <header className="auth-header">
@@ -438,7 +438,7 @@ function PlayerProfileModal({
             aria-selected={tab === option.value}
             aria-controls="player-panel"
             className={`shop-tab${tab === option.value ? " is-active" : ""}`}
-            onClick={() => setTab(option.value)}
+            onClick={() => onTabChange(option.value)}
           >
             {option.label}
           </button>

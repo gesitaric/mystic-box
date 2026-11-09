@@ -252,8 +252,17 @@ function MyListings({ market, loading, apiUrl, session, onSessionExpired, onChan
   );
 }
 
-function ShopModal({ apiUrl, session, balance, onClose, onSessionExpired, onBalanceChange }) {
-  const [tab, setTab] = useState("buy");
+// A aba vem do endereço (/shop, /shop/sell, /shop/mine).
+function ShopModal({
+  apiUrl,
+  session,
+  balance,
+  tab = "buy",
+  onTabChange,
+  onClose,
+  onSessionExpired,
+  onBalanceChange,
+}) {
   const [market, setMarket] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -300,7 +309,7 @@ function ShopModal({ apiUrl, session, balance, onClose, onSessionExpired, onBala
   }, [apiUrl, session, onSessionExpired, onBalanceChange, reloadKey]);
 
   function selectTab(value) {
-    setTab(value);
+    onTabChange(value);
     // Outros jogadores podem ter comprado ou anunciado nesse meio-tempo.
     if (value !== "sell") reload();
   }

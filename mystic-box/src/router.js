@@ -8,6 +8,11 @@ const navigation = createNavigation(window);
 export const navigate = navigation.navigate;
 export const exitTo = navigation.exitTo;
 
+// Rota atual fora da renderização (ex.: dentro de um efeito que roda uma vez).
+export function currentRoute() {
+  return navigation.getSnapshot().route;
+}
+
 // Rota atual: { route, path, data, from }.
 export function useRoute() {
   return useSyncExternalStore(navigation.subscribe, navigation.getSnapshot);

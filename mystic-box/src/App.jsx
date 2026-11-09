@@ -10,6 +10,8 @@ import SummonSpread from "./components/SummonSpread";
 import RevealFx from "./components/reveal/RevealFx";
 import UserCardsList from "./components/UserCardsList";
 import { getCurrentSession, signOut } from "./auth/cognito";
+import { currentRoute, exitTo, navigate, useRoute } from "./router";
+import { withOverlay } from "./routes";
 import "./styles/gacha.css";
 
 const API_URL = (
@@ -110,13 +112,10 @@ function App() {
 
   const [session, setSession] = useState(null);
   const [authOpen, setAuthOpen] = useState(false);
-  const [collectionOpen, setCollectionOpen] = useState(false);
-  const [shopOpen, setShopOpen] = useState(false);
-  // Modal de jogadores: null (fechado), "name" (escolher nome) ou "search".
-  const [playersTab, setPlayersTab] = useState(null);
-  // Tela do usuário logado: "home" (início), "summon" (invocação) ou "battle".
-  // Sem login a tela de invocação é sempre a exibida.
-  const [screen, setScreen] = useState("home");
+  // Tela e painel abertos vêm do endereço (ver routes.js). Sem login a tela
+  // de invocação é sempre a exibida.
+  const { route, data: routeData } = useRoute();
+  const overlay = route.overlay;
   // Sorteio ainda não guardado: { cards, summonToken }.
   const [pendingSummon, setPendingSummon] = useState(null);
   const [saving, setSaving] = useState(false);
@@ -304,7 +303,9 @@ function App() {
       if (currentSession) {
         setSession(currentSession);
         // Com um sorteio pendente, mostra a invocação para acompanhar o salvamento.
-        setScreen(storedSummon ? "summon" : "home");
+        if (storedSummon && currentRoute().screen === "home") {
+          navigate("/summon", { replace: true });
+        }
         void fetchWallet(currentSession);
         void fetchProfile(currentSession);
 
@@ -324,18 +325,27 @@ function App() {
   const cooldownRemaining =
     session && cooldownUntil ? Math.max(0, cooldownUntil - now) : 0;
   const onCooldown = cooldownRemaining > 0;
-  const onHome = Boolean(session) && screen === "home";
-  const onBattle = Boolean(session) && screen === "battle";
+  const onHome = Boolean(session) && route.screen === "home";
+  const onBattle = Boolean(session) && route.screen === "arena";
 
   // Desafios de duelo do sininho. Não há consulta periódica: busca ao abrir a
   // tela inicial e quando o jogador abre/atualiza o sininho.
   const [duels, setDuels] = useState(null);
   const [duelsLoading, setDuelsLoading] = useState(false);
-  // Como a arena abre: null (normal), { challenge } vindo do sininho ou
-  // { opponent } vindo da busca de jogadores.
-  const [duelIntent, setDuelIntent] = useState(null);
-  // Região da campanha escolhida no mapa (abre a arena na aba da campanha).
-  const [campaignIntent, setCampaignIntent] = useState(null);
+  // Como a arena abre, lido do endereço: { challenge } vindo do sininho ou
+  // { opponent } vindo da busca de jogadores; região da campanha escolhida no mapa.
+  const duelIntent =
+    route.screen === "arena" && route.arena === "pvp"
+      ? {
+          challenge: route.duel === "accept" ? routeData?.challenge : undefined,
+          opponent:
+            route.duel === "challenge"
+              ? (routeData?.opponent ?? (route.vs ? { username: route.vs } : undefined))
+              : undefined,
+        }
+      : null;
+  const campaignIntent =
+    route.screen === "arena" && route.arena === "campaign" ? { region: route.region } : null;
 
   const fetchDuels = useCallback(async (activeSession) => {
     if (!activeSession) return;
@@ -444,8 +454,11 @@ function App() {
   function handleAuthenticated(auth) {
     setSession(auth);
     setAuthOpen(false);
-    // Quem entrou para guardar um sorteio continua vendo as cartas.
-    setScreen(pendingSummon || showingSpread ? "summon" : "home");
+    // Quem entrou para guardar um sorteio continua vendo as cartas. Nos outros
+    // casos fica no endereço pedido (ex.: um link para a arena).
+    if ((pendingSummon || showingSpread) && route.screen === "home") {
+      navigate("/summon", { replace: true });
+    }
     void fetchWallet(auth);
     void fetchProfile(auth);
 
@@ -460,13 +473,10 @@ function App() {
   function handleSignOut() {
     signOut();
     setSession(null);
-    setCollectionOpen(false);
-    setShopOpen(false);
-    setPlayersTab(null);
     setCooldownUntil(null);
     setBalance(null);
     setProgress(null);
-    setScreen("home");
+    navigate("/");
   }
 
   // Não sai no meio da animação de abertura nem do suspense da última carta.
@@ -486,16 +496,21 @@ function App() {
       setFlippedCount(0);
       setPortalKey((key) => key + 1);
     }
-    setScreen("home");
+    exitTo("/");
   }
 
-  const closeCollection = useCallback(() => setCollectionOpen(false), []);
-  const closeShop = useCallback(() => setShopOpen(false), []);
-  const closePlayers = useCallback(() => setPlayersTab(null), []);
+  // Fecha o painel aberto: volta à tela de baixo (pelo histórico, se veio dela).
+  const closeOverlay = useCallback(() => exitTo(withOverlay(route, null)), [route]);
+  const openOverlay = useCallback(
+    (next, options) => navigate(withOverlay(route, next), options),
+    [route]
+  );
   const challengePlayer = useCallback((opponent) => {
-    setPlayersTab(null);
-    setDuelIntent({ opponent: { username: opponent.username, level: opponent.level } });
-    setScreen("battle");
+    const chosen = { username: opponent.username, level: opponent.level };
+    navigate(
+      { screen: "arena", arena: "pvp", duel: "challenge", vs: chosen.username },
+      { data: { opponent: chosen } }
+    );
   }, []);
 
   // Nome e tempo de espera devolvidos pelo servidor depois de uma troca.
@@ -523,9 +538,7 @@ function App() {
   const handleCollectionSessionExpired = useCallback(() => {
     signOut();
     setSession(null);
-    setCollectionOpen(false);
-    setShopOpen(false);
-    setPlayersTab(null);
+    navigate(withOverlay(currentRoute(), null), { replace: true });
     setAuthOpen(true);
   }, []);
 
@@ -534,7 +547,7 @@ function App() {
     setSession(null);
     setProgress(null);
     setBalance(null);
-    setScreen("home");
+    navigate("/", { replace: true });
     setAuthOpen(true);
   }, []);
 
@@ -620,7 +633,7 @@ function App() {
           session={session}
           duelIntent={duelIntent}
           campaignIntent={campaignIntent}
-          onExit={() => setScreen("home")}
+          onExit={() => exitTo("/")}
           onSessionExpired={handleBattleSessionExpired}
           onProgressChange={handleBattleProgress}
           onBalanceChange={handleBalanceChange}
@@ -636,31 +649,29 @@ function App() {
           duels={duels}
           duelsLoading={duelsLoading}
           onRefreshDuels={() => void fetchDuels(session)}
-          onAnswerDuel={(challenge) => {
-            setDuelIntent({ challenge });
-            setScreen("battle");
-          }}
+          onAnswerDuel={(challenge) =>
+            navigate(
+              {
+                screen: "arena",
+                arena: "pvp",
+                duel: "accept",
+                challengeId: challenge.challengeId,
+              },
+              { data: { challenge } }
+            )
+          }
           onDeclineDuel={declineDuel}
-          onOpenDuel={() => {
-            setDuelIntent({});
-            setScreen("battle");
-          }}
-          onSummon={() => setScreen("summon")}
-          onBattle={() => {
-            setDuelIntent(null);
-            setCampaignIntent(null);
-            setScreen("battle");
-          }}
+          onOpenDuel={() => navigate("/arena/duel")}
+          onSummon={() => navigate("/summon")}
+          onBattle={() => navigate("/arena")}
           onBalanceChange={handleBalanceChange}
-          onCampaign={(region) => {
-            setDuelIntent(null);
-            setCampaignIntent({ region });
-            setScreen("battle");
-          }}
-          onCollection={() => setCollectionOpen(true)}
-          onShop={() => setShopOpen(true)}
-          onProfile={() => setPlayersTab("name")}
-          onPlayers={() => setPlayersTab("search")}
+          onCampaign={(region) =>
+            navigate({ screen: "arena", arena: "campaign", region, stage: null })
+          }
+          onCollection={() => openOverlay({ name: "collection" })}
+          onShop={() => openOverlay({ name: "shop", tab: "buy" })}
+          onProfile={() => openOverlay({ name: "players", tab: "name" })}
+          onPlayers={() => openOverlay({ name: "players", tab: "search" })}
           onSignOut={handleSignOut}
         />
       ) : (
@@ -795,33 +806,36 @@ function App() {
         </>
       )}
 
-      {collectionOpen && session && (
+      {overlay?.name === "collection" && session && (
         <UserCardsList
           apiUrl={API_URL}
           session={session}
-          onClose={closeCollection}
+          onClose={closeOverlay}
           onSessionExpired={handleCollectionSessionExpired}
         />
       )}
 
-      {shopOpen && session && (
+      {overlay?.name === "shop" && session && (
         <ShopModal
           apiUrl={API_URL}
           session={session}
           balance={balance}
-          onClose={closeShop}
+          tab={overlay.tab}
+          onTabChange={(tab) => openOverlay({ name: "shop", tab }, { replace: true })}
+          onClose={closeOverlay}
           onSessionExpired={handleCollectionSessionExpired}
           onBalanceChange={handleBalanceChange}
         />
       )}
 
-      {playersTab && session && (
+      {overlay?.name === "players" && session && (
         <PlayerProfileModal
           apiUrl={API_URL}
           session={session}
           profile={progress}
-          initialTab={playersTab}
-          onClose={closePlayers}
+          tab={overlay.tab}
+          onTabChange={(tab) => openOverlay({ name: "players", tab }, { replace: true })}
+          onClose={closeOverlay}
           onSessionExpired={handleCollectionSessionExpired}
           onProfileChange={handleProfileChange}
           onChallenge={challengePlayer}
