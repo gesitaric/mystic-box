@@ -1,5 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import AuthModal from "./components/AuthModal";
+import { GrimoireModal } from "./components/Grimoire";
+import { WorldModal } from "./components/WorldMap";
 import BattleScreen from "./components/battle/BattleScreen";
 import HomeScreen from "./components/HomeScreen";
 import PlayerProfileModal from "./components/PlayerProfileModal";
@@ -625,7 +627,6 @@ function App() {
       ) : onHome ? (
         <HomeScreen
           apiUrl={API_URL}
-          session={session}
           email={session.email}
           balance={balance}
           progress={progress}
@@ -648,10 +649,6 @@ function App() {
           onOpenDuel={() => navigate("/arena/duel")}
           onSummon={() => navigate("/summon")}
           onBattle={() => navigate("/arena")}
-          onBalanceChange={handleBalanceChange}
-          onCampaign={(region) =>
-            navigate({ screen: "arena", arena: "campaign", region, stage: null })
-          }
           onCollection={() => openOverlay({ name: "collection" })}
           onShop={() => openOverlay({ name: "shop", tab: "buy" })}
           onProfile={() => openOverlay({ name: "players", tab: "name" })}
@@ -823,6 +820,35 @@ function App() {
           onSessionExpired={handleCollectionSessionExpired}
           onProfileChange={handleProfileChange}
           onChallenge={challengePlayer}
+        />
+      )}
+
+      {overlay?.name === "world" && session && (
+        <WorldModal
+          apiUrl={API_URL}
+          session={session}
+          tab={overlay.tab}
+          regionId={overlay.region}
+          onTabChange={(tab) => openOverlay({ name: "world", tab, region: null }, { replace: true })}
+          onSelectRegion={(region) =>
+            openOverlay({ name: "world", tab: "map", region }, { replace: true })
+          }
+          onCampaign={(region) =>
+            navigate({ screen: "arena", arena: "campaign", region, stage: null })
+          }
+          onBalanceChange={handleBalanceChange}
+          onClose={closeOverlay}
+        />
+      )}
+
+      {overlay?.name === "grimoire" && (
+        <GrimoireModal
+          apiUrl={API_URL}
+          chapter={overlay.chapter}
+          onChapterChange={(chapter) =>
+            openOverlay({ name: "grimoire", chapter }, { replace: true })
+          }
+          onClose={closeOverlay}
         />
       )}
 

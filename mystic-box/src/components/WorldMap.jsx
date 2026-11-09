@@ -5,6 +5,8 @@ import worldMapArt from "../assets/world-map.webp";
 import { getCharacterImage } from "../characterImages";
 import Modal from "./Modal";
 import { loadWorld } from "./worldApi";
+import { currentRoute, navigate } from "../router";
+import { withOverlay } from "../routes";
 import "../styles/lore.css";
 
 // Mapa-múndi. Regiões, posições, textos, crônica e quem vem de cada região vêm
@@ -314,11 +316,21 @@ function Chronicle({ world, chronicle }) {
   );
 }
 
-function WorldModal({ apiUrl, session, onCampaign, onBalanceChange, onClose }) {
+// A aba e a região escolhida vêm do endereço (/world, /world/chronicle, /world/:region).
+export function WorldModal({
+  apiUrl,
+  session,
+  tab = "map",
+  regionId,
+  onTabChange,
+  onSelectRegion,
+  onCampaign,
+  onBalanceChange,
+  onClose,
+}) {
   const [state, setState] = useState({ data: null, error: "" });
   const [attempt, setAttempt] = useState(0);
-  const [selectedId, setSelectedId] = useState("riftheart");
-  const [tab, setTab] = useState("map");
+  const selectedId = regionId ?? "riftheart";
   const owned = useOwnedCards(apiUrl, session);
   const { campaign, collection, markClaimed } = useCampaign(apiUrl, session);
 
@@ -377,7 +389,7 @@ function WorldModal({ apiUrl, session, onCampaign, onBalanceChange, onClose }) {
                 role="tab"
                 aria-selected={tab === id}
                 className={tab === id ? "is-active" : undefined}
-                onClick={() => setTab(id)}
+                onClick={() => onTabChange(id)}
               >
                 {label}
               </button>
@@ -392,7 +404,7 @@ function WorldModal({ apiUrl, session, onCampaign, onBalanceChange, onClose }) {
                 owned={owned}
                 collection={collection}
                 omenRegion={data.omen?.region}
-                onSelect={setSelectedId}
+                onSelect={onSelectRegion}
               />
               {selected && (
                 <RegionPanel
@@ -425,13 +437,17 @@ function WorldModal({ apiUrl, session, onCampaign, onBalanceChange, onClose }) {
   );
 }
 
-// Atalho da tela inicial que abre o mapa-múndi.
-function WorldMap({ apiUrl, session, onCampaign, onBalanceChange }) {
-  const [open, setOpen] = useState(false);
-
+// Atalho da tela inicial que abre o mapa-múndi (/world, mostrado pelo App).
+function WorldMap() {
   return (
     <>
-      <button type="button" className="dock-button" onClick={() => setOpen(true)}>
+      <button
+        type="button"
+        className="dock-button"
+        onClick={() =>
+          navigate(withOverlay(currentRoute(), { name: "world", tab: "map", region: null }))
+        }
+      >
         <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true">
           <path
             d="M3 6.5l5.5-2 7 2.5 5.5-2v13l-5.5 2-7-2.5-5.5 2z"
@@ -445,15 +461,6 @@ function WorldMap({ apiUrl, session, onCampaign, onBalanceChange }) {
         </svg>
         <span>World</span>
       </button>
-      {open && (
-        <WorldModal
-          apiUrl={apiUrl}
-          session={session}
-          onCampaign={onCampaign}
-          onBalanceChange={onBalanceChange}
-          onClose={() => setOpen(false)}
-        />
-      )}
     </>
   );
 }

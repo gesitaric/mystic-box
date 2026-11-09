@@ -998,7 +998,7 @@ function BattleScreen({
           </button>
           <h1 className="battle-heading">Arena</h1>
           <SoundButton on={soundOn} onToggle={() => setSoundOn((on) => !on)} />
-          <Grimoire apiUrl={apiUrl} chapter="battle" />
+          <Grimoire chapter="battle" />
         </div>
         <div className="shop-tabs battle-mode-tabs" role="tablist" aria-label="Battle mode">
           {ARENA_TABS.map((option) => (
@@ -1200,7 +1200,7 @@ function BattleScreen({
           {view.maxRounds}
         </span>
         <SoundButton on={soundOn} onToggle={() => setSoundOn((on) => !on)} />
-        <Grimoire apiUrl={apiUrl} chapter="battle" />
+        <Grimoire chapter="battle" />
       </div>
 
       <AetherMeter

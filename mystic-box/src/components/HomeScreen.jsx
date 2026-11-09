@@ -98,7 +98,6 @@ function ProfileChip({ email, progress, onClick }) {
 // API (saldo, nível, vitórias, tempo de espera).
 function HomeScreen({
   apiUrl,
-  session,
   email,
   balance,
   progress,
@@ -111,8 +110,6 @@ function HomeScreen({
   onOpenDuel,
   onSummon,
   onBattle,
-  onCampaign,
-  onBalanceChange,
   onCollection,
   onShop,
   onProfile,
@@ -272,13 +269,8 @@ function HomeScreen({
           </svg>
           <span>Players</span>
         </button>
-        <WorldMap
-          apiUrl={apiUrl}
-          session={session}
-          onCampaign={onCampaign}
-          onBalanceChange={onBalanceChange}
-        />
-        <Grimoire apiUrl={apiUrl} variant="dock" />
+        <WorldMap />
+        <Grimoire variant="dock" />
       </nav>
     </section>
   );
