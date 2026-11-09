@@ -1,14 +1,19 @@
 import { useEffect, useRef } from "react";
 import { createPortal } from "react-dom";
+import { useBackHandler } from "../router";
 
 // Modais abertos, do mais antigo ao mais recente. Com um modal aberto sobre
 // outro (ex.: formulário de venda dentro da loja), o Esc fecha só o de cima.
 const openModals = [];
 
 // Janela modal usada pela coleção e pela loja.
-function Modal({ label, className = "", onClose, children }) {
+// `routed`: o modal tem endereço próprio (ex.: /shop) e o Voltar do navegador
+// já o fecha pela mudança de endereço. Sem endereço, o Voltar fecha o modal
+// como o Esc (camada no histórico, ver router.js).
+function Modal({ label, className = "", routed = false, onClose, children }) {
   const id = useRef(Symbol("modal"));
   const onCloseRef = useRef(onClose);
+  useBackHandler(() => onCloseRef.current(), { active: !routed });
 
   useEffect(() => {
     onCloseRef.current = onClose;

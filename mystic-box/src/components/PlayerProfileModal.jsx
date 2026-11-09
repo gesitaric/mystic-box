@@ -421,7 +421,7 @@ function PlayerProfileModal({
 }) {
   // A aba vem do endereço (/players, /players/titles, /players/search).
   return (
-    <Modal label="Players" className="player-modal" onClose={onClose}>
+    <Modal label="Players" className="player-modal" routed onClose={onClose}>
       <header className="auth-header">
         <span className="auth-ornament">✦ ✧ ✦</span>
         <h2>SUMMONERS</h2>

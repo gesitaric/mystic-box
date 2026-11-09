@@ -1087,7 +1087,7 @@ export function GrimoireModal({ apiUrl, chapter = "start", onChapterChange, onCl
   }
 
   return (
-    <Modal label="Grimoire: game rules" className="grimoire-modal" onClose={onClose}>
+    <Modal label="Grimoire: game rules" className="grimoire-modal" routed onClose={onClose}>
       <header className="gr-header">
         <span className="gr-sigil" aria-hidden="true">
           ✦

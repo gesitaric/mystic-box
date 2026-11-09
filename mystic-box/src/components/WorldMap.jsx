@@ -354,7 +354,7 @@ export function WorldModal({
   const selected = regions.find((region) => region.id === selectedId) ?? regions[0];
 
   return (
-    <Modal label="World map" className="world-modal" onClose={onClose}>
+    <Modal label="World map" className="world-modal" routed onClose={onClose}>
       <header className="auth-header world-header">
         <span className="auth-ornament">✦ ✧ ✦</span>
         <h2>{data ? data.world.name.toUpperCase() : "THE WORLD"}</h2>

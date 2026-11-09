@@ -317,7 +317,7 @@ function ShopModal({
   const listProps = { market, loading, apiUrl, session, onSessionExpired, onChanged: reload };
 
   return (
-    <Modal label="Shop" className="collection-modal" onClose={onClose}>
+    <Modal label="Shop" className="collection-modal" routed onClose={onClose}>
       <header className="auth-header">
         <span className="auth-ornament">✦ ✧ ✦</span>
         <h2>ARCANE SHOP</h2>

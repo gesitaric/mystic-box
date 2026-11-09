@@ -12,8 +12,8 @@ import SummonSpread from "./components/SummonSpread";
 import RevealFx from "./components/reveal/RevealFx";
 import UserCardsList from "./components/UserCardsList";
 import { getCurrentSession, signOut } from "./auth/cognito";
-import { currentRoute, exitTo, navigate, useRoute } from "./router";
-import { withOverlay } from "./routes";
+import { currentRoute, exitTo, navigate, useBackHandler, useRoute } from "./router";
+import { needsSession, withOverlay } from "./routes";
 import "./styles/gacha.css";
 
 const API_URL = (
@@ -32,6 +32,9 @@ const PORTAL_REVEAL_DELAY_MS = 1700;
 
 // Pausa de suspense antes de revelar a última carta.
 const FINAL_CARD_SUSPENSE_MS = 1600;
+
+// Quanto tempo fica o aviso de que o portal ainda está abrindo.
+const PORTAL_HOLD_NOTICE_MS = 2200;
 
 function formatCountdown(ms) {
   const totalSeconds = Math.ceil(ms / 1000);
@@ -113,7 +116,12 @@ function App() {
   const [portalKey, setPortalKey] = useState(0);
 
   const [session, setSession] = useState(null);
+  // Já sabemos se há login salvo (até lá, não pede login para endereços privados).
+  const [sessionChecked, setSessionChecked] = useState(false);
   const [authOpen, setAuthOpen] = useState(false);
+  // Aviso curto quando o Voltar é apertado com o portal abrindo.
+  const [portalHold, setPortalHold] = useState(false);
+  const portalHoldTimer = useRef(null);
   // Tela e painel abertos vêm do endereço (ver routes.js). Sem login a tela
   // de invocação é sempre a exibida.
   const { route } = useRoute();
@@ -294,6 +302,7 @@ function App() {
     async function restore() {
       const storedSummon = readPendingSummon();
       const currentSession = await getCurrentSession();
+      setSessionChecked(true);
 
       if (storedSummon) {
         setCards(storedSummon.cards);
@@ -469,6 +478,25 @@ function App() {
 
   // Não sai no meio da animação de abertura nem do suspense da última carta.
   const canLeaveSummon = !opening && !charging;
+
+  // O Voltar do navegador também espera o portal: segura e avisa.
+  useBackHandler(
+    () => {
+      clearTimeout(portalHoldTimer.current);
+      setPortalHold(true);
+      portalHoldTimer.current = setTimeout(() => setPortalHold(false), PORTAL_HOLD_NOTICE_MS);
+    },
+    { active: !offSummon && !canLeaveSummon && !overlay, kind: "block" }
+  );
+  useEffect(() => () => clearTimeout(portalHoldTimer.current), []);
+
+  // Endereço que pede login (ex.: um link para a arena) sem login: abre o login
+  // por cima e, depois de entrar, o jogador continua no endereço pedido.
+  const authGate = sessionChecked && !session && needsSession(route);
+  const closeAuth = useCallback(() => {
+    setAuthOpen(false);
+    if (authGate) navigate("/", { replace: true });
+  }, [authGate]);
 
   function goHome() {
     if (!canLeaveSummon) return;
@@ -778,6 +806,12 @@ function App() {
             )}
           </div>
 
+          {portalHold && (opening || charging) && (
+            <p className="portal-hold-notice" role="status">
+              ✦ The portal is still channeling. Hold on…
+            </p>
+          )}
+
           {error && (
             <div className="error" role="alert">
               <span className="error-icon">✦</span>
@@ -853,9 +887,9 @@ function App() {
       )}
 
       <AuthModal
-        key={authOpen ? "open" : "closed"}
-        open={authOpen}
-        onClose={() => setAuthOpen(false)}
+        key={authOpen || authGate ? "open" : "closed"}
+        open={authOpen || authGate}
+        onClose={closeAuth}
         onAuthenticated={handleAuthenticated}
       />
     </main>

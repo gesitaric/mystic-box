@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
+import { useBackHandler } from "../router";
 import { getCharacterImage } from "../characterImages";
 import { CardFace } from "./GachaCard";
 import RevealFx from "./reveal/RevealFx";
@@ -97,6 +98,9 @@ function AscensionCeremony({ card, result, onClose }) {
       audioRef.current = null;
     };
   }, [reduced, level]);
+
+  // O Voltar do navegador fecha a cerimônia, como o Esc.
+  useBackHandler(() => onCloseRef.current());
 
   // Esc fecha no fim; antes, pula para o resumo.
   useEffect(() => {

@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
+import { useBackHandler } from "../router";
 import {
   confirmForgotPassword,
   confirmSignUp,
@@ -72,6 +73,9 @@ function AuthModal({ open, onClose, onAuthenticated }) {
   const [error, setError] = useState("");
   const [info, setInfo] = useState("");
   const [loading, setLoading] = useState(false);
+
+  // O Voltar do navegador fecha o login, como o Esc.
+  useBackHandler(onClose, { active: open });
 
   useEffect(() => {
     if (!open) return;

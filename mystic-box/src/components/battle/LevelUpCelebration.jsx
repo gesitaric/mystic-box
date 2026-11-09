@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { LevelBadge } from "../HomeScreen";
+import { useBackHandler } from "../../router";
 
 // Linha do tempo da celebração (ms desde que abriu).
 const BURST_AT = 0;
@@ -87,6 +88,9 @@ function LevelUpCelebration({ result, unlocked = [], onSound, onDone }) {
   useEffect(() => {
     if (rewardsShown) continueButton.current?.focus();
   }, [rewardsShown]);
+
+  // O Voltar do navegador fecha a celebração, como o Esc.
+  useBackHandler(onDone);
 
   useEffect(() => {
     function handleKeyDown(event) {

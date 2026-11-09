@@ -18,7 +18,7 @@ import {
 } from "./battlePresentation";
 import { createBattleAudio } from "./battleAudio";
 import { readSoundPreference, storeSoundPreference } from "../../audio/soundPreference";
-import { exitTo, navigate, useRoute } from "../../router";
+import { exitTo, navigate, useBackHandler, useRoute } from "../../router";
 import { withOverlay } from "../../routes";
 
 const SINGLE_TARGETS = ["enemy", "ally", "fallen_ally"];
@@ -254,6 +254,7 @@ function duelReading(events, units) {
 }
 
 function DuelReading({ entries, rivalName, onClose }) {
+  useBackHandler(onClose);
   return (
     <div className="battle-result" role="dialog" aria-modal="true" aria-label="Duel reading">
       <div className="battle-result-card battle-reading">
@@ -276,6 +277,43 @@ function DuelReading({ entries, rivalName, onClose }) {
         <div className="battle-result-actions">
           <button type="button" className="keep-button" onClick={onClose}>
             Begin the duel
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// Pergunta mostrada quando o jogador aperta o Voltar do navegador no meio da
+// batalha. Sair não desiste: a batalha continua aberta no servidor.
+function LeaveArenaPrompt({ duel, onStay, onLeave }) {
+  // Voltar de novo (ou Esc) fecha a pergunta e fica na batalha.
+  useBackHandler(onStay);
+
+  useEffect(() => {
+    function handleKeyDown(event) {
+      if (event.key === "Escape") onStay();
+    }
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [onStay]);
+
+  return (
+    <div className="battle-result" role="alertdialog" aria-modal="true" aria-label="Leave the arena?">
+      <div className="battle-result-card">
+        <span className="auth-ornament">✦ ✧ ✦</span>
+        <h2>LEAVE THE ARENA?</h2>
+        <p className="battle-result-reason">
+          {duel
+            ? "The duel goes on without you: when your time runs out, your cards act on their own."
+            : "The battle stays open. You can come back to it from the arena."}
+        </p>
+        <div className="battle-result-actions">
+          <button type="button" className="keep-button" onClick={onStay} autoFocus>
+            Stay and fight
+          </button>
+          <button type="button" className="session-button" onClick={onLeave}>
+            Leave
           </button>
         </div>
       </div>
@@ -367,6 +405,8 @@ function BattleScreen({
   const [inspectedId, setInspectedId] = useState(null);
   const [autoMode, setAutoMode] = useState(false);
   const [confirmForfeit, setConfirmForfeit] = useState(false);
+  // Pergunta "sair da arena?" aberta pelo Voltar do navegador.
+  const [confirmLeave, setConfirmLeave] = useState(false);
   const [lastTeam, setLastTeam] = useState([]);
   const [showLevelUp, setShowLevelUp] = useState(false);
   const { route, data: routeData } = useRoute();
@@ -961,6 +1001,13 @@ function BattleScreen({
     }
   }, [phase, route, battleActive, backToSetup]);
 
+  // Voltar do navegador no meio da batalha: pergunta antes de sair.
+  const stayInBattle = useCallback(() => setConfirmLeave(false), []);
+  useBackHandler(() => setConfirmLeave(true), {
+    active: phase === "battle" && battleActive && !route.overlay,
+    kind: "block",
+  });
+
   if (phase === "loading") {
     return (
       <section className="battle-screen" aria-label="Battle">
@@ -1392,6 +1439,17 @@ function BattleScreen({
       )}
 
       {result && <BattleResult result={result} onAgain={backToSetup} onExit={onExit} />}
+
+      {confirmLeave && battleActive && !result && (
+        <LeaveArenaPrompt
+          duel={duel}
+          onStay={stayInBattle}
+          onLeave={() => {
+            setConfirmLeave(false);
+            onExit();
+          }}
+        />
+      )}
 
       {result && showLevelUp && (
         <LevelUpCelebration
