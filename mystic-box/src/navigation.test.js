@@ -220,6 +220,23 @@ test("se o navegador pular a sentinela, o bloqueio devolve o histórico", () => 
   assert.equal(nav.getSnapshot().path, "/arena/battle");
 });
 
+test("a transição recebe a tela de antes e a de depois", () => {
+  const win = fakeWindow();
+  const seen = [];
+  const nav = createNavigation(win, {
+    transition(apply, previous, next) {
+      seen.push(`${previous.route.screen}->${next.route.screen}`);
+      apply();
+    },
+  });
+  let notified = 0;
+  nav.subscribe(() => (notified += 1));
+  nav.navigate("/arena");
+  nav.navigate("/arena/grimoire");
+  assert.deepEqual(seen, ["home->arena", "arena->arena"]);
+  assert.equal(notified, 2);
+});
+
 test("navegar com a sentinela no topo substitui a sentinela", () => {
   const win = fakeWindow();
   const nav = createNavigation(win);

@@ -13,7 +13,7 @@ import RevealFx from "./components/reveal/RevealFx";
 import UserCardsList from "./components/UserCardsList";
 import { getCurrentSession, signOut } from "./auth/cognito";
 import { currentRoute, exitTo, navigate, useBackHandler, useRoute } from "./router";
-import { needsSession, withOverlay } from "./routes";
+import { needsSession, routeTitle, withOverlay } from "./routes";
 import "./styles/gacha.css";
 
 const API_URL = (
@@ -126,6 +126,12 @@ function App() {
   // de invocação é sempre a exibida.
   const { route } = useRoute();
   const overlay = route.overlay;
+
+  // Nome da aba do navegador acompanha a tela (ajuda a achar a aba e o histórico).
+  const pageTitle = session || route.screen !== "home" ? routeTitle(route) : "Summon";
+  useEffect(() => {
+    document.title = pageTitle ? `${pageTitle} · Mystic Box` : "Mystic Box";
+  }, [pageTitle]);
   // Sorteio ainda não guardado: { cards, summonToken }.
   const [pendingSummon, setPendingSummon] = useState(null);
   const [saving, setSaving] = useState(false);

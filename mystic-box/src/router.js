@@ -1,9 +1,23 @@
 import { useEffect, useRef, useSyncExternalStore } from "react";
+import { flushSync } from "react-dom";
 import { createNavigation } from "./navigation.js";
+
+// Troca de tela (início, invocação, arena) com a transição de "portal"
+// (View Transitions API, onde o navegador tiver; ver index.css). Painéis e
+// abas trocam sem ela.
+function screenTransition(apply, previous, next) {
+  const reduceMotion = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
+  const screenChanged = previous.route.screen !== next.route.screen;
+  if (!screenChanged || reduceMotion || !document.startViewTransition) {
+    apply();
+    return;
+  }
+  document.startViewTransition(() => flushSync(apply));
+}
 
 // Roteador do jogo (um só por página). Ver `routes.js` para os endereços e
 // `navigation.js` para como o Voltar do navegador é tratado.
-const navigation = createNavigation(window);
+const navigation = createNavigation(window, { transition: screenTransition });
 
 export const navigate = navigation.navigate;
 export const exitTo = navigation.exitTo;

@@ -28,7 +28,9 @@ function splitPath(path) {
   return at === -1 ? [path, ""] : [path.slice(0, at), path.slice(at)];
 }
 
-export function createNavigation(win, { schedule } = {}) {
+// `transition(apply, previous, next)`: opcional, embrulha a troca de tela (ex.:
+// animação); precisa chamar `apply()`.
+export function createNavigation(win, { schedule, transition } = {}) {
   const history = win.history;
   const later = schedule ?? ((fn) => win.setTimeout(fn, 0));
   const listeners = new Set();
@@ -87,8 +89,10 @@ export function createNavigation(win, { schedule } = {}) {
     const changed = next.key !== entry.key || next.path !== entry.path;
     entry = next;
     if (changed) {
+      const previous = snapshot;
       snapshot = snapshotOf(entry);
-      emit();
+      if (transition) transition(emit, previous, snapshot);
+      else emit();
     }
   }
 
