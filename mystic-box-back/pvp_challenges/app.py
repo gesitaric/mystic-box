@@ -1,8 +1,8 @@
 """Desafios do duelo online.
 
 Rotas:
-- GET /pvp: desafios recebidos e enviados, duelo ativo, quem está online e
-  regras do online. Também renova a presença de quem pede (se tiver nome de
+- GET /pvp: desafios recebidos e enviados, duelo ativo, quem está online,
+  duelos em andamento (para assistir) e regras do online. Também renova a presença de quem pede (se tiver nome de
   usuário) na lista de quem está online (PvpPresenceTable).
 - POST /pvp/leave: tira o jogador da lista de quem está online.
 - POST /pvp/challenges: {"username", "team": [fileName x3]} desafia um jogador.
@@ -27,7 +27,13 @@ import boto3
 from botocore.exceptions import ClientError
 from mystic_shared import pvp
 from mystic_shared.ascension import read_ascensions
-from mystic_shared.battle import TEAM_SIZE, BattleError, create_pvp_battle, new_rng
+from mystic_shared.battle import (
+    MAX_ROUNDS,
+    TEAM_SIZE,
+    BattleError,
+    create_pvp_battle,
+    new_rng,
+)
 from mystic_shared.cards import get_character
 from mystic_shared.progression import level_for_experience
 from mystic_shared.titles import title_name
@@ -49,6 +55,9 @@ USER_PROGRESS_TABLE = os.environ.get("USER_PROGRESS_TABLE")
 CARD_ASCENSIONS_TABLE = os.environ.get("CARD_ASCENSIONS_TABLE")
 PVP_PRESENCE_TABLE = os.environ.get("PVP_PRESENCE_TABLE")
 CHALLENGER_INDEX = "ChallengerIndex"
+LIVE_DUELS_INDEX = "LiveDuelsIndex"
+# Duelos lidos do índice antes de tirar os parados (a lista mostra menos).
+LIVE_DUELS_READ_LIMIT = 100
 
 # Duelos somem sozinhos (TTL) um dia depois da última ação.
 BATTLE_TTL_SECONDS = 24 * 60 * 60
@@ -332,6 +341,50 @@ def online_players(user_id, now):
     ]
 
 
+def live_duels(user_id, now):
+    """Duelos em andamento para assistir (o id do Cognito não sai daqui)."""
+    result = get_client().query(
+        TableName=PVP_BATTLES_TABLE,
+        IndexName=LIVE_DUELS_INDEX,
+        KeyConditionExpression="liveIn = :lobby",
+        ExpressionAttributeValues={":lobby": {"S": pvp.LOBBY_ID}},
+        ScanIndexForward=False,
+        Limit=LIVE_DUELS_READ_LIMIT,
+    )
+    entries = [
+        {
+            "battleId": item["battleId"]["S"],
+            "startedAt": int(item["startedAt"]["N"]),
+            "round": int(item.get("round", {}).get("N", "1")),
+            "turnDeadline": (
+                int(item["turnDeadline"]["N"]) if "turnDeadline" in item else None
+            ),
+            "players": json.loads(item["players"]["S"]),
+        }
+        for item in result.get("Items", [])
+    ]
+    return [
+        {
+            "battleId": entry["battleId"],
+            "round": entry["round"],
+            "maxRounds": MAX_ROUNDS,
+            "startedAt": entry["startedAt"],
+            "isYours": any(
+                entry["players"][side]["userId"] == user_id for side in pvp.SIDES
+            ),
+            "players": {
+                side: {
+                    "username": entry["players"][side]["username"],
+                    "level": entry["players"][side].get("level"),
+                    "title": entry["players"][side].get("title"),
+                }
+                for side in pvp.SIDES
+            },
+        }
+        for entry in pvp.live_list(entries, now)
+    ]
+
+
 # ------------------------------------------------------------------ regras ---
 
 
@@ -415,6 +468,7 @@ def lobby(user_id):
             ],
             "battle": duel,
             "online": online_players(user_id, now),
+            "liveDuels": live_duels(user_id, now),
             "rules": pvp.public_rules(),
         },
     )
@@ -578,8 +632,9 @@ def accept(user_id, body):
 
     players = {
         "player": {"userId": challenger_id, "username": challenger_name,
-                   "title": get_title_name(challenger_id)},
-        "enemy": {"userId": user_id, "username": my_name, "title": get_title_name(user_id)},
+                   "title": get_title_name(challenger_id), "level": state["playerLevel"]},
+        "enemy": {"userId": user_id, "username": my_name, "title": get_title_name(user_id),
+                  "level": state["enemyLevel"]},
     }
     transact_items = [
         {
@@ -601,6 +656,7 @@ def accept(user_id, body):
                     "players": {"S": json.dumps(players)},
                     "updatedAt": {"S": datetime.fromtimestamp(now, timezone.utc).isoformat()},
                     "expiresAt": {"N": str(now + BATTLE_TTL_SECONDS)},
+                    **pvp.listing_attributes(state, now),
                 },
                 "ConditionExpression": "attribute_not_exists(battleId)",
             }

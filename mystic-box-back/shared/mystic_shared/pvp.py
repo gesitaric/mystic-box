@@ -18,6 +18,10 @@ as regras do que é só do online:
   na lista do salão (LOBBY_ID). O cliente renova a presença a cada
   LOBBY_REFRESH_SECONDS; sem sinal por PRESENCE_SECONDS, o jogador some da
   lista. A lista mostra no máximo MAX_ONLINE_PLAYERS jogadores.
+- Assistir: qualquer jogador com sessão pode assistir a um duelo em andamento
+  (até MAX_LIVE_DUELS aparecem na lista). Quem assiste só lê: não joga vezes
+  vencidas nem grava nada. Um duelo cuja vez venceu há mais de
+  LIVE_DUEL_GRACE_SECONDS sai da lista (os dois jogadores saíram).
 """
 
 from . import battle
@@ -34,6 +38,8 @@ LOBBY_ID = "main"
 LOBBY_REFRESH_SECONDS = 20
 PRESENCE_SECONDS = 60
 MAX_ONLINE_PLAYERS = 50
+MAX_LIVE_DUELS = 20
+LIVE_DUEL_GRACE_SECONDS = 30
 
 
 def challenge_active(expires_at, now):
@@ -131,6 +137,43 @@ def play(state, action, side, now, rng):
     return events
 
 
+# ------------------------------------------------------- duelos ao vivo ---
+
+
+def listing_attributes(state, started_at):
+    """Atributos do item do duelo lidos pela lista de duelos em andamento.
+
+    Formato do DynamoDB. `liveIn` só existe enquanto o duelo está ativo, então
+    o índice dos duelos em andamento (LiveDuelsIndex) só tem esses.
+    """
+    attributes = {
+        "startedAt": {"N": str(int(started_at))},
+        "round": {"N": str(state["round"])},
+    }
+    if state["status"] == "active":
+        attributes["liveIn"] = {"S": LOBBY_ID}
+    if state.get("turnDeadline") is not None:
+        attributes["turnDeadline"] = {"N": str(int(state["turnDeadline"]))}
+    return attributes
+
+
+def is_live(turn_deadline, now):
+    """Duelo com alguém jogando (a vez não venceu há muito tempo)."""
+    if turn_deadline is None:
+        return True
+    return int(now) <= int(turn_deadline) + LIVE_DUEL_GRACE_SECONDS
+
+
+def live_list(entries, now):
+    """Duelos em andamento, mais recentes primeiro, no máximo MAX_LIVE_DUELS.
+
+    `entries`: [{"startedAt", "turnDeadline", ...}].
+    """
+    live = [entry for entry in entries if is_live(entry.get("turnDeadline"), now)]
+    live.sort(key=lambda entry: -int(entry["startedAt"]))
+    return live[:MAX_LIVE_DUELS]
+
+
 # ------------------------------------------------------------------- visão ---
 
 
@@ -165,6 +208,37 @@ def public_duel(state, side, now, players):
     return view
 
 
+def public_spectator(state, now, players):
+    """Duelo visto por quem assiste: os dois lados como estão guardados.
+
+    `players`: {side: {"username", "level", "title"}}.
+    """
+    view = battle.public_state(state, battle.SPECTATOR)
+    view["spectating"] = True
+    view["seq"] = state["seq"]
+    view["turnSeconds"] = TURN_SECONDS
+    view["turnSecondsLeft"] = turn_seconds_left(state, now)
+    view["maxMissedTurns"] = MAX_MISSED_TURNS
+    view["missedTurns"] = dict(state["missed"])
+    view["players"] = {side: players.get(side) for side in SIDES}
+    view["winner"] = battle.winner_side(state)
+    return view
+
+
+def spectator_result(state, players):
+    """Fim do duelo para quem assiste (None se ainda está em andamento)."""
+    if state["status"] == "active":
+        return None
+    winner = battle.winner_side(state)
+    return {
+        "spectator": True,
+        "outcome": "draw" if winner is None else "won",
+        "winner": players[winner]["username"] if winner else None,
+        "loser": players[opponent_side(winner)]["username"] if winner else None,
+        "reason": state["endReason"],
+    }
+
+
 def public_rules():
     return {
         "teamSize": battle.TEAM_SIZE,
@@ -179,4 +253,5 @@ def public_rules():
         "lobbyRefreshSeconds": LOBBY_REFRESH_SECONDS,
         "presenceSeconds": PRESENCE_SECONDS,
         "maxOnlinePlayers": MAX_ONLINE_PLAYERS,
+        "maxLiveDuels": MAX_LIVE_DUELS,
     }
