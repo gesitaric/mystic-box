@@ -1,8 +1,9 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from "react";
 import CampaignPanel from "./CampaignPanel";
 import { getCharacterImage } from "../../characterImages";
 import { LevelBadge } from "../HomeScreen";
 import Grimoire from "../Grimoire";
+import Modal from "../Modal";
 import LevelUpCelebration from "./LevelUpCelebration";
 import PvpLobby from "./PvpLobby";
 import TeamSetup, { SkillList, StatGrid } from "./TeamSetup";
@@ -18,7 +19,7 @@ import {
 } from "./battlePresentation";
 import { createBattleAudio } from "./battleAudio";
 import { readSoundPreference, storeSoundPreference } from "../../audio/soundPreference";
-import { exitTo, navigate, useBackHandler, useRoute } from "../../router";
+import { currentRoute, exitTo, navigate, useBackHandler, useRoute } from "../../router";
 import { withOverlay } from "../../routes";
 
 const SINGLE_TARGETS = ["enemy", "ally", "fallen_ally"];
@@ -84,13 +85,171 @@ function freshView(view) {
   };
 }
 
-// Ressonância de região do time (calculada no servidor).
+// Acompanha uma media query (ex.: se há mouse para mostrar dicas ao passar).
+function useMediaQuery(query) {
+  const subscribe = useCallback(
+    (onChange) => {
+      const list = window.matchMedia(query);
+      list.addEventListener("change", onChange);
+      return () => list.removeEventListener("change", onChange);
+    },
+    [query]
+  );
+  return useSyncExternalStore(subscribe, () => window.matchMedia(query).matches);
+}
+
+// A habilidade pede que o jogador escolha o alvo entre vários.
+function needsTarget(action) {
+  return SINGLE_TARGETS.includes(action.target) && action.targets.length > 1;
+}
+
+// Ressonância de região do time (calculada no servidor). Tocar abre o efeito.
 function ResonanceChip({ resonance, side }) {
   if (!resonance) return null;
   return (
-    <p className={`battle-resonance is-${side}`} title={resonance.description}>
-      ✦ {resonance.regionName}: <strong>{resonance.name}</strong>
+    <details className={`battle-resonance is-${side}`}>
+      <summary>
+        ✦ {resonance.regionName}: <strong>{resonance.name}</strong>
+      </summary>
+      <p>{resonance.description}</p>
+    </details>
+  );
+}
+
+// Explicação da habilidade em foco, logo acima dos botões (no celular não há
+// "passar o mouse"; o primeiro toque mostra, o segundo usa).
+function SkillHint({ action, armed, finePointer }) {
+  if (!action) {
+    return (
+      <p className="battle-skill-hint is-empty">
+        {finePointer
+          ? "Point at a skill to read what it does."
+          : "Tap a skill to read it. Tap it again to use it."}
+      </p>
+    );
+  }
+  return (
+    <p className="battle-skill-hint">
+      <strong>{action.name}</strong>{" "}
+      <span className="battle-skill-hint-meta">
+        {action.cost > 0 ? `${action.cost} ✦` : "Free"} · {TARGET_LABELS[action.target]}
+      </span>{" "}
+      {action.description}
+      {!action.usable && action.reason && (
+        <span className="battle-skill-hint-reason"> {action.reason}</span>
+      )}
+      {armed && <span className="battle-skill-hint-cta"> Tap again to use it.</span>}
     </p>
+  );
+}
+
+// Menu da batalha: o que não precisa ficar sempre na tela.
+function BattleMenu({ duel, soundOn, onToggleSound, onRules, onLeave, canFlee, onFlee, onClose }) {
+  const [confirmFlee, setConfirmFlee] = useState(false);
+  return (
+    <Modal label="Battle menu" className="battle-menu" onClose={onClose}>
+      <h2 className="battle-panel-title">Battle menu</h2>
+      <div className="battle-menu-items">
+        <button
+          type="button"
+          className="battle-menu-item"
+          onClick={onToggleSound}
+          aria-pressed={soundOn}
+        >
+          <span>Sound</span>
+          <span className="battle-menu-note">{soundOn ? "On" : "Off"}</span>
+        </button>
+        <button type="button" className="battle-menu-item" onClick={onRules}>
+          <span>Rules</span>
+          <span className="battle-menu-note">Grimoire</span>
+        </button>
+        <button type="button" className="battle-menu-item" onClick={onLeave}>
+          <span>← Leave to home</span>
+          <span className="battle-menu-note">
+            {duel
+              ? "The duel goes on: when your time runs out, your cards act on their own."
+              : "The battle stays open; you can come back to it."}
+          </span>
+        </button>
+        {canFlee &&
+          (confirmFlee ? (
+            <div className="battle-menu-confirm">
+              <p>Flee and lose this battle? You earn no XP.</p>
+              <div>
+                <button type="button" className="collection-sell-button is-confirm" onClick={onFlee}>
+                  Flee (no XP)
+                </button>
+                <button
+                  type="button"
+                  className="collection-sell-button is-cancel"
+                  onClick={() => setConfirmFlee(false)}
+                >
+                  Stay
+                </button>
+              </div>
+            </div>
+          ) : (
+            <button
+              type="button"
+              className="battle-menu-item is-danger"
+              onClick={() => setConfirmFlee(true)}
+            >
+              <span>Flee</span>
+              <span className="battle-menu-note">Give up this battle</span>
+            </button>
+          ))}
+      </div>
+    </Modal>
+  );
+}
+
+// Detalhes de uma carta: folha que sobe do rodapé no celular, painel ao lado
+// no computador. O que importa no turno (efeitos e habilidades) vem primeiro.
+function UnitDetails({ unit, elementRider, onClose }) {
+  useBackHandler(onClose);
+  useEffect(() => {
+    function handleKeyDown(event) {
+      if (event.key === "Escape") onClose();
+    }
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [onClose]);
+
+  return (
+    <>
+      <div className="battle-sheet-backdrop" onClick={onClose} aria-hidden="true" />
+      <aside
+        className="battle-panel battle-inspect battle-inspect-float"
+        aria-label={`${unit.name} details`}
+      >
+        <button type="button" className="auth-close" aria-label="Close details" onClick={onClose}>
+          ×
+        </button>
+        <h2 className="battle-panel-title">
+          {unit.name}{" "}
+          <span className="battle-inspect-sub">
+            {ELEMENT_STYLE[unit.element]?.icon} {unit.elementLabel} · {unit.archetypeLabel} · Lv{" "}
+            {unit.level}
+            {unit.ascension > 0 && ` · Ascension ${unit.ascension}`}
+          </span>
+        </h2>
+        {unit.statuses.length > 0 && (
+          <ul className="battle-inspect-statuses">
+            {unit.statuses.map((status) => (
+              <li key={status.id}>
+                {STATUS_ICON[status.id]} <strong>{status.label}</strong> ({status.turns}):{" "}
+                {status.description}
+              </li>
+            ))}
+          </ul>
+        )}
+        <SkillList skills={unit.skills} />
+        {elementRider && (
+          <p className="battle-inspect-desc">Element spell effect: {elementRider}</p>
+        )}
+        <StatGrid stats={unit.stats} />
+      </aside>
+    </>
   );
 }
 
@@ -404,7 +563,14 @@ function BattleScreen({
   const [selectedSkill, setSelectedSkill] = useState(null);
   const [inspectedId, setInspectedId] = useState(null);
   const [autoMode, setAutoMode] = useState(false);
-  const [confirmForfeit, setConfirmForfeit] = useState(false);
+  // Menu da batalha (som, regras, sair, fugir).
+  const [menuOpen, setMenuOpen] = useState(false);
+  // Habilidade mostrada na dica sem estar escolhida (mouse em cima ou bloqueada).
+  const [peekSkillId, setPeekSkillId] = useState(null);
+  // Registro aberto por inteiro (no celular ele mostra só as últimas linhas).
+  const [logExpanded, setLogExpanded] = useState(false);
+  // Com mouse, um clique usa a habilidade; no toque, o primeiro só explica.
+  const finePointer = useMediaQuery("(hover: hover) and (pointer: fine)");
   // Pergunta "sair da arena?" aberta pelo Voltar do navegador.
   const [confirmLeave, setConfirmLeave] = useState(false);
   const [lastTeam, setLastTeam] = useState([]);
@@ -833,7 +999,7 @@ function BattleScreen({
       setBusy(true);
       setError("");
       setSelectedSkill(null);
-      setConfirmForfeit(false);
+      setPeekSkillId(null);
       try {
         const { ok, status, data } = await request(
           duel ? "/pvp/battle/actions" : "/battles/current/actions",
@@ -955,17 +1121,27 @@ function BattleScreen({
   }, [selectedSkill]);
 
   function chooseSkill(action) {
-    if (!action.usable || !waitingForPlayer || busy) return;
-    if (selectedSkill?.id === action.id) {
+    if (!waitingForPlayer || busy) return;
+    if (!action.usable) {
+      // Bloqueada: só mostra o motivo.
       setSelectedSkill(null);
+      setPeekSkillId(action.id);
+      return;
+    }
+    const castSkill = () =>
+      void sendAction({ type: "skill", skill: action.id, target: action.targets[0] ?? null });
+    if (selectedSkill?.id === action.id) {
+      // Segundo toque: usa (sem alvo a escolher) ou cancela a escolha do alvo.
+      if (needsTarget(action)) setSelectedSkill(null);
+      else castSkill();
       return;
     }
     audio.current?.select();
-    if (SINGLE_TARGETS.includes(action.target) && action.targets.length > 1) {
+    if (needsTarget(action) || !finePointer) {
       setSelectedSkill(action);
       return;
     }
-    void sendAction({ type: "skill", skill: action.id, target: action.targets[0] ?? null });
+    castSkill();
   }
 
   const backToSetup = useCallback(() => {
@@ -1000,6 +1176,9 @@ function BattleScreen({
       }
     }
   }, [phase, route, battleActive, backToSetup]);
+
+  const closeDetails = useCallback(() => setInspectedId(null), []);
+  const closeMenu = useCallback(() => setMenuOpen(false), []);
 
   // Voltar do navegador no meio da batalha: pergunta antes de sair.
   const stayInBattle = useCallback(() => setConfirmLeave(false), []);
@@ -1187,10 +1366,22 @@ function BattleScreen({
     waitingText = playback ? "..." : `${rivalName} is choosing`;
   }
   const inspectedUnit = units.find((unit) => unit.id === inspectedId) ?? null;
-  const targetIds = selectedSkill?.targets ?? [];
+  const targetIds = selectedSkill && needsTarget(selectedSkill) ? selectedSkill.targets : [];
+  const armedSkill = selectedSkill && !needsTarget(selectedSkill) ? selectedSkill : null;
+  const hintSkill = currentUnit
+    ? (view.actions.find((action) => action.id === (selectedSkill?.id ?? peekSkillId)) ?? null)
+    : null;
   const upcoming = (view.upcoming ?? [])
     .map((id) => units.find((unit) => unit.id === id))
     .filter(Boolean);
+  const canFlee = view.status === "active" && !busy && !playback && (duel || Boolean(view.turn));
+  const timer =
+    turnLeft != null ? (
+      <span className={`battle-turn-timer${turnLeft <= 10 ? " is-low" : ""}`}>
+        {" "}
+        · {turnLeft}s
+      </span>
+    ) : null;
 
   function renderUnit(unit) {
     const override = hpOverride[unit.id];
@@ -1226,41 +1417,49 @@ function BattleScreen({
 
   return (
     <section className="battle-screen is-arena" aria-label="Battle">
-      <div className="battle-topbar">
-        <button
-          type="button"
-          className="session-button"
-          onClick={onExit}
-          title={
-            duel
-              ? "The duel goes on: when your time runs out, your cards act on their own."
-              : "The battle stays open; you can come back to it."
-          }
-        >
-          ← Home
-        </button>
+      <div className="battle-topbar is-arena">
         <span className="battle-round">
           {duel
             ? `Duel vs ${rivalName}${view.opponent?.title ? `, ${view.opponent.title}` : ""}`
             : view.difficultyLabel}{" "}
-          · Round {view.round}/
-          {view.maxRounds}
+          · Round {view.round}/{view.maxRounds}
         </span>
-        <SoundButton on={soundOn} onToggle={() => setSoundOn((on) => !on)} />
-        <Grimoire chapter="battle" />
+        <button
+          type="button"
+          className="battle-menu-button"
+          onClick={() => setMenuOpen(true)}
+          aria-label="Battle menu"
+          aria-haspopup="dialog"
+          title="Menu"
+        >
+          <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true">
+            <path
+              d="M4 7h16M4 12h16M4 17h16"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+            />
+          </svg>
+        </button>
       </div>
 
-      <AetherMeter
-        label={duel ? rivalName : "Foes"}
-        value={aether.enemy}
-        max={view.maxAether}
-        side="enemy"
-      />
-      <ResonanceChip resonance={view.resonance?.enemy} side="enemy" />
-      <div className="battle-row is-enemy">{enemies.map(renderUnit)}</div>
+      <div className="battle-field">
+        <div className="battle-side is-enemy">
+          <AetherMeter
+            label={duel ? rivalName : "Foes"}
+            value={aether.enemy}
+            max={view.maxAether}
+            side="enemy"
+          />
+          <ResonanceChip resonance={view.resonance?.enemy} side="enemy" />
+        </div>
+        <div className="battle-row is-enemy">{enemies.map(renderUnit)}</div>
 
-      <div className="battle-center">
-        <ol className="battle-log" aria-live="polite" aria-label="Battle log">
+        <ol
+          className={`battle-log${logExpanded ? " is-expanded" : ""}`}
+          aria-live="polite"
+          aria-label="Battle log"
+        >
           {log.map((entry) => (
             <li key={entry.id} className={`battle-log-entry is-${entry.kind}`}>
               {entry.text}
@@ -1268,39 +1467,46 @@ function BattleScreen({
           ))}
           <li ref={logEnd} className="battle-log-end" aria-hidden="true" />
         </ol>
-        {upcoming.length > 0 && !playback && (
-          <div className="battle-upcoming" aria-label="Next in this round">
-            <span>Next:</span>
-            {upcoming.slice(0, 5).map((unit) => (
-              <img
-                key={unit.id}
-                src={getCharacterImage(unit.fileName)}
-                alt={unit.name}
-                title={unit.name}
-                className={`battle-upcoming-face is-${unit.side}`}
-              />
-            ))}
-          </div>
-        )}
-      </div>
+        <div className="battle-midline">
+          {upcoming.length > 0 && !playback && (
+            <div className="battle-upcoming" aria-label="Next in this round">
+              <span>Next:</span>
+              {upcoming.slice(0, 5).map((unit) => (
+                <img
+                  key={unit.id}
+                  src={getCharacterImage(unit.fileName)}
+                  alt={unit.name}
+                  title={unit.name}
+                  className={`battle-upcoming-face is-${unit.side}`}
+                />
+              ))}
+            </div>
+          )}
+          <button
+            type="button"
+            className="battle-log-toggle"
+            aria-expanded={logExpanded}
+            onClick={() => setLogExpanded((open) => !open)}
+          >
+            {logExpanded ? "Hide log ▴" : "Full log ▾"}
+          </button>
+        </div>
 
-      <div className="battle-row is-player">{allies.map(renderUnit)}</div>
-      <ResonanceChip resonance={view.resonance?.player} side="player" />
-      <AetherMeter label="Your Aether" value={aether.player} max={view.maxAether} side="player" />
+        <div className="battle-row is-player">{allies.map(renderUnit)}</div>
+        <div className="battle-side is-player">
+          <ResonanceChip resonance={view.resonance?.player} side="player" />
+          <AetherMeter label="Your Aether" value={aether.player} max={view.maxAether} side="player" />
+        </div>
+      </div>
 
       <div className="battle-actions">
         {currentUnit ? (
           <>
             <p className="battle-actions-title">
-              {selectedSkill
-                ? `${selectedSkill.name}: choose a target (${TARGET_LABELS[selectedSkill.target]}) · Esc to cancel`
+              {targetIds.length > 0
+                ? `${selectedSkill.name}: choose a target (${TARGET_LABELS[selectedSkill.target]})`
                 : `${currentUnit.name}'s turn`}
-              {turnLeft != null && (
-                <span className={`battle-turn-timer${turnLeft <= 10 ? " is-low" : ""}`}>
-                  {" "}
-                  · {turnLeft}s
-                </span>
-              )}
+              {timer}
             </p>
             {duel && view.missedTurns > 0 && (
               <p className="battle-turn-warning" role="status">
@@ -1308,17 +1514,28 @@ function BattleScreen({
                 all and you abandon the duel.
               </p>
             )}
+            {!autoMode && (
+              <SkillHint action={hintSkill} armed={armedSkill != null} finePointer={finePointer} />
+            )}
             <div className="battle-skills">
               {view.actions.map((action) => (
                 <button
                   key={action.id}
                   type="button"
-                  className={`battle-skill${selectedSkill?.id === action.id ? " is-selected" : ""}${
-                    action.duo ? " is-duo" : ""
-                  }`}
-                  disabled={!action.usable || busy || autoMode}
-                  title={action.usable ? action.description : `${action.description} (${action.reason})`}
+                  className={[
+                    "battle-skill",
+                    selectedSkill?.id === action.id && "is-selected",
+                    action.duo && "is-duo",
+                    !action.usable && "is-unusable",
+                  ]
+                    .filter(Boolean)
+                    .join(" ")}
+                  disabled={busy || autoMode}
+                  aria-disabled={!action.usable}
                   onClick={() => chooseSkill(action)}
+                  onMouseEnter={() => finePointer && setPeekSkillId(action.id)}
+                  onMouseLeave={() => finePointer && setPeekSkillId(null)}
+                  onFocus={() => setPeekSkillId(action.id)}
                 >
                   <span className="battle-skill-name">
                     {action.duo && "✦✦ "}
@@ -1333,14 +1550,9 @@ function BattleScreen({
             </div>
           </>
         ) : (
-          <p className="battle-actions-title">
+          <p className="battle-actions-title is-waiting">
             {waitingText}
-            {turnLeft != null && (
-              <span className={`battle-turn-timer${turnLeft <= 10 ? " is-low" : ""}`}>
-                {" "}
-                · {turnLeft}s
-              </span>
-            )}
+            {timer}
           </p>
         )}
 
@@ -1350,39 +1562,22 @@ function BattleScreen({
               type="checkbox"
               checked={autoMode}
               disabled={view.status !== "active"}
-              onChange={(event) => setAutoMode(event.target.checked)}
+              onChange={(event) => {
+                setSelectedSkill(null);
+                setAutoMode(event.target.checked);
+              }}
             />
             Auto battle
           </label>
-          {view.status === "active" &&
-            (confirmForfeit ? (
-              <span className="battle-forfeit-confirm">
-                <button
-                  type="button"
-                  className="collection-sell-button is-confirm"
-                  disabled={busy || Boolean(playback)}
-                  onClick={() => void sendAction({ type: "forfeit" })}
-                >
-                  Flee (no XP)
-                </button>
-                <button
-                  type="button"
-                  className="collection-sell-button is-cancel"
-                  onClick={() => setConfirmForfeit(false)}
-                >
-                  Stay
-                </button>
-              </span>
-            ) : (
-              <button
-                type="button"
-                className="collection-sell-button is-cancel"
-                disabled={busy || Boolean(playback) || (!duel && !view.turn)}
-                onClick={() => setConfirmForfeit(true)}
-              >
-                Flee
-              </button>
-            ))}
+          {currentUnit && selectedSkill && (
+            <button
+              type="button"
+              className="battle-cancel-skill"
+              onClick={() => setSelectedSkill(null)}
+            >
+              Cancel
+            </button>
+          )}
         </div>
 
         {error && (
@@ -1393,41 +1588,33 @@ function BattleScreen({
       </div>
 
       {inspectedUnit && (
-        <aside className="battle-panel battle-inspect battle-inspect-float" aria-label={`${inspectedUnit.name} details`}>
-          <button
-            type="button"
-            className="auth-close"
-            aria-label="Close details"
-            onClick={() => setInspectedId(null)}
-          >
-            ×
-          </button>
-          <h2 className="battle-panel-title">
-            {inspectedUnit.name}{" "}
-            <span className="battle-inspect-sub">
-              {ELEMENT_STYLE[inspectedUnit.element]?.icon} {inspectedUnit.elementLabel} ·{" "}
-              {inspectedUnit.archetypeLabel} · Lv {inspectedUnit.level}
-              {inspectedUnit.ascension > 0 && ` · Ascension ${inspectedUnit.ascension}`}
-            </span>
-          </h2>
-          {view.elementRiders?.[inspectedUnit.element] && (
-            <p className="battle-inspect-desc">
-              Element spell effect: {view.elementRiders[inspectedUnit.element]}
-            </p>
-          )}
-          <StatGrid stats={inspectedUnit.stats} />
-          {inspectedUnit.statuses.length > 0 && (
-            <ul className="battle-inspect-statuses">
-              {inspectedUnit.statuses.map((status) => (
-                <li key={status.id}>
-                  {STATUS_ICON[status.id]} <strong>{status.label}</strong> ({status.turns}):{" "}
-                  {status.description}
-                </li>
-              ))}
-            </ul>
-          )}
-          <SkillList skills={inspectedUnit.skills} />
-        </aside>
+        <UnitDetails
+          unit={inspectedUnit}
+          elementRider={view.elementRiders?.[inspectedUnit.element]}
+          onClose={closeDetails}
+        />
+      )}
+
+      {menuOpen && (
+        <BattleMenu
+          duel={duel}
+          soundOn={soundOn}
+          onToggleSound={() => setSoundOn((on) => !on)}
+          onRules={() => {
+            setMenuOpen(false);
+            navigate(withOverlay(currentRoute(), { name: "grimoire", chapter: "battle" }));
+          }}
+          onLeave={() => {
+            setMenuOpen(false);
+            onExit();
+          }}
+          canFlee={canFlee}
+          onFlee={() => {
+            setMenuOpen(false);
+            void sendAction({ type: "forfeit" });
+          }}
+          onClose={closeMenu}
+        />
       )}
 
       {reading && !result && (
