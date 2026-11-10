@@ -64,6 +64,24 @@ export const END_REASON_TEXT = {
   opponent_abandon: "Your rival stopped playing and abandoned the duel.",
 };
 
+// Fim do duelo para quem assiste: o servidor diz quem venceu, quem perdeu e
+// por quê ("victory"/"defeat" são vistos do lado de quem desafiou).
+export function spectatorEndText({ winner, loser, reason }) {
+  switch (reason) {
+    case "victory":
+    case "defeat":
+      return `${loser}'s whole team has fallen.`;
+    case "forfeit":
+      return `${loser} fled the duel.`;
+    case "abandon":
+      return `${loser} stopped playing and abandoned the duel.`;
+    case "timeout":
+      return "The duel dragged on for too long.";
+    default:
+      return winner ? `${winner} won the duel.` : "";
+  }
+}
+
 const STATUS_NAMES = {
   burn: "Burn",
   stun: "Stun",

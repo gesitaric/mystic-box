@@ -19,6 +19,7 @@ test("os endereços conhecidos voltam iguais depois de lidos", () => {
     "/arena/duel/challenge",
     "/arena/duel/challenge?vs=Lyra+Star",
     "/arena/duel/accept/abc-123",
+    "/arena/duel/watch/1f0c9a2e-77b1-4c5e-9d3a-2b6f0e8c4d11",
     "/arena/battle",
     "/collection",
     "/shop",
@@ -53,6 +54,14 @@ test("lê tela, aba e painel", () => {
     known: true,
   });
   assert.deepEqual(parse("/arena/duel/challenge?vs=%20Lyra%20").vs, "Lyra");
+  assert.deepEqual(parse("/arena/duel/watch/abc-1"), {
+    screen: "arena",
+    arena: "pvp",
+    duel: "watch",
+    battleId: "abc-1",
+    overlay: null,
+    known: true,
+  });
   assert.deepEqual(parse("/shop/sell").overlay, { name: "shop", tab: "sell" });
   assert.deepEqual(parse("/world/riftheart").overlay, {
     name: "world",
@@ -72,6 +81,8 @@ test("endereço desconhecido vira o início", () => {
     "/arena/campaign/riftheart/02",
     "/arena/campaign/a/1/2",
     "/arena/duel/accept",
+    "/arena/duel/watch",
+    "/arena/duel/watch/a/b",
     "/arena/battle/x",
     "/summon/x",
     "/%E0%A4%A",

@@ -25,6 +25,7 @@ TABLES = {
     "progress": ("userId", None),
     "wallet": ("userId", None),
     "ascensions": ("userId", "file_name"),
+    "presence": ("lobbyId", "userId"),
 }
 
 
@@ -68,6 +69,7 @@ def db(monkeypatch, clock):
         "USER_PROGRESS_TABLE": "progress",
         "USER_WALLET_TABLE": "wallet",
         "CARD_ASCENSIONS_TABLE": "ascensions",
+        "PVP_PRESENCE_TABLE": "presence",
     }
     for module in (pvp_battle, pvp_challenges):
         monkeypatch.setattr(module, "_client", fake)
@@ -95,6 +97,21 @@ def request(authenticated_event, user, method, resource, body=None, query=None):
 
 def lobby(authenticated_event, user):
     return call(pvp_challenges, request(authenticated_event, user, "GET", "/pvp"))
+
+
+def leave(authenticated_event, user):
+    return call(pvp_challenges, request(authenticated_event, user, "POST", "/pvp/leave"))
+
+
+def watch(authenticated_event, user, battle_id, since=None):
+    query = {"battleId": battle_id}
+    if since is not None:
+        query["since"] = str(since)
+    return call(pvp_battle, request(authenticated_event, user, "GET", "/pvp/watch", query=query))
+
+
+def online_names(body):
+    return [player["username"] for player in body["online"]]
 
 
 def challenge(authenticated_event, user, username, team):
@@ -709,3 +726,184 @@ def test_current_unchanged_is_a_short_answer(authenticated_event, db, clock):
     assert "unchanged" not in body
     assert body["battle"]["seq"] == seq + 1
     assert body["events"][0]["type"] == "timeout"
+
+
+# ----------------------------------------------------------- online ---
+
+
+def test_online_list_keeps_recent_players_up_to_the_limit(monkeypatch):
+    monkeypatch.setattr(pvp, "MAX_ONLINE_PLAYERS", 2)
+    entries = [
+        {"username": "Old", "lastSeen": 10, "expiresAt": 70},
+        {"username": "Gone", "lastSeen": 1, "expiresAt": 50},
+        {"username": "New", "lastSeen": 30, "expiresAt": 90},
+        {"username": "Mid", "lastSeen": 20, "expiresAt": 80},
+    ]
+    assert [e["username"] for e in pvp.online_list(entries, now=60)] == ["New", "Mid"]
+
+
+def test_lobby_marks_the_player_as_online(authenticated_event, db, clock):
+    status, body = lobby(authenticated_event, ALICE)
+    assert status == 200
+    assert body["online"] == [
+        {"username": "Alice", "level": 1, "title": None, "isYou": True, "inDuel": False}
+    ]
+    item = db.tables["presence"][(pvp.LOBBY_ID, ALICE)]
+    assert int(item["expiresAt"]["N"]) == clock["value"] + pvp.PRESENCE_SECONDS
+    assert body["rules"]["lobbyRefreshSeconds"] == pvp.LOBBY_REFRESH_SECONDS
+
+
+def test_other_players_see_who_is_online(authenticated_event, db, clock):
+    lobby(authenticated_event, ALICE)
+    clock["value"] += 5
+    _, body = lobby(authenticated_event, BOB)
+    assert online_names(body) == ["Bob", "Alice"]
+    alice = body["online"][1]
+    assert alice["isYou"] is False and alice["inDuel"] is False
+
+
+def test_players_without_username_are_not_listed(authenticated_event, db):
+    del db.tables["profiles"][(CAROL, None)]["username"]
+    _, body = lobby(authenticated_event, CAROL)
+    assert body["online"] == []
+    assert db.tables["presence"] == {}
+
+
+def test_presence_expires_without_refresh(authenticated_event, db, clock):
+    lobby(authenticated_event, ALICE)
+    clock["value"] += pvp.PRESENCE_SECONDS
+    _, body = lobby(authenticated_event, BOB)
+    assert online_names(body) == ["Bob"]
+
+
+def test_leave_removes_the_player(authenticated_event, db):
+    lobby(authenticated_event, ALICE)
+    status, _ = leave(authenticated_event, ALICE)
+    assert status == 200
+    _, body = lobby(authenticated_event, BOB)
+    assert online_names(body) == ["Bob"]
+    # Sair sem estar na lista não é erro.
+    assert leave(authenticated_event, CAROL)[0] == 200
+
+
+def test_online_list_shows_who_is_dueling(authenticated_event, db):
+    lobby(authenticated_event, ALICE)
+    lobby(authenticated_event, BOB)
+    start_duel(authenticated_event)
+    _, body = lobby(authenticated_event, CAROL)
+    dueling = {player["username"]: player["inDuel"] for player in body["online"]}
+    assert dueling == {"Alice": True, "Bob": True, "Carol": False}
+
+
+def test_online_list_shows_the_title(authenticated_event, db):
+    db.tables["profiles"][(ALICE, None)]["title"] = {"S": "summoner"}
+    _, body = lobby(authenticated_event, ALICE)
+    assert body["online"][0]["title"] == "Summoner"
+
+
+# --------------------------------------------------------- assistir ---
+
+
+def test_live_duels_show_up_in_the_lobby(authenticated_event, db):
+    battle_id = start_duel(authenticated_event)
+    _, carol = lobby(authenticated_event, CAROL)
+    assert len(carol["liveDuels"]) == 1
+    duel = carol["liveDuels"][0]
+    assert duel["battleId"] == battle_id and duel["isYours"] is False
+    assert duel["round"] == 1 and duel["maxRounds"] == battle.MAX_ROUNDS
+    assert duel["players"]["player"] == {"username": "Alice", "level": 1, "title": None}
+    assert duel["players"]["enemy"]["username"] == "Bob"
+    assert "userId" not in json.dumps(carol["liveDuels"])
+
+    _, alice = lobby(authenticated_event, ALICE)
+    assert alice["liveDuels"][0]["isYours"] is True
+
+
+def test_finished_duels_leave_the_list(authenticated_event, db):
+    battle_id = start_duel(authenticated_event)
+    act(authenticated_event, BOB, {"battleId": battle_id, "type": "forfeit"})
+    assert "liveIn" not in db.tables["battles"][(battle_id, None)]
+    _, carol = lobby(authenticated_event, CAROL)
+    assert carol["liveDuels"] == []
+
+
+def test_stalled_duels_leave_the_list(authenticated_event, db, clock):
+    start_duel(authenticated_event)
+    clock["value"] += pvp.TURN_SECONDS + pvp.LIVE_DUEL_GRACE_SECONDS + 1
+    _, carol = lobby(authenticated_event, CAROL)
+    assert carol["liveDuels"] == []
+
+
+def test_live_list_keeps_newest_up_to_the_limit(monkeypatch):
+    monkeypatch.setattr(pvp, "MAX_LIVE_DUELS", 2)
+    entries = [
+        {"battleId": "a", "startedAt": 1, "turnDeadline": None},
+        {"battleId": "b", "startedAt": 3, "turnDeadline": 100},
+        {"battleId": "c", "startedAt": 2, "turnDeadline": 200},
+        {"battleId": "stale", "startedAt": 4, "turnDeadline": 10},
+    ]
+    live = pvp.live_list(entries, now=10 + pvp.LIVE_DUEL_GRACE_SECONDS + 1)
+    assert [entry["battleId"] for entry in live] == ["b", "c"]
+
+
+def test_spectator_sees_both_sides_without_acting(authenticated_event, db):
+    battle_id = start_duel(authenticated_event)
+    status, body = watch(authenticated_event, CAROL, battle_id, since=0)
+    assert status == 200, body
+    view = body["battle"]
+    assert view["spectating"] is True
+    assert view["yourTurn"] is False and view["actions"] == []
+    assert view["players"]["player"]["username"] == "Alice"
+    assert view["players"]["enemy"]["username"] == "Bob"
+    challenger = sorted(u["fileName"] for u in view["units"] if u["side"] == "player")
+    assert challenger == sorted(ALICE_TEAM)
+    assert view["turnSecondsLeft"] == pvp.TURN_SECONDS
+    assert body["events"] and body["result"] is None
+
+    # Quem assiste não joga.
+    assert act(authenticated_event, CAROL, {"battleId": battle_id, "type": "auto"})[0] == 404
+
+
+def test_spectator_unchanged_is_a_short_answer(authenticated_event, db):
+    battle_id = start_duel(authenticated_event)
+    _, body = watch(authenticated_event, CAROL, battle_id)
+    assert body["events"] == []
+    _, again = watch(authenticated_event, CAROL, battle_id, since=body["battle"]["seq"])
+    assert again["unchanged"] is True
+
+
+def test_players_cannot_watch_their_own_duel(authenticated_event, db):
+    battle_id = start_duel(authenticated_event)
+    status, body = watch(authenticated_event, ALICE, battle_id)
+    assert status == 409 and body["battleId"] == battle_id
+
+
+def test_watch_rejects_unknown_duels(authenticated_event, db):
+    assert watch(authenticated_event, CAROL, "nope")[0] == 404
+    assert watch(authenticated_event, CAROL, "x" * 100)[0] == 400
+
+
+def test_spectator_does_not_play_expired_turns(authenticated_event, db, clock):
+    battle_id = start_duel(authenticated_event)
+    version = db.tables["battles"][(battle_id, None)]["version"]["N"]
+    clock["value"] += pvp.TURN_SECONDS + 1
+    status, body = watch(authenticated_event, CAROL, battle_id)
+    assert status == 200 and body["battle"]["turnSecondsLeft"] == 0
+    assert db.tables["battles"][(battle_id, None)]["version"]["N"] == version
+
+
+def test_spectator_sees_who_won(authenticated_event, db):
+    battle_id = start_duel(authenticated_event)
+    _, body = watch(authenticated_event, CAROL, battle_id)
+    seq = body["battle"]["seq"]
+    act(authenticated_event, BOB, {"battleId": battle_id, "type": "forfeit"})
+
+    _, body = watch(authenticated_event, CAROL, battle_id, since=seq)
+    assert body["battle"]["winner"] == "player"
+    assert body["battle"]["endReason"] == "forfeit"
+    assert body["result"] == {
+        "spectator": True, "outcome": "won", "winner": "Alice", "loser": "Bob",
+        "reason": "forfeit",
+    }
+    end = next(e for e in body["events"] if e["type"] == "end")
+    assert end["winner"] == "player" and end["reason"] == "forfeit"

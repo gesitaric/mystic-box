@@ -148,6 +148,29 @@ def apply_function_env(functions):
         os.environ.setdefault(key, value)
 
 
+def add_missing_indexes(client, name, props):
+    """Índice novo no template numa tabela que já existe no banco local."""
+    wanted = props.get("GlobalSecondaryIndexes") or []
+    if not wanted:
+        return
+    table = client.describe_table(TableName=name)["Table"]
+    existing = {index["IndexName"] for index in table.get("GlobalSecondaryIndexes", [])}
+    for index in wanted:
+        if index["IndexName"] in existing:
+            continue
+        used = {key["AttributeName"] for key in index["KeySchema"]}
+        client.update_table(
+            TableName=name,
+            AttributeDefinitions=[
+                definition
+                for definition in props["AttributeDefinitions"]
+                if definition["AttributeName"] in used
+            ],
+            GlobalSecondaryIndexUpdates=[{"Create": index}],
+        )
+        print(f"  indice criado: {name}.{index['IndexName']}")
+
+
 def ensure_tables(tables):
     import boto3
 
@@ -155,6 +178,7 @@ def ensure_tables(tables):
     existing = set(client.list_tables()["TableNames"])
     for name, props in tables.items():
         if name in existing:
+            add_missing_indexes(client, name, props)
             continue
         options = {}
         if props.get("GlobalSecondaryIndexes"):

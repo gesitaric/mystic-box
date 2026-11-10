@@ -16,6 +16,7 @@ import {
   TARGET_LABELS,
   describeEvent,
   eventDelay,
+  spectatorEndText,
 } from "./battlePresentation";
 import { createBattleAudio } from "./battleAudio";
 import { readSoundPreference, storeSoundPreference } from "../../audio/soundPreference";
@@ -35,6 +36,8 @@ const DUEL_POLL_GROWTH = 1.5;
 const DUEL_POLL_MAX_MS = 5000;
 // Folga depois do fim do turno antes de conferir o que o servidor fez.
 const TURN_END_MARGIN_MS = 1000;
+
+const DUEL_LIST = { screen: "arena", arena: "pvp", duel: "list" };
 
 const ARENA_TABS = [
   { value: "pve", label: "vs Computer" },
@@ -144,7 +147,17 @@ function SkillHint({ action, armed, finePointer }) {
 }
 
 // Menu da batalha: o que não precisa ficar sempre na tela.
-function BattleMenu({ duel, soundOn, onToggleSound, onRules, onLeave, canFlee, onFlee, onClose }) {
+function BattleMenu({
+  duel,
+  spectating,
+  soundOn,
+  onToggleSound,
+  onRules,
+  onLeave,
+  canFlee,
+  onFlee,
+  onClose,
+}) {
   const [confirmFlee, setConfirmFlee] = useState(false);
   return (
     <Modal label="Battle menu" className="battle-menu" onClose={onClose}>
@@ -164,11 +177,13 @@ function BattleMenu({ duel, soundOn, onToggleSound, onRules, onLeave, canFlee, o
           <span className="battle-menu-note">Grimoire</span>
         </button>
         <button type="button" className="battle-menu-item" onClick={onLeave}>
-          <span>← Leave to home</span>
+          <span>{spectating ? "← Back to duels" : "← Leave to home"}</span>
           <span className="battle-menu-note">
-            {duel
-              ? "The duel goes on: when your time runs out, your cards act on their own."
-              : "The battle stays open; you can come back to it."}
+            {spectating
+              ? "You are only watching: the duel goes on without you."
+              : duel
+                ? "The duel goes on: when your time runs out, your cards act on their own."
+                : "The battle stays open; you can come back to it."}
           </span>
         </button>
         {canFlee &&
@@ -532,6 +547,27 @@ function BattleResult({ result, onAgain, onExit }) {
   );
 }
 
+// Fim de um duelo assistido: quem venceu (vem do servidor), sem experiência.
+function SpectatorResult({ result, onBack, onExit }) {
+  return (
+    <div className="battle-result" role="dialog" aria-modal="true" aria-label="Duel result">
+      <div className="battle-result-card is-won">
+        <span className="auth-ornament">✦ ✧ ✦</span>
+        <h2>{result.winner ? `${result.winner.toUpperCase()} WINS` : "DRAW"}</h2>
+        <p className="battle-result-reason">{spectatorEndText(result)}</p>
+        <div className="battle-result-actions">
+          <button type="button" className="keep-button" onClick={onBack}>
+            Back to duels
+          </button>
+          <button type="button" className="session-button" onClick={onExit}>
+            Home
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // Tela de batalha contra o computador. Tudo (dano, turnos, IA, recompensas)
 // é decidido pelo servidor; aqui só se pedem ações e se anima o resultado.
 // A aba da arena, a região e a fase da campanha e a tela do duelo vêm do
@@ -584,6 +620,10 @@ function BattleScreen({
   // Último lote de eventos do duelo já recebido.
   const seqRef = useRef(0);
   const enteringDuel = useRef(false);
+  // Duelo de outros jogadores sendo aberto para assistir (id), para não repetir.
+  const openingWatch = useRef(null);
+  // Assistindo (só lê o duelo, em /pvp/watch).
+  const spectatingRef = useRef(false);
   // Consultas seguidas sem novidade (para o intervalo crescente).
   const idlePolls = useRef(0);
   // Duelo na tela: as consultas vão direto a ele (uma leitura no servidor).
@@ -605,6 +645,7 @@ function BattleScreen({
     callbacks.current = { onProgressChange, onBalanceChange };
     autoRef.current = autoMode;
     battleIdRef.current = view?.battleId ?? null;
+    spectatingRef.current = Boolean(view?.spectating);
   });
 
   useEffect(() => {
@@ -757,7 +798,11 @@ function BattleScreen({
     }
 
     function apply(event) {
-      const entry = describeEvent(event, names);
+      let entry = describeEvent(event, names);
+      if (event.type === "end" && next.spectating) {
+        const winner = next.players?.[event.winner]?.username;
+        entry = { text: winner ? `${winner} wins!` : "Draw.", kind: "heal" };
+      }
       if (entry) {
         const id = ++floatId.current;
         setLog((current) => [...current, { id, ...entry }].slice(-LOG_LIMIT));
@@ -964,12 +1009,62 @@ function BattleScreen({
     }
   }, [request]);
 
+  // Abre o duelo de outros jogadores para assistir (só leitura).
+  const watchDuel = useCallback(
+    async (battleId) => {
+      if (openingWatch.current === battleId) return;
+      openingWatch.current = battleId;
+      setStartError("");
+      try {
+        const { ok, status, data } = await request(
+          `/pvp/watch?battleId=${encodeURIComponent(battleId)}`
+        );
+        if (!ok) {
+          // O próprio duelo: entra nele como jogador.
+          if (status === 409 && data.battleId) {
+            void enterDuel();
+            return;
+          }
+          setStartError(data.message ?? "Could not open this duel.");
+          navigate(DUEL_LIST, { replace: true });
+          return;
+        }
+        const { battle } = data;
+        seqRef.current = battle.seq;
+        idlePolls.current = 0;
+        setSelectedSkill(null);
+        setInspectedId(null);
+        setAutoMode(false);
+        setReading(null);
+        setView(received(battle));
+        setLog([
+          {
+            id: "watch",
+            text: `Watching ${battle.players.player.username} vs ${battle.players.enemy.username}.`,
+            kind: "round",
+          },
+        ]);
+        setResult(data.result ?? null);
+        setPhase("battle");
+      } catch (watchError) {
+        if (watchError instanceof SessionExpired) return;
+        console.error(watchError);
+        setStartError("Could not open this duel.");
+        navigate(DUEL_LIST, { replace: true });
+      } finally {
+        openingWatch.current = null;
+      }
+    },
+    [request, enterDuel]
+  );
+
   // Busca o que mudou no duelo desde o último lote recebido.
   const syncDuel = useCallback(async () => {
     const battleId = battleIdRef.current;
-    const { ok, data } = await request(
-      `/pvp/battle?since=${seqRef.current}${battleId ? `&battleId=${encodeURIComponent(battleId)}` : ""}`
-    );
+    const path = spectatingRef.current
+      ? `/pvp/watch?battleId=${encodeURIComponent(battleId)}&since=${seqRef.current}`
+      : `/pvp/battle?since=${seqRef.current}${battleId ? `&battleId=${encodeURIComponent(battleId)}` : ""}`;
+    const { ok, data } = await request(path);
     if (!ok || !data.battle) return;
     if (data.unchanged) {
       // Nada novo: só atualiza o tempo de turno.
@@ -1155,7 +1250,31 @@ function BattleScreen({
   // Endereço e tela andam juntos. O servidor decide se há batalha; o endereço
   // diz onde o jogador quer estar.
   const battleActive = view?.status === "active";
+  const spectating = Boolean(view?.spectating);
+  const watchId = route.arena === "pvp" && route.duel === "watch" ? route.battleId : null;
+
+  // Endereço de assistir: abre o duelo (o servidor confere se ele existe).
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    if (phase === "setup" && watchId) void watchDuel(watchId);
+  }, [phase, watchId, watchDuel]);
+
+  const watchedId = spectating ? view.battleId : null;
+  const stopWatching = useCallback(() => {
+    setResult(null);
+    setView(null);
+    setLog([]);
+    setPhase("setup");
+  }, []);
+
+  useEffect(() => {
+    if (watchedId) {
+      // Saiu do endereço do duelo assistido (Voltar, outro painel do duelo):
+      // para de assistir. Nada é gravado no servidor.
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      if (watchId !== watchedId) stopWatching();
+      return;
+    }
     if (phase === "setup") {
       if (route.arena === "battle") {
         // Sem batalha (acabou ou o link era antigo): volta à preparação.
@@ -1171,11 +1290,10 @@ function BattleScreen({
         });
       } else {
         // Voltou (pelo navegador) do resultado de uma batalha que acabou.
-        // eslint-disable-next-line react-hooks/set-state-in-effect
         backToSetup();
       }
     }
-  }, [phase, route, battleActive, backToSetup]);
+  }, [phase, route, battleActive, backToSetup, watchId, watchedId, stopWatching]);
 
   const closeDetails = useCallback(() => setInspectedId(null), []);
   const closeMenu = useCallback(() => setMenuOpen(false), []);
@@ -1183,7 +1301,7 @@ function BattleScreen({
   // Voltar do navegador no meio da batalha: pergunta antes de sair.
   const stayInBattle = useCallback(() => setConfirmLeave(false), []);
   useBackHandler(() => setConfirmLeave(true), {
-    active: phase === "battle" && battleActive && !route.overlay,
+    active: phase === "battle" && battleActive && !spectating && !route.overlay,
     kind: "block",
   });
 
@@ -1243,7 +1361,11 @@ function BattleScreen({
             </button>
           ))}
         </div>
-        {arena === "pvp" ? (
+        {arena === "pvp" && watchId ? (
+          <p className="collection-status" role="status">
+            Taking a seat in the stands...
+          </p>
+        ) : arena === "pvp" ? (
           <>
             {startError && (
               <p className="auth-error" role="alert">
@@ -1353,7 +1475,11 @@ function BattleScreen({
   const yourTurn = view.yourTurn ?? true;
   const currentUnit =
     !playback && view.turn && yourTurn ? units.find((u) => u.id === view.turn) : null;
-  const rivalName = view.opponent?.username ?? "Your rival";
+  const rivalName = spectating
+    ? view.players.enemy.username
+    : (view.opponent?.username ?? "Your rival");
+  // Quem assiste vê a carta da vez destacada (não escolhe nada).
+  const turnUnit = spectating && !playback ? units.find((u) => u.id === view.turn) : null;
   const turnLeft =
     duel && view.turnSecondsLeft != null && !playback
       ? Math.max(
@@ -1364,6 +1490,10 @@ function BattleScreen({
   let waitingText = view.status === "active" ? "The foes are acting..." : "The battle is over.";
   if (duel && view.status === "active") {
     waitingText = playback ? "..." : `${rivalName} is choosing`;
+    if (spectating && !playback) {
+      const owner = turnUnit ? view.players[turnUnit.side]?.username : null;
+      waitingText = turnUnit ? `${owner} is choosing for ${turnUnit.name}` : "...";
+    }
   }
   const inspectedUnit = units.find((unit) => unit.id === inspectedId) ?? null;
   const targetIds = selectedSkill && needsTarget(selectedSkill) ? selectedSkill.targets : [];
@@ -1374,7 +1504,8 @@ function BattleScreen({
   const upcoming = (view.upcoming ?? [])
     .map((id) => units.find((unit) => unit.id === id))
     .filter(Boolean);
-  const canFlee = view.status === "active" && !busy && !playback && (duel || Boolean(view.turn));
+  const canFlee =
+    !spectating && view.status === "active" && !busy && !playback && (duel || Boolean(view.turn));
   const timer =
     turnLeft != null ? (
       <span className={`battle-turn-timer${turnLeft <= 10 ? " is-low" : ""}`}>
@@ -1392,7 +1523,7 @@ function BattleScreen({
         unit={unit}
         hp={override?.hp ?? unit.hp}
         alive={override?.alive ?? unit.alive}
-        active={currentUnit?.id === unit.id}
+        active={(currentUnit ?? turnUnit)?.id === unit.id}
         acting={actingId === unit.id}
         targetable={targetable}
         inspected={inspectedId === unit.id}
@@ -1419,9 +1550,12 @@ function BattleScreen({
     <section className="battle-screen is-arena" aria-label="Battle">
       <div className="battle-topbar is-arena">
         <span className="battle-round">
-          {duel
-            ? `Duel vs ${rivalName}${view.opponent?.title ? `, ${view.opponent.title}` : ""}`
-            : view.difficultyLabel}{" "}
+          {spectating && <span className="battle-spectating">Watching · </span>}
+          {spectating
+            ? `${view.players.player.username} vs ${view.players.enemy.username}`
+            : duel
+              ? `Duel vs ${rivalName}${view.opponent?.title ? `, ${view.opponent.title}` : ""}`
+              : view.difficultyLabel}{" "}
           · Round {view.round}/{view.maxRounds}
         </span>
         <button
@@ -1495,7 +1629,12 @@ function BattleScreen({
         <div className="battle-row is-player">{allies.map(renderUnit)}</div>
         <div className="battle-side is-player">
           <ResonanceChip resonance={view.resonance?.player} side="player" />
-          <AetherMeter label="Your Aether" value={aether.player} max={view.maxAether} side="player" />
+          <AetherMeter
+            label={spectating ? view.players.player.username : "Your Aether"}
+            value={aether.player}
+            max={view.maxAether}
+            side="player"
+          />
         </div>
       </div>
 
@@ -1556,29 +1695,31 @@ function BattleScreen({
           </p>
         )}
 
-        <div className="battle-controls">
-          <label className="battle-auto">
-            <input
-              type="checkbox"
-              checked={autoMode}
-              disabled={view.status !== "active"}
-              onChange={(event) => {
-                setSelectedSkill(null);
-                setAutoMode(event.target.checked);
-              }}
-            />
-            Auto battle
-          </label>
-          {currentUnit && selectedSkill && (
-            <button
-              type="button"
-              className="battle-cancel-skill"
-              onClick={() => setSelectedSkill(null)}
-            >
-              Cancel
-            </button>
-          )}
-        </div>
+        {!spectating && (
+          <div className="battle-controls">
+            <label className="battle-auto">
+              <input
+                type="checkbox"
+                checked={autoMode}
+                disabled={view.status !== "active"}
+                onChange={(event) => {
+                  setSelectedSkill(null);
+                  setAutoMode(event.target.checked);
+                }}
+              />
+              Auto battle
+            </label>
+            {currentUnit && selectedSkill && (
+              <button
+                type="button"
+                className="battle-cancel-skill"
+                onClick={() => setSelectedSkill(null)}
+              >
+                Cancel
+              </button>
+            )}
+          </div>
+        )}
 
         {error && (
           <p className="auth-error" role="alert">
@@ -1598,6 +1739,7 @@ function BattleScreen({
       {menuOpen && (
         <BattleMenu
           duel={duel}
+          spectating={spectating}
           soundOn={soundOn}
           onToggleSound={() => setSoundOn((on) => !on)}
           onRules={() => {
@@ -1606,7 +1748,8 @@ function BattleScreen({
           }}
           onLeave={() => {
             setMenuOpen(false);
-            onExit();
+            if (spectating) exitTo("/arena/duel");
+            else onExit();
           }}
           canFlee={canFlee}
           onFlee={() => {
@@ -1625,7 +1768,12 @@ function BattleScreen({
         />
       )}
 
-      {result && <BattleResult result={result} onAgain={backToSetup} onExit={onExit} />}
+      {result &&
+        (result.spectator ? (
+          <SpectatorResult result={result} onBack={() => exitTo("/arena/duel")} onExit={onExit} />
+        ) : (
+          <BattleResult result={result} onAgain={backToSetup} onExit={onExit} />
+        ))}
 
       {confirmLeave && battleActive && !result && (
         <LeaveArenaPrompt

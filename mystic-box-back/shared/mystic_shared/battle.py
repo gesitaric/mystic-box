@@ -1551,6 +1551,16 @@ _EVENT_ID_FIELDS = ("actor", "target", "source")
 _EVENT_ID_LIST_FIELDS = ("targets", "order")
 
 
+# Quem só assiste a um duelo: vê os lados como estão guardados ("player" é
+# quem desafiou), sem vez própria; o fim diz quem venceu (`winner`).
+SPECTATOR = "spectator"
+
+
+def winner_side(state):
+    """Lado vencedor ("player"/"enemy") ou None (em andamento ou empate)."""
+    return {"won": "player", "lost": "enemy"}.get(state["status"])
+
+
 def view_events(events, viewer="player"):
     """Eventos como `viewer` vê (próprio time como "player")."""
     viewed = []
@@ -1571,7 +1581,10 @@ def view_events(events, viewer="player"):
             if event.get("type") == "end" and event["result"] in ("won", "lost"):
                 event["result"] = "lost" if event["result"] == "won" else "won"
         if event.get("type") == "end":
-            event["reason"] = view_reason(event["reason"], event["result"])
+            if viewer == SPECTATOR:
+                event["winner"] = {"won": "player", "lost": "enemy"}.get(event["result"])
+            else:
+                event["reason"] = view_reason(event["reason"], event["result"])
         viewed.append(event)
     return viewed
 
@@ -1645,7 +1658,9 @@ def public_state(state, viewer="player"):
         "battleId": state["battleId"],
         "mode": "pvp" if pvp else "pve",
         "status": outcome,
-        "endReason": view_reason(state["endReason"], outcome),
+        "endReason": (
+            state["endReason"] if viewer == SPECTATOR else view_reason(state["endReason"], outcome)
+        ),
         "difficulty": difficulty,
         "difficultyLabel": difficulty_label,
         "campaign": (

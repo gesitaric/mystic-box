@@ -1509,6 +1509,52 @@
   justify-content: flex-end;
 }
 
+.pvp-online-name {
+  display: flex;
+  overflow: hidden;
+  flex: 1;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.pvp-online-title {
+  overflow: hidden;
+  color: #cbb6ee;
+  font-size: 11px;
+  font-style: italic;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.pvp-live-names {
+  display: flex;
+  overflow: hidden;
+  flex: 1;
+  align-items: baseline;
+  gap: 6px;
+  min-width: 0;
+}
+
+.pvp-live-names .player-result-name {
+  flex: 0 1 auto;
+}
+
+.pvp-live-vs {
+  flex-shrink: 0;
+  color: #cbb6ee;
+  font-size: 11px;
+  font-style: italic;
+}
+
+.pvp-online-status {
+  flex-shrink: 0;
+  color: #cbb6ee;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+}
+
 /* Laços na escolha do time */
 
 .battle-roster-bond {
@@ -2408,4 +2454,13 @@ details.battle-resonance p {
   .battle-sheet-backdrop {
     animation: none;
   }
+}
+
+/* Duelo assistido */
+
+.battle-spectating {
+  color: #8fe3ff;
+  font-weight: 800;
+  letter-spacing: 1px;
+  text-transform: uppercase;
 }

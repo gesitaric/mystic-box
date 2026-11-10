@@ -121,8 +121,102 @@ function OpponentSearch({ request, selected, onSelect }) {
   );
 }
 
-// Lobby do duelo online: desafios recebidos e enviados, desafiar alguém e
-// aceitar um desafio. Regras, prazos e validações são do servidor.
+// Quem está online agora (devolvido pelo servidor em GET /pvp), com desafio
+// em um clique. O próprio jogador aparece marcado como "You".
+function OnlinePlayers({ online, outgoing, canChallenge, onChallenge }) {
+  const challenged = new Set(outgoing.map((entry) => entry.username.toLowerCase()));
+  const others = online.filter((player) => !player.isYou);
+  return (
+    <section className="battle-panel" aria-label="Online now">
+      <h2 className="battle-panel-title">
+        Online now <span className="battle-panel-count">{others.length}</span>
+      </h2>
+      {others.length === 0 && (
+        <p className="collection-status">
+          No other summoners here right now. Stay a while or challenge someone by name.
+        </p>
+      )}
+      {online.length > 0 && (
+        <ul className="player-results pvp-online">
+          {online.map((player) => {
+            let status = null;
+            if (player.isYou) status = <span className="player-result-you">You</span>;
+            else if (player.inDuel) status = <span className="pvp-online-status">In a duel</span>;
+            else if (challenged.has(player.username.toLowerCase())) {
+              status = <span className="pvp-online-status">Challenged</span>;
+            }
+            return (
+              <li key={player.username} className="player-result">
+                <LevelTag level={player.level} />
+                <span className="pvp-online-name">
+                  <span className="player-result-name">{player.username}</span>
+                  {player.title && <span className="pvp-online-title">{player.title}</span>}
+                </span>
+                {status ?? (
+                  <button
+                    type="button"
+                    className="collection-sell-button is-confirm"
+                    disabled={!canChallenge}
+                    onClick={() => onChallenge(player)}
+                  >
+                    Challenge
+                  </button>
+                )}
+              </li>
+            );
+          })}
+        </ul>
+      )}
+    </section>
+  );
+}
+
+// Duelos de outros jogadores em andamento (devolvidos pelo servidor), para
+// assistir. O próprio duelo aparece marcado, sem o botão.
+function LiveDuels({ duels, onWatch }) {
+  return (
+    <section className="battle-panel" aria-label="Duels in progress">
+      <h2 className="battle-panel-title">
+        Duels in progress <span className="battle-panel-count">{duels.length}</span>
+      </h2>
+      {duels.length === 0 ? (
+        <p className="collection-status">No duels right now.</p>
+      ) : (
+        <ul className="player-results pvp-live">
+          {duels.map((duel) => (
+            <li key={duel.battleId} className="player-result">
+              <span className="pvp-live-names">
+                <span className="player-result-name">{duel.players.player.username}</span>
+                <span className="pvp-live-vs">vs</span>
+                <span className="player-result-name">{duel.players.enemy.username}</span>
+              </span>
+              <span className="pvp-expires">
+                Round {duel.round}/{duel.maxRounds}
+              </span>
+              {duel.isYours ? (
+                <span className="player-result-you">Yours</span>
+              ) : (
+                <button
+                  type="button"
+                  className="collection-sell-button is-confirm"
+                  onClick={() => onWatch(duel)}
+                >
+                  Watch
+                </button>
+              )}
+            </li>
+          ))}
+        </ul>
+      )}
+    </section>
+  );
+}
+
+// Lobby do duelo online: quem está online, duelos para assistir, desafios recebidos e enviados,
+// desafiar alguém e aceitar um desafio. Regras, prazos e validações são do
+// servidor. Enquanto a tela está aberta (e a aba visível), o lobby é
+// consultado de tempos em tempos (o intervalo vem das regras): isso mantém o
+// jogador na lista de quem está online e leva ao duelo quando aceitam o desafio.
 function PvpLobby({
   apiUrl,
   session,
@@ -166,6 +260,7 @@ function PvpLobby({
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState("");
   const [busyId, setBusyId] = useState(null);
+  const [pageVisible, setPageVisible] = useState(() => document.visibilityState !== "hidden");
 
   const refresh = useCallback(async () => {
     try {
@@ -185,11 +280,40 @@ function PvpLobby({
     }
   }, [request, onEnterDuel]);
 
-  // Uma consulta ao abrir; depois só quando o jogador pede (botão Refresh).
+  // Uma consulta ao abrir e outra ao voltar para a aba.
   useEffect(() => {
+    if (!pageVisible) return;
     // eslint-disable-next-line react-hooks/set-state-in-effect
     void refresh();
-  }, [refresh]);
+  }, [refresh, pageVisible]);
+
+  useEffect(() => {
+    function handleVisibility() {
+      setPageVisible(document.visibilityState !== "hidden");
+    }
+    document.addEventListener("visibilitychange", handleVisibility);
+    return () => document.removeEventListener("visibilitychange", handleVisibility);
+  }, []);
+
+  // Depois, de tempos em tempos (com a aba escondida, não consulta).
+  const refreshSeconds = lobby?.rules?.lobbyRefreshSeconds;
+  useEffect(() => {
+    if (!refreshSeconds || !pageVisible) return undefined;
+    const timer = setInterval(() => void refresh(), refreshSeconds * 1000);
+    return () => clearInterval(timer);
+  }, [refreshSeconds, pageVisible, refresh]);
+
+  // Ao sair da tela de duelo, sai da lista de quem está online.
+  const requestRef = useRef(request);
+  useEffect(() => {
+    requestRef.current = request;
+  });
+  useEffect(
+    () => () => {
+      requestRef.current("/pvp/leave", { method: "POST" }).catch(() => {});
+    },
+    []
+  );
 
   async function manualRefresh() {
     setRefreshing(true);
@@ -214,7 +338,7 @@ function PvpLobby({
         return;
       }
       setNotice(
-        `Challenge sent to ${data.challenge.username}. Press Refresh to see if they accepted before time runs out.`
+        `Challenge sent to ${data.challenge.username}. Stay here: the duel starts as soon as they accept.`
       );
       exitTo("/arena/duel");
       void refresh();
@@ -285,6 +409,21 @@ function PvpLobby({
     }
   }
 
+  // Desafio a partir da lista de quem está online.
+  function challengePlayer(player) {
+    setSubmitError("");
+    setNotice("");
+    navigate(
+      { ...DUEL_LIST, duel: "challenge", vs: player.username },
+      { data: { opponent: { username: player.username, level: player.level } } }
+    );
+  }
+
+  function watchDuel(duel) {
+    setNotice("");
+    navigate({ ...DUEL_LIST, duel: "watch", battleId: duel.battleId });
+  }
+
   // Rival escolhido (ou trocado) fica no endereço da mesma tela.
   function selectOpponent(opponent) {
     navigate(
@@ -345,6 +484,7 @@ function PvpLobby({
   }
 
   const { incoming, outgoing, rules } = lobby;
+  const canChallenge = lobby.hasUsername && outgoing.length < rules.maxOutgoingChallenges;
 
   return (
     <div className="battle-setup pvp-lobby">
@@ -373,6 +513,15 @@ function PvpLobby({
           {notice}
         </p>
       )}
+
+      <OnlinePlayers
+        online={lobby.online ?? []}
+        outgoing={outgoing}
+        canChallenge={canChallenge}
+        onChallenge={challengePlayer}
+      />
+
+      <LiveDuels duels={lobby.liveDuels ?? []} onWatch={watchDuel} />
 
       <section className="battle-panel" aria-label="Challenges received">
         <h2 className="battle-panel-title">
@@ -456,10 +605,10 @@ function PvpLobby({
           <button
             type="button"
             className="keep-button"
-            disabled={!lobby.hasUsername || outgoing.length >= rules.maxOutgoingChallenges}
+            disabled={!canChallenge}
             onClick={() => openView({ name: "challenge", opponent: null })}
           >
-            Challenge a player
+            Challenge by name
           </button>
         </div>
       </section>

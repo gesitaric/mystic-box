@@ -9,6 +9,7 @@
 //   /arena/duel                         duelos online
 //   /arena/duel/challenge?vs=:username  desafiar alguém
 //   /arena/duel/accept/:challengeId     aceitar um desafio
+//   /arena/duel/watch/:battleId         assistir a um duelo de outros jogadores
 //   /arena/battle                       batalha ou duelo em andamento
 //
 // Painéis (modais) entram no fim do endereço da tela de baixo:
@@ -106,6 +107,9 @@ function parseArena(segments, params) {
   if (view === "accept" && isId(id)) {
     return { screen: "arena", arena, duel: "accept", challengeId: id };
   }
+  if (view === "watch" && isId(id)) {
+    return { screen: "arena", arena, duel: "watch", battleId: id };
+  }
   return null;
 }
 
@@ -158,6 +162,9 @@ function arenaPath(route) {
       if (route.duel === "challenge") return "/arena/duel/challenge";
       if (route.duel === "accept" && route.challengeId) {
         return `/arena/duel/accept/${encodeURIComponent(route.challengeId)}`;
+      }
+      if (route.duel === "watch" && route.battleId) {
+        return `/arena/duel/watch/${encodeURIComponent(route.battleId)}`;
       }
       return "/arena/duel";
     default:
@@ -221,7 +228,7 @@ export function routeTitle(route) {
   if (route.screen === "arena") {
     if (route.arena === "battle") return "Battle";
     if (route.arena === "campaign") return "Campaign";
-    if (route.arena === "pvp") return "Online duel";
+    if (route.arena === "pvp") return route.duel === "watch" ? "Watching a duel" : "Online duel";
     return "Arena";
   }
   return null;

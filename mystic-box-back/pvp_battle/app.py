@@ -8,6 +8,9 @@ Rotas:
   N, devolve só `unchanged` com o tempo de turno.
 - POST /pvp/battle/actions: {"battleId", "type": "skill"|"auto"|"forfeit",
   "skill"?, "target"?, "since"?} joga a vez da carta do jogador.
+- GET /pvp/watch?battleId=X&since=N: o duelo visto por quem assiste (qualquer
+  jogador com sessão que não seja um dos dois), com os eventos depois do lote
+  N. Só lê: vezes vencidas ficam para a próxima requisição dos jogadores.
 
 As regras da batalha são as de mystic_shared.battle; o tempo de turno e o
 abandono, de mystic_shared.pvp. Vezes com o tempo esgotado são jogadas no
@@ -26,6 +29,7 @@ import boto3
 from botocore.exceptions import ClientError
 from mystic_shared import pvp
 from mystic_shared.battle import (
+    SPECTATOR,
     BattleError,
     battle_experience,
     new_rng,
@@ -62,6 +66,7 @@ FINISH_ATTEMPTS = 3
 
 BATTLE_ROUTE = "/pvp/battle"
 ACTION_ROUTE = "/pvp/battle/actions"
+WATCH_ROUTE = "/pvp/watch"
 
 # Criado uma vez por container e reaproveitado entre invocações.
 _client = None
@@ -152,15 +157,21 @@ class Duel:
         self.state = json.loads(item["state"]["S"])
         self.version = int(item["version"]["N"])
         self.players = json.loads(item["players"]["S"])
+        # Duelos de antes da lista de duelos em andamento não têm startedAt.
+        self.started_at = int(item.get("startedAt", {}).get("N", "0")) or int(time.time())
 
     def public_players(self):
         return {
             side: {
                 "username": self.players[side]["username"],
                 "level": self.state[f"{side}Level"],
+                "title": self.players[side].get("title"),
             }
             for side in SIDES
         }
+
+    def has_player(self, user_id):
+        return any(self.players[side]["userId"] == user_id for side in SIDES)
 
 
 def load_duel(user_id, battle_id=None):
@@ -210,6 +221,7 @@ def battle_put(duel):
             "players": {"S": json.dumps(duel.players)},
             "updatedAt": {"S": datetime.fromtimestamp(now, timezone.utc).isoformat()},
             "expiresAt": {"N": str(now + BATTLE_TTL_SECONDS)},
+            **pvp.listing_attributes(duel.state, duel.started_at),
         },
         # Impede que duas ações simultâneas usem a mesma vez.
         "ConditionExpression": "#version = :expected",
@@ -404,6 +416,38 @@ def current(user_id, event):
     return duel_response(200, duel, since)
 
 
+def watch(user_id, event):
+    params = event.get("queryStringParameters") or {}
+    since = parse_since(params.get("since"))
+    battle_id = params.get("battleId")
+    if not is_short_string(battle_id):
+        return response(400, {"message": "Invalid duel."})
+    try:
+        item = get_item(PVP_BATTLES_TABLE, {"battleId": {"S": battle_id}})
+    except ClientError:
+        return response(500, {"message": "Could not load the duel."})
+    if not item:
+        return response(404, {"message": "This duel is over or no longer exists."})
+    duel = Duel(None, item)
+    if duel.has_player(user_id):
+        return response(409, {"message": "You are playing this duel.", "battleId": battle_id})
+    if since is not None and since == duel.state["seq"]:
+        return unchanged_response(duel)
+
+    now = int(time.time())
+    players = duel.public_players()
+    events, complete = pvp.events_since(duel.state, since, SPECTATOR)
+    return response(
+        200,
+        {
+            "battle": pvp.public_spectator(duel.state, now, players),
+            "events": events,
+            "complete": complete,
+            "result": pvp.spectator_result(duel.state, players),
+        },
+    )
+
+
 def act(user_id, event):
     try:
         body = parse_body(event)
@@ -474,4 +518,6 @@ def lambda_handler(event, context):
         return current(user_id, event)
     if method == "POST" and resource == ACTION_ROUTE:
         return act(user_id, event)
+    if method == "GET" and resource == WATCH_ROUTE:
+        return watch(user_id, event)
     return response(404, {"message": "Not found."})

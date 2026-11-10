@@ -232,7 +232,8 @@ Resources:
         Enabled: true
 
   # Duelos online (estado em JSON, com versão). Somem pelo TTL um dia depois
-  # da última ação.
+  # da última ação. LiveDuelsIndex é esparso: só os duelos em andamento têm
+  # `liveIn` (lista de duelos para assistir).
   PvpBattlesTable:
     Type: AWS::DynamoDB::Table
     Properties:
@@ -240,9 +241,47 @@ Resources:
       AttributeDefinitions:
       - AttributeName: battleId
         AttributeType: S
+      - AttributeName: liveIn
+        AttributeType: S
+      - AttributeName: startedAt
+        AttributeType: N
       KeySchema:
       - AttributeName: battleId
         KeyType: HASH
+      GlobalSecondaryIndexes:
+      - IndexName: LiveDuelsIndex
+        KeySchema:
+        - AttributeName: liveIn
+          KeyType: HASH
+        - AttributeName: startedAt
+          KeyType: RANGE
+        Projection:
+          ProjectionType: INCLUDE
+          NonKeyAttributes:
+          - players
+          - round
+          - turnDeadline
+      TimeToLiveSpecification:
+        AttributeName: expiresAt
+        Enabled: true
+
+  # Quem está online no salão do duelo: um item por jogador (lobbyId, userId),
+  # renovado enquanto ele está na tela de duelo. Some sozinho (TTL); o código
+  # também ignora os vencidos.
+  PvpPresenceTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+      - AttributeName: lobbyId
+        AttributeType: S
+      - AttributeName: userId
+        AttributeType: S
+      KeySchema:
+      - AttributeName: lobbyId
+        KeyType: HASH
+      - AttributeName: userId
+        KeyType: RANGE
       TimeToLiveSpecification:
         AttributeName: expiresAt
         Enabled: true
@@ -1068,9 +1107,12 @@ Resources:
           USER_CARDS_TABLE: !Ref UserCardsTable
           USER_PROGRESS_TABLE: !Ref UserProgressTable
           CARD_ASCENSIONS_TABLE: !Ref CardAscensionsTable
+          PVP_PRESENCE_TABLE: !Ref PvpPresenceTable
       Policies:
       - DynamoDBCrudPolicy:
           TableName: !Ref PvpChallengesTable
+      - DynamoDBCrudPolicy:
+          TableName: !Ref PvpPresenceTable
       - DynamoDBCrudPolicy:
           TableName: !Ref PvpBattlesTable
       - DynamoDBCrudPolicy:
@@ -1099,6 +1141,20 @@ Resources:
           Properties:
             RestApiId: !Ref MysticBoxApi
             Path: /pvp
+            Method: options
+        PvpLeave:
+          Type: Api
+          Properties:
+            RestApiId: !Ref MysticBoxApi
+            Path: /pvp/leave
+            Method: post
+            Auth:
+              Authorizer: CognitoAuthorizer
+        PvpLeaveOptions:
+          Type: Api
+          Properties:
+            RestApiId: !Ref MysticBoxApi
+            Path: /pvp/leave
             Method: options
         PvpChallenge:
           Type: Api
@@ -1212,6 +1268,20 @@ Resources:
           Properties:
             RestApiId: !Ref MysticBoxApi
             Path: /pvp/battle/actions
+            Method: options
+        PvpWatch:
+          Type: Api
+          Properties:
+            RestApiId: !Ref MysticBoxApi
+            Path: /pvp/watch
+            Method: get
+            Auth:
+              Authorizer: CognitoAuthorizer
+        PvpWatchOptions:
+          Type: Api
+          Properties:
+            RestApiId: !Ref MysticBoxApi
+            Path: /pvp/watch
             Method: options
 
   GetRulesFunction:
