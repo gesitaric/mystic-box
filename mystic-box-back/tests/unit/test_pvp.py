@@ -25,6 +25,7 @@ TABLES = {
     "progress": ("userId", None),
     "wallet": ("userId", None),
     "ascensions": ("userId", "file_name"),
+    "presence": ("lobbyId", "userId"),
 }
 
 
@@ -68,6 +69,7 @@ def db(monkeypatch, clock):
         "USER_PROGRESS_TABLE": "progress",
         "USER_WALLET_TABLE": "wallet",
         "CARD_ASCENSIONS_TABLE": "ascensions",
+        "PVP_PRESENCE_TABLE": "presence",
     }
     for module in (pvp_battle, pvp_challenges):
         monkeypatch.setattr(module, "_client", fake)
@@ -95,6 +97,14 @@ def request(authenticated_event, user, method, resource, body=None, query=None):
 
 def lobby(authenticated_event, user):
     return call(pvp_challenges, request(authenticated_event, user, "GET", "/pvp"))
+
+
+def leave(authenticated_event, user):
+    return call(pvp_challenges, request(authenticated_event, user, "POST", "/pvp/leave"))
+
+
+def online_names(body):
+    return [player["username"] for player in body["online"]]
 
 
 def challenge(authenticated_event, user, username, team):
@@ -709,3 +719,76 @@ def test_current_unchanged_is_a_short_answer(authenticated_event, db, clock):
     assert "unchanged" not in body
     assert body["battle"]["seq"] == seq + 1
     assert body["events"][0]["type"] == "timeout"
+
+
+# ----------------------------------------------------------- online ---
+
+
+def test_online_list_keeps_recent_players_up_to_the_limit(monkeypatch):
+    monkeypatch.setattr(pvp, "MAX_ONLINE_PLAYERS", 2)
+    entries = [
+        {"username": "Old", "lastSeen": 10, "expiresAt": 70},
+        {"username": "Gone", "lastSeen": 1, "expiresAt": 50},
+        {"username": "New", "lastSeen": 30, "expiresAt": 90},
+        {"username": "Mid", "lastSeen": 20, "expiresAt": 80},
+    ]
+    assert [e["username"] for e in pvp.online_list(entries, now=60)] == ["New", "Mid"]
+
+
+def test_lobby_marks_the_player_as_online(authenticated_event, db, clock):
+    status, body = lobby(authenticated_event, ALICE)
+    assert status == 200
+    assert body["online"] == [
+        {"username": "Alice", "level": 1, "title": None, "isYou": True, "inDuel": False}
+    ]
+    item = db.tables["presence"][(pvp.LOBBY_ID, ALICE)]
+    assert int(item["expiresAt"]["N"]) == clock["value"] + pvp.PRESENCE_SECONDS
+    assert body["rules"]["lobbyRefreshSeconds"] == pvp.LOBBY_REFRESH_SECONDS
+
+
+def test_other_players_see_who_is_online(authenticated_event, db, clock):
+    lobby(authenticated_event, ALICE)
+    clock["value"] += 5
+    _, body = lobby(authenticated_event, BOB)
+    assert online_names(body) == ["Bob", "Alice"]
+    alice = body["online"][1]
+    assert alice["isYou"] is False and alice["inDuel"] is False
+
+
+def test_players_without_username_are_not_listed(authenticated_event, db):
+    del db.tables["profiles"][(CAROL, None)]["username"]
+    _, body = lobby(authenticated_event, CAROL)
+    assert body["online"] == []
+    assert db.tables["presence"] == {}
+
+
+def test_presence_expires_without_refresh(authenticated_event, db, clock):
+    lobby(authenticated_event, ALICE)
+    clock["value"] += pvp.PRESENCE_SECONDS
+    _, body = lobby(authenticated_event, BOB)
+    assert online_names(body) == ["Bob"]
+
+
+def test_leave_removes_the_player(authenticated_event, db):
+    lobby(authenticated_event, ALICE)
+    status, _ = leave(authenticated_event, ALICE)
+    assert status == 200
+    _, body = lobby(authenticated_event, BOB)
+    assert online_names(body) == ["Bob"]
+    # Sair sem estar na lista não é erro.
+    assert leave(authenticated_event, CAROL)[0] == 200
+
+
+def test_online_list_shows_who_is_dueling(authenticated_event, db):
+    lobby(authenticated_event, ALICE)
+    lobby(authenticated_event, BOB)
+    start_duel(authenticated_event)
+    _, body = lobby(authenticated_event, CAROL)
+    dueling = {player["username"]: player["inDuel"] for player in body["online"]}
+    assert dueling == {"Alice": True, "Bob": True, "Carol": False}
+
+
+def test_online_list_shows_the_title(authenticated_event, db):
+    db.tables["profiles"][(ALICE, None)]["title"] = {"S": "summoner"}
+    _, body = lobby(authenticated_event, ALICE)
+    assert body["online"][0]["title"] == "Summoner"

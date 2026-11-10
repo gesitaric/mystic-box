@@ -1,7 +1,10 @@
 """Desafios do duelo online.
 
 Rotas:
-- GET /pvp: desafios recebidos e enviados, duelo ativo e regras do online.
+- GET /pvp: desafios recebidos e enviados, duelo ativo, quem está online e
+  regras do online. Também renova a presença de quem pede (se tiver nome de
+  usuário) na lista de quem está online (PvpPresenceTable).
+- POST /pvp/leave: tira o jogador da lista de quem está online.
 - POST /pvp/challenges: {"username", "team": [fileName x3]} desafia um jogador.
 - POST /pvp/challenges/accept: {"challengeId", "team"} aceita e começa o duelo.
 - POST /pvp/challenges/decline: {"challengeId"} recusa um desafio recebido.
@@ -44,6 +47,7 @@ USERNAMES_TABLE = os.environ.get("USERNAMES_TABLE")
 USER_CARDS_TABLE = os.environ.get("USER_CARDS_TABLE")
 USER_PROGRESS_TABLE = os.environ.get("USER_PROGRESS_TABLE")
 CARD_ASCENSIONS_TABLE = os.environ.get("CARD_ASCENSIONS_TABLE")
+PVP_PRESENCE_TABLE = os.environ.get("PVP_PRESENCE_TABLE")
 CHALLENGER_INDEX = "ChallengerIndex"
 
 # Duelos somem sozinhos (TTL) um dia depois da última ação.
@@ -52,6 +56,7 @@ BATTLE_TTL_SECONDS = 24 * 60 * 60
 MAX_ID_LENGTH = 64
 
 LOBBY_ROUTE = "/pvp"
+LEAVE_ROUTE = "/pvp/leave"
 CHALLENGE_ROUTE = "/pvp/challenges"
 ACCEPT_ROUTE = "/pvp/challenges/accept"
 DECLINE_ROUTE = "/pvp/challenges/decline"
@@ -134,14 +139,16 @@ def get_item(table, key):
     return get_client().get_item(TableName=table, Key=key, ConsistentRead=True).get("Item")
 
 
+def get_profile(user_id):
+    return get_item(USER_PROFILES_TABLE, {"userId": {"S": user_id}}) or {}
+
+
 def get_username(user_id):
-    item = get_item(USER_PROFILES_TABLE, {"userId": {"S": user_id}}) or {}
-    return item.get("username", {}).get("S")
+    return get_profile(user_id).get("username", {}).get("S")
 
 
 def get_title_name(user_id):
-    item = get_item(USER_PROFILES_TABLE, {"userId": {"S": user_id}}) or {}
-    return title_name(item.get("title", {}).get("S"))
+    return title_name(get_profile(user_id).get("title", {}).get("S"))
 
 
 def find_user_id(username):
@@ -254,6 +261,77 @@ def active_duel(user_id):
     return None
 
 
+# ---------------------------------------------------------------- presença ---
+
+
+def mark_present(user_id, username, level, title, now):
+    """Renova a presença do jogador na lista de quem está online."""
+    item = {
+        "lobbyId": {"S": pvp.LOBBY_ID},
+        "userId": {"S": user_id},
+        "username": {"S": username},
+        "level": {"N": str(level)},
+        "lastSeen": {"N": str(now)},
+        "expiresAt": {"N": str(pvp.presence_expires_at(now))},
+    }
+    if title:
+        item["title"] = {"S": title}
+    get_client().put_item(TableName=PVP_PRESENCE_TABLE, Item=item)
+
+
+def players_in_duel(user_ids):
+    """Quais destes jogadores estão num duelo ativo (pelo ponteiro)."""
+    user_ids = list(dict.fromkeys(user_ids))
+    if not user_ids:
+        return set()
+    result = get_client().batch_get_item(
+        RequestItems={
+            PVP_PLAYERS_TABLE: {
+                "Keys": [{"userId": {"S": user_id}} for user_id in user_ids],
+                "ProjectionExpression": "userId, #status",
+                "ExpressionAttributeNames": {"#status": "status"},
+            }
+        }
+    )
+    return {
+        item["userId"]["S"]
+        for item in result.get("Responses", {}).get(PVP_PLAYERS_TABLE, [])
+        if item.get("status", {}).get("S") == "active"
+    }
+
+
+def online_players(user_id, now):
+    """Quem está online agora (o próprio jogador marcado com isYou)."""
+    items = query_all(
+        TableName=PVP_PRESENCE_TABLE,
+        KeyConditionExpression="lobbyId = :lobby",
+        ExpressionAttributeValues={":lobby": {"S": pvp.LOBBY_ID}},
+    )
+    entries = [
+        {
+            "userId": item["userId"]["S"],
+            "username": item["username"]["S"],
+            "level": int(item.get("level", {}).get("N", "1")),
+            "title": item.get("title", {}).get("S"),
+            "lastSeen": int(item["lastSeen"]["N"]),
+            "expiresAt": int(item["expiresAt"]["N"]),
+        }
+        for item in items
+    ]
+    online = pvp.online_list(entries, now)
+    dueling = players_in_duel([entry["userId"] for entry in online])
+    return [
+        {
+            "username": entry["username"],
+            "level": entry["level"],
+            "title": entry["title"],
+            "isYou": entry["userId"] == user_id,
+            "inDuel": entry["userId"] in dueling,
+        }
+        for entry in online
+    ]
+
+
 # ------------------------------------------------------------------ regras ---
 
 
@@ -298,7 +376,8 @@ def public_challenge(item, username_field, user_id_field, levels, now):
 
 def lobby(user_id):
     now = int(time.time())
-    username = get_username(user_id)
+    profile = get_profile(user_id)
+    username = profile.get("username", {}).get("S")
     incoming = active_challenges(incoming_challenges(user_id), now)
     outgoing = active_challenges(outgoing_challenges(user_id), now)
     levels = get_levels(
@@ -316,6 +395,11 @@ def lobby(user_id):
             "opponent": pointer.get("opponentName", {}).get("S"),
         }
 
+    # Sem nome de usuário ninguém consegue desafiar: não aparece na lista.
+    if username:
+        title = title_name(profile.get("title", {}).get("S"))
+        mark_present(user_id, username, get_level(user_id), title, now)
+
     return response(
         200,
         {
@@ -330,9 +414,18 @@ def lobby(user_id):
                 for item in outgoing
             ],
             "battle": duel,
+            "online": online_players(user_id, now),
             "rules": pvp.public_rules(),
         },
     )
+
+
+def leave(user_id):
+    get_client().delete_item(
+        TableName=PVP_PRESENCE_TABLE,
+        Key={"lobbyId": {"S": pvp.LOBBY_ID}, "userId": {"S": user_id}},
+    )
+    return response(200, {"left": True})
 
 
 def challenge(user_id, body):
@@ -570,6 +663,8 @@ def lambda_handler(event, context):
     try:
         if method == "GET" and resource == LOBBY_ROUTE:
             return lobby(user_id)
+        if method == "POST" and resource == LEAVE_ROUTE:
+            return leave(user_id)
         handler = ROUTES.get((method, resource))
         if handler is None:
             return response(404, {"message": "Not found."})

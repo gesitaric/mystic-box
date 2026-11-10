@@ -14,6 +14,10 @@ as regras do que é só do online:
 - Registro de eventos: cada ação gera um lote numerado (`seq`) que os dois
   jogadores buscam para animar; só os últimos EVENT_HISTORY lotes ficam
   guardados.
+- Quem está online: quem tem nome de usuário e abre a tela de duelo aparece
+  na lista do salão (LOBBY_ID). O cliente renova a presença a cada
+  LOBBY_REFRESH_SECONDS; sem sinal por PRESENCE_SECONDS, o jogador some da
+  lista. A lista mostra no máximo MAX_ONLINE_PLAYERS jogadores.
 """
 
 from . import battle
@@ -26,6 +30,11 @@ EVENT_HISTORY = 40
 
 SIDES = ("player", "enemy")
 
+LOBBY_ID = "main"
+LOBBY_REFRESH_SECONDS = 20
+PRESENCE_SECONDS = 60
+MAX_ONLINE_PLAYERS = 50
+
 
 def challenge_active(expires_at, now):
     return int(expires_at) > int(now)
@@ -33,6 +42,28 @@ def challenge_active(expires_at, now):
 
 def opponent_side(side):
     return "enemy" if side == "player" else "player"
+
+
+# ------------------------------------------------------------------ presença ---
+
+
+def presence_expires_at(now):
+    """Até quando o jogador aparece na lista sem renovar a presença."""
+    return int(now) + PRESENCE_SECONDS
+
+
+def is_online(expires_at, now):
+    return int(expires_at) > int(now)
+
+
+def online_list(entries, now):
+    """Jogadores online, mais recentes primeiro, no máximo MAX_ONLINE_PLAYERS.
+
+    `entries`: [{"username", "level", "title", "lastSeen", "expiresAt", ...}].
+    """
+    online = [entry for entry in entries if is_online(entry["expiresAt"], now)]
+    online.sort(key=lambda entry: (-int(entry["lastSeen"]), entry["username"].lower()))
+    return online[:MAX_ONLINE_PLAYERS]
 
 
 # ------------------------------------------------------------------ relógio ---
@@ -145,4 +176,7 @@ def public_rules():
         "lossExperience": round(battle.PVP["experience"] * battle.LOSS_EXPERIENCE_RATIO),
         "lossExperiencePerDefeat": battle.LOSS_EXPERIENCE_PER_DEFEAT,
         "maxRounds": battle.MAX_ROUNDS,
+        "lobbyRefreshSeconds": LOBBY_REFRESH_SECONDS,
+        "presenceSeconds": PRESENCE_SECONDS,
+        "maxOnlinePlayers": MAX_ONLINE_PLAYERS,
     }

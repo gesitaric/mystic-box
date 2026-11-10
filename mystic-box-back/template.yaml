@@ -247,6 +247,27 @@ Resources:
         AttributeName: expiresAt
         Enabled: true
 
+  # Quem está online no salão do duelo: um item por jogador (lobbyId, userId),
+  # renovado enquanto ele está na tela de duelo. Some sozinho (TTL); o código
+  # também ignora os vencidos.
+  PvpPresenceTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+      - AttributeName: lobbyId
+        AttributeType: S
+      - AttributeName: userId
+        AttributeType: S
+      KeySchema:
+      - AttributeName: lobbyId
+        KeyType: HASH
+      - AttributeName: userId
+        KeyType: RANGE
+      TimeToLiveSpecification:
+        AttributeName: expiresAt
+        Enabled: true
+
   # Duelo de cada jogador (status active/finished): garante um duelo ativo
   # por jogador e aponta para o último duelo.
   PvpPlayersTable:
@@ -1068,9 +1089,12 @@ Resources:
           USER_CARDS_TABLE: !Ref UserCardsTable
           USER_PROGRESS_TABLE: !Ref UserProgressTable
           CARD_ASCENSIONS_TABLE: !Ref CardAscensionsTable
+          PVP_PRESENCE_TABLE: !Ref PvpPresenceTable
       Policies:
       - DynamoDBCrudPolicy:
           TableName: !Ref PvpChallengesTable
+      - DynamoDBCrudPolicy:
+          TableName: !Ref PvpPresenceTable
       - DynamoDBCrudPolicy:
           TableName: !Ref PvpBattlesTable
       - DynamoDBCrudPolicy:
@@ -1099,6 +1123,20 @@ Resources:
           Properties:
             RestApiId: !Ref MysticBoxApi
             Path: /pvp
+            Method: options
+        PvpLeave:
+          Type: Api
+          Properties:
+            RestApiId: !Ref MysticBoxApi
+            Path: /pvp/leave
+            Method: post
+            Auth:
+              Authorizer: CognitoAuthorizer
+        PvpLeaveOptions:
+          Type: Api
+          Properties:
+            RestApiId: !Ref MysticBoxApi
+            Path: /pvp/leave
             Method: options
         PvpChallenge:
           Type: Api
