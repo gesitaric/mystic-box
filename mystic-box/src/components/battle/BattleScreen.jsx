@@ -18,6 +18,8 @@ import {
 } from "./battlePresentation";
 import { createBattleAudio } from "./battleAudio";
 import { readSoundPreference, storeSoundPreference } from "../../audio/soundPreference";
+import { exitTo, navigate, useBackHandler, useRoute } from "../../router";
+import { withOverlay } from "../../routes";
 
 const SINGLE_TARGETS = ["enemy", "ally", "fallen_ally"];
 const LOG_LIMIT = 60;
@@ -252,6 +254,7 @@ function duelReading(events, units) {
 }
 
 function DuelReading({ entries, rivalName, onClose }) {
+  useBackHandler(onClose);
   return (
     <div className="battle-result" role="dialog" aria-modal="true" aria-label="Duel reading">
       <div className="battle-result-card battle-reading">
@@ -274,6 +277,43 @@ function DuelReading({ entries, rivalName, onClose }) {
         <div className="battle-result-actions">
           <button type="button" className="keep-button" onClick={onClose}>
             Begin the duel
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// Pergunta mostrada quando o jogador aperta o Voltar do navegador no meio da
+// batalha. Sair não desiste: a batalha continua aberta no servidor.
+function LeaveArenaPrompt({ duel, onStay, onLeave }) {
+  // Voltar de novo (ou Esc) fecha a pergunta e fica na batalha.
+  useBackHandler(onStay);
+
+  useEffect(() => {
+    function handleKeyDown(event) {
+      if (event.key === "Escape") onStay();
+    }
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [onStay]);
+
+  return (
+    <div className="battle-result" role="alertdialog" aria-modal="true" aria-label="Leave the arena?">
+      <div className="battle-result-card">
+        <span className="auth-ornament">✦ ✧ ✦</span>
+        <h2>LEAVE THE ARENA?</h2>
+        <p className="battle-result-reason">
+          {duel
+            ? "The duel goes on without you: when your time runs out, your cards act on their own."
+            : "The battle stays open. You can come back to it from the arena."}
+        </p>
+        <div className="battle-result-actions">
+          <button type="button" className="keep-button" onClick={onStay} autoFocus>
+            Stay and fight
+          </button>
+          <button type="button" className="session-button" onClick={onLeave}>
+            Leave
           </button>
         </div>
       </div>
@@ -335,11 +375,11 @@ function BattleResult({ result, onAgain, onExit }) {
 
 // Tela de batalha contra o computador. Tudo (dano, turnos, IA, recompensas)
 // é decidido pelo servidor; aqui só se pedem ações e se anima o resultado.
+// A aba da arena, a região e a fase da campanha e a tela do duelo vêm do
+// endereço (ver routes.js); a batalha em andamento fica em /arena/battle.
 function BattleScreen({
   apiUrl,
   session,
-  duelIntent,
-  campaignIntent,
   onExit,
   onSessionExpired,
   onProgressChange,
@@ -365,12 +405,15 @@ function BattleScreen({
   const [inspectedId, setInspectedId] = useState(null);
   const [autoMode, setAutoMode] = useState(false);
   const [confirmForfeit, setConfirmForfeit] = useState(false);
+  // Pergunta "sair da arena?" aberta pelo Voltar do navegador.
+  const [confirmLeave, setConfirmLeave] = useState(false);
   const [lastTeam, setLastTeam] = useState([]);
   const [showLevelUp, setShowLevelUp] = useState(false);
-  // Aba da preparação: contra o computador ou duelo online.
-  const [arena, setArena] = useState(duelIntent ? "pvp" : campaignIntent ? "campaign" : "pve");
-  // Fase da campanha escolhida (região e fase vindas de GET /users/me/campaign).
-  const [campaignStage, setCampaignStage] = useState(null);
+  const { route, data: routeData } = useRoute();
+  // Endereço da preparação de onde a batalha começou (para onde ela volta).
+  const setupPath = useRef({ screen: "arena", arena: "pve" });
+  // Aba da preparação: contra o computador, campanha ou duelo online.
+  const arena = route.arena === "battle" ? null : route.arena;
   const [clock, setClock] = useState(() => Date.now());
   // Último lote de eventos do duelo já recebido.
   const seqRef = useRef(0);
@@ -435,7 +478,7 @@ function BattleScreen({
       // Um duelo em andamento tem prioridade: o tempo de turno está correndo.
       if (activeDuel) {
         seqRef.current = activeDuel.seq;
-        setArena("pvp");
+        setupPath.current = { screen: "arena", arena: "pvp", duel: "list" };
         setView(received(activeDuel));
         setLog([{ id: "resume", text: "Duel resumed.", kind: "round" }]);
         setPhase("battle");
@@ -732,6 +775,7 @@ function BattleScreen({
       const { ok, data } = await request("/pvp/battle?since=0");
       if (!ok || !data.battle) return;
       seqRef.current = data.battle.seq;
+      setupPath.current = { screen: "arena", arena: "pvp", duel: "list" };
       setResult(null);
       setSelectedSkill(null);
       setInspectedId(null);
@@ -924,13 +968,45 @@ function BattleScreen({
     void sendAction({ type: "skill", skill: action.id, target: action.targets[0] ?? null });
   }
 
-  function backToSetup() {
+  const backToSetup = useCallback(() => {
     setShowLevelUp(false);
     setResult(null);
     setView(null);
     setLog([]);
     void loadCurrent();
-  }
+  }, [loadCurrent]);
+
+  // Endereço e tela andam juntos. O servidor decide se há batalha; o endereço
+  // diz onde o jogador quer estar.
+  const battleActive = view?.status === "active";
+  useEffect(() => {
+    if (phase === "setup") {
+      if (route.arena === "battle") {
+        // Sem batalha (acabou ou o link era antigo): volta à preparação.
+        navigate(withOverlay(setupPath.current, route.overlay), { replace: true });
+      } else {
+        setupPath.current = { ...route, overlay: null };
+      }
+    } else if (phase === "battle" && route.arena !== "battle") {
+      if (battleActive) {
+        // Batalha em andamento: ela é a tela da arena.
+        navigate(withOverlay({ screen: "arena", arena: "battle" }, route.overlay), {
+          replace: true,
+        });
+      } else {
+        // Voltou (pelo navegador) do resultado de uma batalha que acabou.
+        // eslint-disable-next-line react-hooks/set-state-in-effect
+        backToSetup();
+      }
+    }
+  }, [phase, route, battleActive, backToSetup]);
+
+  // Voltar do navegador no meio da batalha: pergunta antes de sair.
+  const stayInBattle = useCallback(() => setConfirmLeave(false), []);
+  useBackHandler(() => setConfirmLeave(true), {
+    active: phase === "battle" && battleActive && !route.overlay,
+    kind: "block",
+  });
 
   if (phase === "loading") {
     return (
@@ -969,7 +1045,7 @@ function BattleScreen({
           </button>
           <h1 className="battle-heading">Arena</h1>
           <SoundButton on={soundOn} onToggle={() => setSoundOn((on) => !on)} />
-          <Grimoire apiUrl={apiUrl} chapter="battle" />
+          <Grimoire chapter="battle" />
         </div>
         <div className="shop-tabs battle-mode-tabs" role="tablist" aria-label="Battle mode">
           {ARENA_TABS.map((option) => (
@@ -979,7 +1055,10 @@ function BattleScreen({
               role="tab"
               aria-selected={arena === option.value}
               className={`shop-tab${arena === option.value ? " is-active" : ""}`}
-              onClick={() => setArena(option.value)}
+              onClick={() => {
+                setStartError("");
+                navigate({ screen: "arena", arena: option.value }, { replace: true });
+              }}
             >
               {option.label}
             </button>
@@ -996,72 +1075,79 @@ function BattleScreen({
               apiUrl={apiUrl}
               session={session}
               request={request}
+              route={route}
+              routeData={routeData}
               initialTeam={lastTeam}
-              initialChallenge={duelIntent?.challenge}
               cachedCards={rosterCards}
               onCardsLoaded={setRosterCards}
-              initialOpponent={duelIntent?.opponent}
               onTeamChosen={setLastTeam}
               onEnterDuel={enterDuel}
               onSessionExpired={onSessionExpired}
             />
           </>
-        ) : arena === "campaign" && !campaignStage ? (
+        ) : arena === "campaign" ? (
           <CampaignPanel
             request={request}
-            initialRegion={campaignIntent?.region}
+            regionId={route.region}
+            stageNumber={route.stage}
+            onSelectRegion={(region) =>
+              navigate({ screen: "arena", arena: "campaign", region, stage: null })
+            }
+            onAllLands={() => exitTo("/arena/campaign")}
             onChooseStage={(region, stage) => {
               setStartError("");
-              setCampaignStage({ region, stage });
+              navigate({ screen: "arena", arena: "campaign", region, stage });
             }}
-          />
-        ) : arena === "campaign" ? (
-          <TeamSetup
-            apiUrl={apiUrl}
-            session={session}
-            setup={{ teamSize: setup?.teamSize }}
-            initialTeam={lastTeam}
-            starting={starting}
-            startError={startError}
-            startLabel={campaignStage.stage.boss ? "Face the champion" : "Begin the battle"}
-            onStart={(team) =>
-              startBattle(team, null, {
-                region: campaignStage.region.region,
-                stage: campaignStage.stage.stage,
-              })
-            }
-            onSessionExpired={onSessionExpired}
-            cachedCards={rosterCards}
-            onCardsLoaded={setRosterCards}
-          >
-            <section className="battle-panel campaign-brief">
-              <button
-                type="button"
-                className="session-button"
-                onClick={() => setCampaignStage(null)}
+            renderStage={(region, stage) => (
+              <TeamSetup
+                apiUrl={apiUrl}
+                session={session}
+                setup={{ teamSize: setup?.teamSize }}
+                initialTeam={lastTeam}
+                starting={starting}
+                startError={startError}
+                startLabel={stage.boss ? "Face the champion" : "Begin the battle"}
+                onStart={(team) =>
+                  startBattle(team, null, { region: region.region, stage: stage.stage })
+                }
+                onSessionExpired={onSessionExpired}
+                cachedCards={rosterCards}
+                onCardsLoaded={setRosterCards}
               >
-                ← {campaignStage.region.regionName}
-              </button>
-              <h2 className="battle-panel-title">
-                {campaignStage.stage.boss ? "♛ " : ""}
-                {campaignStage.stage.name}
-              </h2>
-              <p className="battle-inspect-desc">{campaignStage.stage.intro}</p>
-              <div className="campaign-stage-foes">
-                {campaignStage.stage.enemies.map((enemy) => (
-                  <img
-                    key={enemy.file_name}
-                    src={getCharacterImage(enemy.file_name)}
-                    alt={enemy.name}
-                    title={enemy.name}
-                  />
-                ))}
-                <span className="campaign-stage-meta">
-                  Foes Lv {campaignStage.stage.enemyLevel} · +{campaignStage.stage.experience} XP
-                </span>
-              </div>
-            </section>
-          </TeamSetup>
+                <section className="battle-panel campaign-brief">
+                  <button
+                    type="button"
+                    className="session-button"
+                    onClick={() =>
+                      exitTo(
+                        `/arena/campaign/${encodeURIComponent(region.region)}`
+                      )
+                    }
+                  >
+                    ← {region.regionName}
+                  </button>
+                  <h2 className="battle-panel-title">
+                    {stage.boss ? "♛ " : ""}
+                    {stage.name}
+                  </h2>
+                  <p className="battle-inspect-desc">{stage.intro}</p>
+                  <div className="campaign-stage-foes">
+                    {stage.enemies.map((enemy) => (
+                      <img
+                        key={enemy.file_name}
+                        src={getCharacterImage(enemy.file_name)}
+                        alt={enemy.name}
+                        title={enemy.name}
+                      />
+                    ))}
+                    <span className="campaign-stage-meta">
+                      Foes Lv {stage.enemyLevel} · +{stage.experience} XP
+                    </span>
+                  </div>
+                </section>
+              </TeamSetup>
+            )}
+          />
         ) : (
           <TeamSetup
             apiUrl={apiUrl}
@@ -1161,7 +1247,7 @@ function BattleScreen({
           {view.maxRounds}
         </span>
         <SoundButton on={soundOn} onToggle={() => setSoundOn((on) => !on)} />
-        <Grimoire apiUrl={apiUrl} chapter="battle" />
+        <Grimoire chapter="battle" />
       </div>
 
       <AetherMeter
@@ -1353,6 +1439,17 @@ function BattleScreen({
       )}
 
       {result && <BattleResult result={result} onAgain={backToSetup} onExit={onExit} />}
+
+      {confirmLeave && battleActive && !result && (
+        <LeaveArenaPrompt
+          duel={duel}
+          onStay={stayInBattle}
+          onLeave={() => {
+            setConfirmLeave(false);
+            onExit();
+          }}
+        />
+      )}
 
       {result && showLevelUp && (
         <LevelUpCelebration

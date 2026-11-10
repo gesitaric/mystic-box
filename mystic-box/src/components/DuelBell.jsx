@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import Countdown from "./Countdown";
+import { useBackHandler } from "../router";
 
 // Sininho de desafios de duelo. Não consulta sozinho: a lista vem de quando a
 // tela inicial abriu e é atualizada ao abrir o sininho (onRefresh).
@@ -9,6 +10,8 @@ function DuelBell({ duels, loading, onRefresh, onAnswer, onDecline, onOpenDuel }
   const root = useRef(null);
   const incoming = duels?.incoming ?? [];
   const count = incoming.length + (duels?.battle ? 1 : 0);
+  // Com a lista aberta, o Voltar do navegador só a fecha.
+  useBackHandler(() => setOpen(false), { active: open });
 
   useEffect(() => {
     if (!open) return undefined;

@@ -8,7 +8,7 @@ function UserCardsList({
   onSessionExpired,
 }) {
   return (
-    <Modal label="My collection" className="collection-modal" onClose={onClose}>
+    <Modal label="My collection" className="collection-modal" routed onClose={onClose}>
       <header className="auth-header">
         <span className="auth-ornament">✦ ✧ ✦</span>
         <h2>MY COLLECTION</h2>

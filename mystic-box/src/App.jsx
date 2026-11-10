@@ -1,5 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import AuthModal from "./components/AuthModal";
+import { GrimoireModal } from "./components/Grimoire";
+import { WorldModal } from "./components/WorldMap";
 import BattleScreen from "./components/battle/BattleScreen";
 import HomeScreen from "./components/HomeScreen";
 import PlayerProfileModal from "./components/PlayerProfileModal";
@@ -10,6 +12,8 @@ import SummonSpread from "./components/SummonSpread";
 import RevealFx from "./components/reveal/RevealFx";
 import UserCardsList from "./components/UserCardsList";
 import { getCurrentSession, signOut } from "./auth/cognito";
+import { currentRoute, exitTo, navigate, useBackHandler, useRoute } from "./router";
+import { needsSession, routeTitle, withOverlay } from "./routes";
 import "./styles/gacha.css";
 
 const API_URL = (
@@ -28,6 +32,9 @@ const PORTAL_REVEAL_DELAY_MS = 1700;
 
 // Pausa de suspense antes de revelar a última carta.
 const FINAL_CARD_SUSPENSE_MS = 1600;
+
+// Quanto tempo fica o aviso de que o portal ainda está abrindo.
+const PORTAL_HOLD_NOTICE_MS = 2200;
 
 function formatCountdown(ms) {
   const totalSeconds = Math.ceil(ms / 1000);
@@ -109,14 +116,22 @@ function App() {
   const [portalKey, setPortalKey] = useState(0);
 
   const [session, setSession] = useState(null);
+  // Já sabemos se há login salvo (até lá, não pede login para endereços privados).
+  const [sessionChecked, setSessionChecked] = useState(false);
   const [authOpen, setAuthOpen] = useState(false);
-  const [collectionOpen, setCollectionOpen] = useState(false);
-  const [shopOpen, setShopOpen] = useState(false);
-  // Modal de jogadores: null (fechado), "name" (escolher nome) ou "search".
-  const [playersTab, setPlayersTab] = useState(null);
-  // Tela do usuário logado: "home" (início), "summon" (invocação) ou "battle".
-  // Sem login a tela de invocação é sempre a exibida.
-  const [screen, setScreen] = useState("home");
+  // Aviso curto quando o Voltar é apertado com o portal abrindo.
+  const [portalHold, setPortalHold] = useState(false);
+  const portalHoldTimer = useRef(null);
+  // Tela e painel abertos vêm do endereço (ver routes.js). Sem login a tela
+  // de invocação é sempre a exibida.
+  const { route } = useRoute();
+  const overlay = route.overlay;
+
+  // Nome da aba do navegador acompanha a tela (ajuda a achar a aba e o histórico).
+  const pageTitle = session || route.screen !== "home" ? routeTitle(route) : "Summon";
+  useEffect(() => {
+    document.title = pageTitle ? `${pageTitle} · Mystic Box` : "Mystic Box";
+  }, [pageTitle]);
   // Sorteio ainda não guardado: { cards, summonToken }.
   const [pendingSummon, setPendingSummon] = useState(null);
   const [saving, setSaving] = useState(false);
@@ -293,6 +308,7 @@ function App() {
     async function restore() {
       const storedSummon = readPendingSummon();
       const currentSession = await getCurrentSession();
+      setSessionChecked(true);
 
       if (storedSummon) {
         setCards(storedSummon.cards);
@@ -304,7 +320,9 @@ function App() {
       if (currentSession) {
         setSession(currentSession);
         // Com um sorteio pendente, mostra a invocação para acompanhar o salvamento.
-        setScreen(storedSummon ? "summon" : "home");
+        if (storedSummon && currentRoute().screen === "home") {
+          navigate("/summon", { replace: true });
+        }
         void fetchWallet(currentSession);
         void fetchProfile(currentSession);
 
@@ -324,18 +342,13 @@ function App() {
   const cooldownRemaining =
     session && cooldownUntil ? Math.max(0, cooldownUntil - now) : 0;
   const onCooldown = cooldownRemaining > 0;
-  const onHome = Boolean(session) && screen === "home";
-  const onBattle = Boolean(session) && screen === "battle";
+  const onHome = Boolean(session) && route.screen === "home";
+  const onBattle = Boolean(session) && route.screen === "arena";
 
   // Desafios de duelo do sininho. Não há consulta periódica: busca ao abrir a
   // tela inicial e quando o jogador abre/atualiza o sininho.
   const [duels, setDuels] = useState(null);
   const [duelsLoading, setDuelsLoading] = useState(false);
-  // Como a arena abre: null (normal), { challenge } vindo do sininho ou
-  // { opponent } vindo da busca de jogadores.
-  const [duelIntent, setDuelIntent] = useState(null);
-  // Região da campanha escolhida no mapa (abre a arena na aba da campanha).
-  const [campaignIntent, setCampaignIntent] = useState(null);
 
   const fetchDuels = useCallback(async (activeSession) => {
     if (!activeSession) return;
@@ -444,8 +457,11 @@ function App() {
   function handleAuthenticated(auth) {
     setSession(auth);
     setAuthOpen(false);
-    // Quem entrou para guardar um sorteio continua vendo as cartas.
-    setScreen(pendingSummon || showingSpread ? "summon" : "home");
+    // Quem entrou para guardar um sorteio continua vendo as cartas. Nos outros
+    // casos fica no endereço pedido (ex.: um link para a arena).
+    if ((pendingSummon || showingSpread) && route.screen === "home") {
+      navigate("/summon", { replace: true });
+    }
     void fetchWallet(auth);
     void fetchProfile(auth);
 
@@ -460,17 +476,33 @@ function App() {
   function handleSignOut() {
     signOut();
     setSession(null);
-    setCollectionOpen(false);
-    setShopOpen(false);
-    setPlayersTab(null);
     setCooldownUntil(null);
     setBalance(null);
     setProgress(null);
-    setScreen("home");
+    navigate("/");
   }
 
   // Não sai no meio da animação de abertura nem do suspense da última carta.
   const canLeaveSummon = !opening && !charging;
+
+  // O Voltar do navegador também espera o portal: segura e avisa.
+  useBackHandler(
+    () => {
+      clearTimeout(portalHoldTimer.current);
+      setPortalHold(true);
+      portalHoldTimer.current = setTimeout(() => setPortalHold(false), PORTAL_HOLD_NOTICE_MS);
+    },
+    { active: !offSummon && !canLeaveSummon && !overlay, kind: "block" }
+  );
+  useEffect(() => () => clearTimeout(portalHoldTimer.current), []);
+
+  // Endereço que pede login (ex.: um link para a arena) sem login: abre o login
+  // por cima e, depois de entrar, o jogador continua no endereço pedido.
+  const authGate = sessionChecked && !session && needsSession(route);
+  const closeAuth = useCallback(() => {
+    setAuthOpen(false);
+    if (authGate) navigate("/", { replace: true });
+  }, [authGate]);
 
   function goHome() {
     if (!canLeaveSummon) return;
@@ -486,16 +518,21 @@ function App() {
       setFlippedCount(0);
       setPortalKey((key) => key + 1);
     }
-    setScreen("home");
+    exitTo("/");
   }
 
-  const closeCollection = useCallback(() => setCollectionOpen(false), []);
-  const closeShop = useCallback(() => setShopOpen(false), []);
-  const closePlayers = useCallback(() => setPlayersTab(null), []);
+  // Fecha o painel aberto: volta à tela de baixo (pelo histórico, se veio dela).
+  const closeOverlay = useCallback(() => exitTo(withOverlay(route, null)), [route]);
+  const openOverlay = useCallback(
+    (next, options) => navigate(withOverlay(route, next), options),
+    [route]
+  );
   const challengePlayer = useCallback((opponent) => {
-    setPlayersTab(null);
-    setDuelIntent({ opponent: { username: opponent.username, level: opponent.level } });
-    setScreen("battle");
+    const chosen = { username: opponent.username, level: opponent.level };
+    navigate(
+      { screen: "arena", arena: "pvp", duel: "challenge", vs: chosen.username },
+      { data: { opponent: chosen } }
+    );
   }, []);
 
   // Nome e tempo de espera devolvidos pelo servidor depois de uma troca.
@@ -523,9 +560,7 @@ function App() {
   const handleCollectionSessionExpired = useCallback(() => {
     signOut();
     setSession(null);
-    setCollectionOpen(false);
-    setShopOpen(false);
-    setPlayersTab(null);
+    navigate(withOverlay(currentRoute(), null), { replace: true });
     setAuthOpen(true);
   }, []);
 
@@ -534,7 +569,7 @@ function App() {
     setSession(null);
     setProgress(null);
     setBalance(null);
-    setScreen("home");
+    navigate("/", { replace: true });
     setAuthOpen(true);
   }, []);
 
@@ -618,9 +653,7 @@ function App() {
         <BattleScreen
           apiUrl={API_URL}
           session={session}
-          duelIntent={duelIntent}
-          campaignIntent={campaignIntent}
-          onExit={() => setScreen("home")}
+          onExit={() => exitTo("/")}
           onSessionExpired={handleBattleSessionExpired}
           onProgressChange={handleBattleProgress}
           onBalanceChange={handleBalanceChange}
@@ -628,7 +661,6 @@ function App() {
       ) : onHome ? (
         <HomeScreen
           apiUrl={API_URL}
-          session={session}
           email={session.email}
           balance={balance}
           progress={progress}
@@ -636,31 +668,25 @@ function App() {
           duels={duels}
           duelsLoading={duelsLoading}
           onRefreshDuels={() => void fetchDuels(session)}
-          onAnswerDuel={(challenge) => {
-            setDuelIntent({ challenge });
-            setScreen("battle");
-          }}
+          onAnswerDuel={(challenge) =>
+            navigate(
+              {
+                screen: "arena",
+                arena: "pvp",
+                duel: "accept",
+                challengeId: challenge.challengeId,
+              },
+              { data: { challenge } }
+            )
+          }
           onDeclineDuel={declineDuel}
-          onOpenDuel={() => {
-            setDuelIntent({});
-            setScreen("battle");
-          }}
-          onSummon={() => setScreen("summon")}
-          onBattle={() => {
-            setDuelIntent(null);
-            setCampaignIntent(null);
-            setScreen("battle");
-          }}
-          onBalanceChange={handleBalanceChange}
-          onCampaign={(region) => {
-            setDuelIntent(null);
-            setCampaignIntent({ region });
-            setScreen("battle");
-          }}
-          onCollection={() => setCollectionOpen(true)}
-          onShop={() => setShopOpen(true)}
-          onProfile={() => setPlayersTab("name")}
-          onPlayers={() => setPlayersTab("search")}
+          onOpenDuel={() => navigate("/arena/duel")}
+          onSummon={() => navigate("/summon")}
+          onBattle={() => navigate("/arena")}
+          onCollection={() => openOverlay({ name: "collection" })}
+          onShop={() => openOverlay({ name: "shop", tab: "buy" })}
+          onProfile={() => openOverlay({ name: "players", tab: "name" })}
+          onPlayers={() => openOverlay({ name: "players", tab: "search" })}
           onSignOut={handleSignOut}
         />
       ) : (
@@ -786,6 +812,12 @@ function App() {
             )}
           </div>
 
+          {portalHold && (opening || charging) && (
+            <p className="portal-hold-notice" role="status">
+              ✦ The portal is still channeling. Hold on…
+            </p>
+          )}
+
           {error && (
             <div className="error" role="alert">
               <span className="error-icon">✦</span>
@@ -795,43 +827,75 @@ function App() {
         </>
       )}
 
-      {collectionOpen && session && (
+      {overlay?.name === "collection" && session && (
         <UserCardsList
           apiUrl={API_URL}
           session={session}
-          onClose={closeCollection}
+          onClose={closeOverlay}
           onSessionExpired={handleCollectionSessionExpired}
         />
       )}
 
-      {shopOpen && session && (
+      {overlay?.name === "shop" && session && (
         <ShopModal
           apiUrl={API_URL}
           session={session}
           balance={balance}
-          onClose={closeShop}
+          tab={overlay.tab}
+          onTabChange={(tab) => openOverlay({ name: "shop", tab }, { replace: true })}
+          onClose={closeOverlay}
           onSessionExpired={handleCollectionSessionExpired}
           onBalanceChange={handleBalanceChange}
         />
       )}
 
-      {playersTab && session && (
+      {overlay?.name === "players" && session && (
         <PlayerProfileModal
           apiUrl={API_URL}
           session={session}
           profile={progress}
-          initialTab={playersTab}
-          onClose={closePlayers}
+          tab={overlay.tab}
+          onTabChange={(tab) => openOverlay({ name: "players", tab }, { replace: true })}
+          onClose={closeOverlay}
           onSessionExpired={handleCollectionSessionExpired}
           onProfileChange={handleProfileChange}
           onChallenge={challengePlayer}
         />
       )}
 
+      {overlay?.name === "world" && session && (
+        <WorldModal
+          apiUrl={API_URL}
+          session={session}
+          tab={overlay.tab}
+          regionId={overlay.region}
+          onTabChange={(tab) => openOverlay({ name: "world", tab, region: null }, { replace: true })}
+          onSelectRegion={(region) =>
+            openOverlay({ name: "world", tab: "map", region }, { replace: true })
+          }
+          onCampaign={(region) =>
+            navigate({ screen: "arena", arena: "campaign", region, stage: null })
+          }
+          onBalanceChange={handleBalanceChange}
+          onClose={closeOverlay}
+        />
+      )}
+
+      {overlay?.name === "grimoire" && (
+        <GrimoireModal
+          apiUrl={API_URL}
+          chapter={overlay.chapter}
+          onChapterChange={(chapter) =>
+            openOverlay({ name: "grimoire", chapter }, { replace: true })
+          }
+          onClose={closeOverlay}
+        />
+      )}
+
       <AuthModal
-        key={authOpen ? "open" : "closed"}
-        open={authOpen}
-        onClose={() => setAuthOpen(false)}
+        key={authOpen || authGate ? "open" : "closed"}
+        open={authOpen || authGate}
+        onClose={closeAuth}
         onAuthenticated={handleAuthenticated}
       />
     </main>

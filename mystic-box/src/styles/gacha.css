@@ -2816,3 +2816,33 @@ h1 {
   text-align: right;
 }
 
+
+/* Aviso quando o Voltar do navegador é apertado com o portal abrindo. */
+.portal-hold-notice {
+  position: fixed;
+  left: 50%;
+  bottom: max(24px, env(safe-area-inset-bottom));
+  z-index: 100;
+  max-width: calc(100vw - 32px);
+  margin: 0;
+  padding: 10px 20px;
+  border: 1px solid rgba(200, 170, 255, 0.55);
+  border-radius: 999px;
+  background: linear-gradient(135deg, rgba(48, 26, 92, 0.9), rgba(22, 14, 48, 0.9));
+  color: #efe6ff;
+  font-size: 13px;
+  letter-spacing: 1px;
+  text-align: center;
+  box-shadow: 0 0 24px rgba(160, 120, 255, 0.45);
+  backdrop-filter: blur(8px);
+  transform: translateX(-50%);
+  animation: portalHoldIn 0.35s cubic-bezier(0.22, 1, 0.36, 1);
+  pointer-events: none;
+}
+
+@keyframes portalHoldIn {
+  from {
+    opacity: 0;
+    transform: translate(-50%, 12px);
+  }
+}

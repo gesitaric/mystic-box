@@ -3,11 +3,20 @@ import { getCharacterImage } from "../../characterImages";
 import { SessionExpired } from "./arenaApi";
 
 // Campanha pelo mapa: regiões, fases, inimigos e recompensas vêm de
-// `GET /users/me/campaign`. Aqui só se escolhe a fase.
-function CampaignPanel({ request, initialRegion, onChooseStage }) {
+// `GET /users/me/campaign`. Aqui só se escolhe a fase. A região e a fase
+// abertas vêm do endereço (/arena/campaign/:region/:stage); com uma fase
+// liberada aberta, `renderStage` mostra a preparação dela.
+function CampaignPanel({
+  request,
+  regionId,
+  stageNumber,
+  onSelectRegion,
+  onAllLands,
+  onChooseStage,
+  renderStage,
+}) {
   const [data, setData] = useState(null);
   const [error, setError] = useState("");
-  const [regionId, setRegionId] = useState(initialRegion ?? null);
 
   useEffect(() => {
     let cancelled = false;
@@ -43,6 +52,9 @@ function CampaignPanel({ request, initialRegion, onChooseStage }) {
   }
 
   const region = data.regions.find((r) => r.region === regionId) ?? null;
+  const openStage = region?.stages.find((s) => s.stage === stageNumber) ?? null;
+  // Fase ainda trancada (ou que não existe): mostra a lista da região.
+  if (region && openStage?.unlocked) return renderStage(region, openStage);
 
   if (!region) {
     return (
@@ -57,7 +69,7 @@ function CampaignPanel({ request, initialRegion, onChooseStage }) {
               <button
                 type="button"
                 className={`campaign-region${r.complete ? " is-complete" : ""}`}
-                onClick={() => setRegionId(r.region)}
+                onClick={() => onSelectRegion(r.region)}
               >
                 <strong>{r.regionName}</strong>
                 <span className="campaign-region-progress">
@@ -77,7 +89,7 @@ function CampaignPanel({ request, initialRegion, onChooseStage }) {
 
   return (
     <div className="campaign">
-      <button type="button" className="session-button" onClick={() => setRegionId(null)}>
+      <button type="button" className="session-button" onClick={onAllLands}>
         ← All lands
       </button>
       <h2 className="campaign-title">
@@ -126,7 +138,7 @@ function CampaignPanel({ request, initialRegion, onChooseStage }) {
               type="button"
               className="keep-button"
               disabled={!stage.unlocked}
-              onClick={() => onChooseStage(region, stage)}
+              onClick={() => onChooseStage(region.region, stage.stage)}
             >
               {!stage.unlocked ? "Locked" : stage.cleared ? "Fight again" : "Fight"}
             </button>

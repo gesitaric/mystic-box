@@ -15,7 +15,8 @@ backend (`mystic-box-back`), e também é publicada com `sam deploy`.
 - cache pela política gerenciada `CachingOptimized`, que respeita o `Cache-Control`
   gravado em cada objeto pelo deploy;
 - headers de segurança pela política gerenciada `SecurityHeadersPolicy`;
-- 403/404 devolvendo `index.html` (o app usa rotas por hash, como `#portal`);
+- 403/404 devolvendo `index.html` (o app usa rotas por caminho, como `/arena/battle`, e o
+  protótipo `#portal`; ver `src/routes.js`);
 - a política do bucket liberando `s3:GetObject` só para esta distribuição;
 - o domínio `https://mystic-box.geskee.com.br`: alias na distribuição, com TLS 1.2+
   e o certificado wildcard `*.geskee.com.br`, e registros A/AAAA (alias) na hosted zone.

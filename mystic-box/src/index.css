@@ -109,3 +109,39 @@ code {
   padding: 4px 8px;
   background: var(--code-bg);
 }
+
+/* Troca de tela (início, invocação, arena): a nova tela se abre como um
+   portal a partir do centro, por cima da antiga que se dissolve. */
+::view-transition-old(root) {
+  animation: screen-fade-out 0.35s ease both;
+}
+
+::view-transition-new(root) {
+  animation: screen-portal-in 0.55s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@keyframes screen-fade-out {
+  to {
+    opacity: 0;
+    filter: blur(6px);
+    transform: scale(1.04);
+  }
+}
+
+@keyframes screen-portal-in {
+  from {
+    clip-path: circle(0% at 50% 50%);
+    filter: brightness(1.8) saturate(1.4);
+  }
+  to {
+    clip-path: circle(75% at 50% 50%);
+    filter: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  ::view-transition-old(root),
+  ::view-transition-new(root) {
+    animation: none;
+  }
+}

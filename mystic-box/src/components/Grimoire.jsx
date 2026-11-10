@@ -1,5 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import Modal from "./Modal";
+import { currentRoute, navigate } from "../router";
+import { withOverlay } from "../routes";
 import { ELEMENT_STYLE, STATUS_ICON, TARGET_LABELS } from "./battle/battlePresentation";
 import "../styles/grimoire.css";
 
@@ -1040,9 +1042,10 @@ const CHAPTERS = [
   { id: "progression", label: "Progression", icon: "⬆️", component: ProgressionChapter },
 ];
 
-function GrimoireModal({ apiUrl, initialChapter, onClose }) {
+// O capítulo vem do endereço (/grimoire/:chapter, em cima de qualquer tela).
+export function GrimoireModal({ apiUrl, chapter = "start", onChapterChange, onClose }) {
   const { rules, error, retry } = useRules(apiUrl);
-  const [chapter, setChapter] = useState(initialChapter);
+  const setChapter = onChapterChange;
   const [battlePage, setBattlePage] = useState("flow");
   const [query, setQuery] = useState("");
   const current = CHAPTERS.find((entry) => entry.id === chapter) ?? CHAPTERS[0];
@@ -1084,7 +1087,7 @@ function GrimoireModal({ apiUrl, initialChapter, onClose }) {
   }
 
   return (
-    <Modal label="Grimoire: game rules" className="grimoire-modal" onClose={onClose}>
+    <Modal label="Grimoire: game rules" className="grimoire-modal" routed onClose={onClose}>
       <header className="gr-header">
         <span className="gr-sigil" aria-hidden="true">
           ✦
@@ -1134,16 +1137,16 @@ function GrimoireModal({ apiUrl, initialChapter, onClose }) {
   );
 }
 
-// Botão que abre o Grimório. `chapter` escolhe a página inicial (ex.: "battle"
-// na arena). `variant`: "dock" (atalho da tela inicial) ou "icon" (barra do topo).
-function Grimoire({ apiUrl, chapter = "start", variant = "icon" }) {
-  const [open, setOpen] = useState(false);
-  const close = useCallback(() => setOpen(false), []);
+// Botão que abre o Grimório sobre a tela atual (o App mostra o modal).
+// `chapter` escolhe a página inicial (ex.: "battle" na arena). `variant`:
+// "dock" (atalho da tela inicial) ou "icon" (barra do topo).
+function Grimoire({ chapter = "start", variant = "icon" }) {
+  const open = () => navigate(withOverlay(currentRoute(), { name: "grimoire", chapter }));
 
   return (
     <>
       {variant === "dock" ? (
-        <button type="button" className="dock-button" onClick={() => setOpen(true)}>
+        <button type="button" className="dock-button" onClick={open}>
           <BookIcon size={22} />
           <span>Grimoire</span>
         </button>
@@ -1151,7 +1154,7 @@ function Grimoire({ apiUrl, chapter = "start", variant = "icon" }) {
         <button
           type="button"
           className="grimoire-icon-button"
-          onClick={() => setOpen(true)}
+          onClick={open}
           aria-label="Open the Grimoire (game rules)"
           title="Grimoire · how to play"
         >
@@ -1159,7 +1162,6 @@ function Grimoire({ apiUrl, chapter = "start", variant = "icon" }) {
           <span className="grimoire-icon-label">Rules</span>
         </button>
       )}
-      {open && <GrimoireModal apiUrl={apiUrl} initialChapter={chapter} onClose={close} />}
     </>
   );
 }
