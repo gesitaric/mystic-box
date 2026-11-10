@@ -171,7 +171,48 @@ function OnlinePlayers({ online, outgoing, canChallenge, onChallenge }) {
   );
 }
 
-// Lobby do duelo online: quem está online, desafios recebidos e enviados,
+// Duelos de outros jogadores em andamento (devolvidos pelo servidor), para
+// assistir. O próprio duelo aparece marcado, sem o botão.
+function LiveDuels({ duels, onWatch }) {
+  return (
+    <section className="battle-panel" aria-label="Duels in progress">
+      <h2 className="battle-panel-title">
+        Duels in progress <span className="battle-panel-count">{duels.length}</span>
+      </h2>
+      {duels.length === 0 ? (
+        <p className="collection-status">No duels right now.</p>
+      ) : (
+        <ul className="player-results pvp-live">
+          {duels.map((duel) => (
+            <li key={duel.battleId} className="player-result">
+              <span className="pvp-live-names">
+                <span className="player-result-name">{duel.players.player.username}</span>
+                <span className="pvp-live-vs">vs</span>
+                <span className="player-result-name">{duel.players.enemy.username}</span>
+              </span>
+              <span className="pvp-expires">
+                Round {duel.round}/{duel.maxRounds}
+              </span>
+              {duel.isYours ? (
+                <span className="player-result-you">Yours</span>
+              ) : (
+                <button
+                  type="button"
+                  className="collection-sell-button is-confirm"
+                  onClick={() => onWatch(duel)}
+                >
+                  Watch
+                </button>
+              )}
+            </li>
+          ))}
+        </ul>
+      )}
+    </section>
+  );
+}
+
+// Lobby do duelo online: quem está online, duelos para assistir, desafios recebidos e enviados,
 // desafiar alguém e aceitar um desafio. Regras, prazos e validações são do
 // servidor. Enquanto a tela está aberta (e a aba visível), o lobby é
 // consultado de tempos em tempos (o intervalo vem das regras): isso mantém o
@@ -378,6 +419,11 @@ function PvpLobby({
     );
   }
 
+  function watchDuel(duel) {
+    setNotice("");
+    navigate({ ...DUEL_LIST, duel: "watch", battleId: duel.battleId });
+  }
+
   // Rival escolhido (ou trocado) fica no endereço da mesma tela.
   function selectOpponent(opponent) {
     navigate(
@@ -474,6 +520,8 @@ function PvpLobby({
         canChallenge={canChallenge}
         onChallenge={challengePlayer}
       />
+
+      <LiveDuels duels={lobby.liveDuels ?? []} onWatch={watchDuel} />
 
       <section className="battle-panel" aria-label="Challenges received">
         <h2 className="battle-panel-title">
