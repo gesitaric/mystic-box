@@ -844,6 +844,18 @@ function DuelsPage({ pvp }) {
         Challenge another summoner by name. Same cards, skills and rules as the arena, but
         both teams are played by people.
       </p>
+      <h3 className="gr-heading">Who is online</h3>
+      <ul className="gr-list">
+        <li>
+          While you are on the duel screen with a username, other summoners see you in the
+          Online now list and can challenge you in one click.
+        </li>
+        <li>
+          The list refreshes every {formatDuration(pvp.lobbyRefreshSeconds)}. Leave the screen
+          (or go quiet for {formatDuration(pvp.presenceSeconds)}) and you drop off it. Up to{" "}
+          {pvp.maxOnlinePlayers} summoners are shown.
+        </li>
+      </ul>
       <h3 className="gr-heading">Challenges</h3>
       <ul className="gr-list">
         <li>You need a username to challenge, and you find your rival by theirs.</li>
