@@ -2000,6 +2000,462 @@
   border-left-color: #9fe6ff;
 }
 
+/* ---------- Arena: layout da batalha (celular e computador) ---------- */
+
+/* A batalha ocupa a tela: o campo rola, as ações ficam presas no rodapé. */
+.battle-screen.is-arena {
+  gap: clamp(6px, 1vh, 10px);
+  width: min(100%, 1180px);
+  overflow: hidden;
+  padding: 0;
+}
+
+.battle-topbar.is-arena {
+  flex-wrap: nowrap;
+  gap: 10px;
+}
+
+.battle-topbar.is-arena .battle-round {
+  flex: 1;
+  min-width: 0;
+  margin-left: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.battle-menu-button {
+  display: grid;
+  flex-shrink: 0;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  padding: 0;
+  border: 1px solid rgba(180, 160, 255, 0.3);
+  border-radius: 12px;
+  background: rgba(20, 14, 44, 0.6);
+  color: rgba(233, 228, 255, 0.85);
+  cursor: pointer;
+  transition:
+    color 0.2s,
+    border-color 0.2s,
+    box-shadow 0.2s;
+}
+
+.battle-menu-button:hover,
+.battle-menu-button:focus-visible {
+  color: #fff;
+  border-color: rgba(255, 217, 138, 0.7);
+  box-shadow: 0 0 18px rgba(160, 110, 255, 0.6);
+  outline: none;
+}
+
+.battle-field {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  align-items: center;
+  gap: clamp(6px, 1.2vh, 12px);
+  width: 100%;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 4px 2px;
+}
+
+.battle-field > * {
+  flex-shrink: 0;
+}
+
+.battle-side {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  width: 100%;
+}
+
+.battle-midline {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  width: 100%;
+  max-width: 720px;
+  min-height: 26px;
+}
+
+.battle-log-toggle {
+  margin-left: auto;
+  padding: 4px 10px;
+  border: 1px solid rgba(203, 182, 238, 0.25);
+  border-radius: 999px;
+  background: rgba(5, 3, 14, 0.5);
+  color: #cbb6ee;
+  font-family: inherit;
+  font-size: 10px;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+
+.battle-field .battle-log {
+  max-width: 720px;
+}
+
+.battle-field .battle-log.is-expanded {
+  height: min(45dvh, 360px);
+}
+
+/* Ressonância: toque para ler o efeito. */
+details.battle-resonance {
+  margin: 0;
+}
+
+details.battle-resonance summary {
+  cursor: pointer;
+  list-style: none;
+}
+
+details.battle-resonance summary::-webkit-details-marker {
+  display: none;
+}
+
+details.battle-resonance p {
+  max-width: 520px;
+  margin: 4px auto 0;
+  color: #d9f3ff;
+  font-size: 11px;
+  letter-spacing: 0;
+  text-shadow: none;
+}
+
+/* Rodapé de ações: sempre visível. */
+.battle-screen.is-arena .battle-actions {
+  flex-shrink: 0;
+  gap: 6px;
+  max-width: 820px;
+  padding: 8px 2px max(6px, env(safe-area-inset-bottom));
+  border-top: 1px solid rgba(203, 182, 238, 0.14);
+}
+
+.battle-actions-title.is-waiting {
+  padding: 10px 0;
+}
+
+.battle-skill-hint {
+  width: 100%;
+  min-height: 2.9em;
+  margin: 0;
+  padding: 6px 10px;
+  border-radius: 10px;
+  background: rgba(5, 3, 14, 0.55);
+  color: #e4d8f8;
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+.battle-skill-hint.is-empty {
+  display: grid;
+  place-items: center;
+  color: rgba(203, 182, 238, 0.65);
+  font-style: italic;
+  text-align: center;
+}
+
+.battle-skill-hint strong {
+  color: #ffe6a6;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+}
+
+.battle-skill-hint-meta {
+  color: #9fd8ff;
+  font-size: 11px;
+}
+
+.battle-skill-hint-reason {
+  color: #ffb27a;
+  font-weight: 700;
+}
+
+.battle-skill-hint-cta {
+  color: var(--gold);
+  font-weight: 700;
+}
+
+.battle-skill {
+  justify-content: center;
+  min-height: 48px;
+}
+
+.battle-skill.is-unusable {
+  opacity: 0.45;
+  cursor: help;
+}
+
+.battle-cancel-skill {
+  padding: 6px 14px;
+  border: 1px solid rgba(203, 182, 238, 0.35);
+  border-radius: 999px;
+  background: transparent;
+  color: #cbb6ee;
+  font-family: inherit;
+  font-size: 11px;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+
+/* Menu da batalha. */
+.auth-modal.battle-menu {
+  width: min(380px, 92vw);
+}
+
+.battle-menu-items {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.battle-menu-item {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  width: 100%;
+  min-height: 48px;
+  padding: 10px 14px;
+  border: 1px solid rgba(203, 182, 238, 0.28);
+  border-radius: 14px;
+  background: rgba(10, 6, 22, 0.6);
+  color: #ffe6a6;
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 800;
+  letter-spacing: 1px;
+  text-align: left;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition:
+    border-color 0.2s ease,
+    background 0.2s ease;
+}
+
+.battle-menu-item:hover,
+.battle-menu-item:focus-visible {
+  border-color: rgba(255, 220, 150, 0.6);
+  background: rgba(40, 24, 70, 0.8);
+  outline: none;
+}
+
+.battle-menu-item.is-danger {
+  color: #ff9a9a;
+}
+
+.battle-menu-note {
+  color: #cbb6ee;
+  font-size: 11px;
+  font-weight: 400;
+  letter-spacing: 0;
+  text-transform: none;
+}
+
+.battle-menu-confirm {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 10px 14px;
+  border: 1px solid rgba(255, 120, 120, 0.4);
+  border-radius: 14px;
+}
+
+.battle-menu-confirm p {
+  margin: 0;
+  color: #ffd0d0;
+  font-size: 12px;
+}
+
+.battle-menu-confirm div {
+  display: flex;
+  gap: 8px;
+}
+
+/* Detalhes da carta: no computador, painel ao lado, sem fundo escuro. */
+.battle-sheet-backdrop {
+  display: none;
+}
+
+.battle-inspect-float .battle-skill-list {
+  margin-bottom: 10px;
+}
+
+/* ---------- Arena no celular ---------- */
+@media (max-width: 640px) {
+  .scene.battle-view {
+    padding: 8px 8px 0;
+  }
+
+  .battle-field {
+    gap: 6px;
+  }
+
+  .battle-screen.is-arena .battle-row {
+    gap: 6px;
+  }
+
+  .battle-screen.is-arena .battle-unit-art {
+    width: 48px;
+  }
+
+  .battle-screen.is-arena .battle-unit-class {
+    display: none;
+  }
+
+  .battle-screen.is-arena .battle-unit-name {
+    font-size: 10px;
+    letter-spacing: 0.5px;
+  }
+
+  .battle-screen.is-arena .battle-unit-statuses {
+    min-height: 14px;
+  }
+
+  .battle-aether {
+    gap: 6px;
+  }
+
+  .battle-aether-label {
+    min-width: 0;
+    max-width: 90px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  /* O registro mostra só as últimas linhas; "Full log" abre tudo. */
+  .battle-field .battle-log {
+    height: calc(3 * 1.4em + 12px);
+    padding: 6px 10px;
+    font-size: 11px;
+    line-height: 1.4;
+  }
+
+  .battle-field .battle-log.is-expanded {
+    height: min(45dvh, 360px);
+  }
+
+  .battle-skills {
+    grid-template-columns: repeat(auto-fit, minmax(104px, 1fr));
+    gap: 6px;
+  }
+
+  .battle-skill {
+    padding: 6px;
+  }
+
+  .battle-skill-name {
+    font-size: 11px;
+    letter-spacing: 0.5px;
+  }
+
+  .battle-skill-hint {
+    font-size: 11px;
+  }
+
+  /* Detalhes da carta: folha que sobe do rodapé. */
+  .battle-sheet-backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: 299;
+    display: block;
+    background: rgba(4, 2, 10, 0.6);
+    animation: errorIn 0.2s ease;
+  }
+
+  .battle-inspect-float {
+    right: 0;
+    bottom: 0;
+    left: 0;
+    width: auto;
+    max-height: 72dvh;
+    padding-bottom: max(14px, env(safe-area-inset-bottom));
+    border-radius: 18px 18px 0 0;
+    animation: battleSheetUp 0.25s ease;
+  }
+}
+
+@keyframes battleSheetUp {
+  from {
+    transform: translateY(40px);
+    opacity: 0;
+  }
+
+  to {
+    transform: none;
+    opacity: 1;
+  }
+}
+
+/* ---------- Arena no computador: registro ao lado do campo ---------- */
+@media (min-width: 1024px) and (min-height: 600px) {
+  .battle-field {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(240px, 300px);
+    grid-template-rows: auto auto minmax(0, 1fr) auto auto;
+    grid-template-areas:
+      "enemy-side log"
+      "enemy-row log"
+      "midline log"
+      "player-row log"
+      "player-side log";
+    align-items: center;
+    justify-items: center;
+    column-gap: 20px;
+  }
+
+  .battle-side.is-enemy {
+    grid-area: enemy-side;
+  }
+
+  .battle-row.is-enemy {
+    grid-area: enemy-row;
+  }
+
+  .battle-midline {
+    grid-area: midline;
+    justify-content: center;
+  }
+
+  .battle-row.is-player {
+    grid-area: player-row;
+  }
+
+  .battle-side.is-player {
+    grid-area: player-side;
+  }
+
+  .battle-field .battle-log,
+  .battle-field .battle-log.is-expanded {
+    grid-area: log;
+    align-self: stretch;
+    height: auto;
+    min-height: 0;
+    max-width: none;
+  }
+
+  .battle-log-toggle {
+    display: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .battle-inspect-float,
+  .battle-sheet-backdrop {
+    animation: none;
+  }
+}
+
 /* Duelo assistido */
 
 .battle-spectating {
