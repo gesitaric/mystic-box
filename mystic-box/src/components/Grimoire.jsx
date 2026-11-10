@@ -855,6 +855,10 @@ function DuelsPage({ pvp }) {
           (or go quiet for {formatDuration(pvp.presenceSeconds)}) and you drop off it. Up to{" "}
           {pvp.maxOnlinePlayers} summoners are shown.
         </li>
+        <li>
+          Duels in progress (up to {pvp.maxLiveDuels}) can be watched by anyone. You see both
+          teams and every move, but cannot act or change anything.
+        </li>
       </ul>
       <h3 className="gr-heading">Challenges</h3>
       <ul className="gr-list">
