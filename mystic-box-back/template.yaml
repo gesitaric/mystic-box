@@ -286,6 +286,27 @@ Resources:
         AttributeName: expiresAt
         Enabled: true
 
+  # Reações (emojis) enviadas nos duelos, por duelo (battleId). Cada reação é
+  # `r#<instante>#<nonce>`; `s#<userId>` guarda o controle de envio de quem
+  # reage. Tudo some sozinho (TTL); o código também ignora as vencidas.
+  PvpReactionsTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+      - AttributeName: battleId
+        AttributeType: S
+      - AttributeName: reactionKey
+        AttributeType: S
+      KeySchema:
+      - AttributeName: battleId
+        KeyType: HASH
+      - AttributeName: reactionKey
+        KeyType: RANGE
+      TimeToLiveSpecification:
+        AttributeName: expiresAt
+        Enabled: true
+
   # Duelo de cada jogador (status active/finished): garante um duelo ativo
   # por jogador e aponta para o último duelo.
   PvpPlayersTable:
@@ -1229,11 +1250,17 @@ Resources:
         Variables:
           PVP_BATTLES_TABLE: !Ref PvpBattlesTable
           PVP_PLAYERS_TABLE: !Ref PvpPlayersTable
+          PVP_REACTIONS_TABLE: !Ref PvpReactionsTable
+          USER_PROFILES_TABLE: !Ref UserProfilesTable
           USER_PROGRESS_TABLE: !Ref UserProgressTable
           USER_WALLET_TABLE: !Ref UserWalletTable
       Policies:
       - DynamoDBCrudPolicy:
           TableName: !Ref PvpBattlesTable
+      - DynamoDBCrudPolicy:
+          TableName: !Ref PvpReactionsTable
+      - DynamoDBReadPolicy:
+          TableName: !Ref UserProfilesTable
       - DynamoDBCrudPolicy:
           TableName: !Ref PvpPlayersTable
       - DynamoDBCrudPolicy:
@@ -1282,6 +1309,20 @@ Resources:
           Properties:
             RestApiId: !Ref MysticBoxApi
             Path: /pvp/watch
+            Method: options
+        PvpReaction:
+          Type: Api
+          Properties:
+            RestApiId: !Ref MysticBoxApi
+            Path: /pvp/battle/reactions
+            Method: post
+            Auth:
+              Authorizer: CognitoAuthorizer
+        PvpReactionOptions:
+          Type: Api
+          Properties:
+            RestApiId: !Ref MysticBoxApi
+            Path: /pvp/battle/reactions
             Method: options
 
   GetRulesFunction:
