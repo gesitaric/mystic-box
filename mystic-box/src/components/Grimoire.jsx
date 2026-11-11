@@ -172,6 +172,10 @@ function StartChapter({ rules, go }) {
         <li>
           Knock out all {battle.teamSize} foes before round {battle.maxRounds} to win.
         </li>
+        <li>
+          From round {battle.surge.startRound} the <b>Aether Surge</b> rises: attacks hit
+          harder and healing gets weaker every round.
+        </li>
       </ol>
       <button type="button" className="gr-cta" onClick={() => go("battle")}>
         Read the full battle guide →
@@ -403,6 +407,14 @@ function FlowPage({ battle }) {
           </p>
         </section>
       </div>
+      <h3 className="gr-heading">Aether Surge</h3>
+      <p>
+        Battles cannot be stalled forever. From round <b>{battle.surge.startRound}</b>, every
+        new round raises damage by <b>+{battle.surge.damagePerRoundPercent}%</b> and lowers
+        healing (and the vitality of revived cards) by{" "}
+        <b>{battle.surge.healPerRoundPercent}%</b>. From round{" "}
+        <b>{battle.surge.noHealRound}</b> nothing heals anymore.
+      </p>
       <Tip>
         Leaving the arena does not end the battle: it waits for you on the Battle screen.
       </Tip>

@@ -27,6 +27,9 @@ Batalha por turnos entre dois times de 3 cartas. Regras principais:
 - Rivalidades: rivais (`lore.RIVALRIES`) em times opostos causam
   RIVAL_DAMAGE_MULTIPLIER de dano um ao outro.
 - Provocação: golpes de alvo único precisam mirar quem está provocando.
+- Maré de Aether: a partir de SURGE_START_ROUND, cada rodada aumenta o dano
+  em SURGE_DAMAGE_PER_ROUND e diminui a cura (e a vida de quem é reanimado) em
+  SURGE_HEAL_PER_ROUND, até a cura zerar (evento `surge` a cada subida).
 - Duelo online (mode "pvp"): as mesmas regras, mas os dois lados são
   jogadores. O lado "player" é quem desafiou e o "enemy" quem aceitou; cada
   um luta no próprio nível, sem bônus de dificuldade. Se as rodadas acabarem,
@@ -39,6 +42,7 @@ aqui. Funções que sorteiam recebem `rng` (random.Random) para testes
 determinísticos.
 """
 
+import math
 import random
 
 from .ascension import MAX_ASCENSION, bonus_skills, clamp_ascension
@@ -62,6 +66,14 @@ AETHER_PER_TURN = 1
 # Aether extra que Strike e Guard geram (além do AETHER_PER_TURN).
 BASIC_SKILL_AETHER = 1
 MAX_ROUNDS = 30
+# Maré de Aether (morte súbita): a partir de SURGE_START_ROUND, cada rodada
+# aumenta o dano dos golpes e diminui a cura (até zerar), para que times só de
+# defesa e cura não prendam a batalha num ciclo sem fim.
+SURGE_START_ROUND = 8
+SURGE_DAMAGE_PER_ROUND = 0.2
+SURGE_HEAL_PER_ROUND = 0.2
+# Primeira rodada em que a cura já é zero.
+SURGE_NO_HEAL_ROUND = SURGE_START_ROUND - 1 + math.ceil(round(1 / SURGE_HEAL_PER_ROUND, 6))
 
 DEFENSE_CONSTANT = 50
 DAMAGE_VARIANCE = 0.1
@@ -231,9 +243,35 @@ def _gain_aether(state, side, amount):
     state["aether"][side] = min(MAX_AETHER, state["aether"][side] + amount)
 
 
-def _heal(target, amount, events, source=None, status=None):
+def surge_level(state):
+    """Força da Maré de Aether na rodada atual (0 = ainda não começou)."""
+    if not state:
+        return 0
+    return max(0, state["round"] - SURGE_START_ROUND + 1)
+
+
+def surge_damage_multiplier(state):
+    return 1 + SURGE_DAMAGE_PER_ROUND * surge_level(state)
+
+
+def surge_heal_multiplier(state):
+    return max(0.0, 1 - SURGE_HEAL_PER_ROUND * surge_level(state))
+
+
+def public_surge(state):
+    """Maré atual em percentuais (para o estado público e o evento `surge`)."""
+    return {
+        "level": surge_level(state),
+        "startRound": SURGE_START_ROUND,
+        "damageBonusPercent": round((surge_damage_multiplier(state) - 1) * 100),
+        "healPenaltyPercent": round((1 - surge_heal_multiplier(state)) * 100),
+    }
+
+
+def _heal(state, target, amount, events, source=None, status=None):
     if not _alive(target):
         return 0
+    amount *= surge_heal_multiplier(state)
     healed = max(0, min(round(amount), target["maxHp"] - target["hp"]))
     target["hp"] += healed
     event = {"type": "heal", "target": target["id"], "amount": healed, "hp": target["hp"]}
@@ -268,8 +306,12 @@ def _lose_hp(target, amount, events, event):
     return amount - absorbed
 
 
-def _deal_damage(attacker, defender, multiplier, kind, rng, events, pierce=0.0, extra=None):
-    """Calcula e aplica um golpe. Devolve o dano causado à vitalidade."""
+def _deal_damage(state, attacker, defender, multiplier, kind, rng, events, pierce=0.0,
+                 extra=None):
+    """Calcula e aplica um golpe. Devolve o dano causado à vitalidade.
+
+    `state` só é usado para a Maré de Aether (None = sem maré).
+    """
     stats_a, stats_d = attacker["stats"], defender["stats"]
     if kind == "physical":
         power, defense = stats_a["might"], stats_d["bulwark"]
@@ -295,6 +337,7 @@ def _deal_damage(attacker, defender, multiplier, kind, rng, events, pierce=0.0, 
     rival = defender["id"] in attacker.get("rivals", ())
     if rival:
         damage *= RIVAL_DAMAGE_MULTIPLIER
+    damage *= surge_damage_multiplier(state)
 
     damage *= rng.uniform(1 - DAMAGE_VARIANCE, 1 + DAMAGE_VARIANCE)
     critical = rng.random() * 100 < stats_a["fate"]
@@ -341,16 +384,16 @@ def _element_rider(state, caster, target, damage, events):
     elif element == "lumen" and damage > 0:
         allies = _team(state, caster["side"])
         wounded = min(allies, key=lambda u: u["hp"] / u["maxHp"])
-        _heal(wounded, damage * LUMEN_HEAL_RATIO, events, source=caster)
+        _heal(state, wounded, damage * LUMEN_HEAL_RATIO, events, source=caster)
     elif element == "umbra" and damage > 0:
-        _heal(caster, damage * UMBRA_DRAIN_RATIO, events, source=caster)
+        _heal(state, caster, damage * UMBRA_DRAIN_RATIO, events, source=caster)
 
 
 # ------------------------------------------------------------ habilidades ---
 
 
 def _strike(state, actor, targets, rng, events):
-    _deal_damage(actor, targets[0], 1.0, _best_kind(actor), rng, events)
+    _deal_damage(state, actor, targets[0], 1.0, _best_kind(actor), rng, events)
     _gain_aether(state, actor["side"], BASIC_SKILL_AETHER)
 
 
@@ -366,7 +409,7 @@ def _bastion_call(state, actor, targets, rng, events):
 
 def _tremor_slam(state, actor, targets, rng, events):
     for target in targets:
-        _deal_damage(actor, target, 0.8, "physical", rng, events)
+        _deal_damage(state, actor, target, 0.8, "physical", rng, events)
         if _alive(target) and rng.random() < 0.35:
             _apply_status(state, target, "stun", 1, events)
 
@@ -380,13 +423,13 @@ def _unbreakable_oath(state, actor, targets, rng, events):
 def _rending_flurry(state, actor, targets, rng, events):
     for _ in range(2):
         if _alive(targets[0]):
-            _deal_damage(actor, targets[0], 0.75, "physical", rng, events)
+            _deal_damage(state, actor, targets[0], 0.75, "physical", rng, events)
 
 
 def _execution_arc(state, actor, targets, rng, events):
     target = targets[0]
     multiplier = 1.5 * (1.6 if target["hp"] / target["maxHp"] < 0.4 else 1)
-    _deal_damage(actor, target, multiplier, "physical", rng, events)
+    _deal_damage(state, actor, target, multiplier, "physical", rng, events)
 
 
 def _thousand_cuts(state, actor, targets, rng, events):
@@ -395,41 +438,42 @@ def _thousand_cuts(state, actor, targets, rng, events):
         if not alive:
             break
         target = rng.choice(alive)
-        _deal_damage(actor, target, 0.55, "physical", rng, events)
+        _deal_damage(state, actor, target, 0.55, "physical", rng, events)
         _apply_status(state, target, "weaken", 2, events)
 
 
 def _elemental_bolt(state, actor, targets, rng, events):
-    damage = _deal_damage(actor, targets[0], 1.45, "magical", rng, events)
+    damage = _deal_damage(state, actor, targets[0], 1.45, "magical", rng, events)
     _element_rider(state, actor, targets[0], damage, events)
 
 
 def _arcane_tempest(state, actor, targets, rng, events):
     for target in targets:
-        damage = _deal_damage(actor, target, 0.8, "magical", rng, events)
+        damage = _deal_damage(state, actor, target, 0.8, "magical", rng, events)
         _element_rider(state, actor, target, damage, events)
 
 
 def _cataclysm(state, actor, targets, rng, events):
-    damage = _deal_damage(actor, targets[0], 2.3, "magical", rng, events, pierce=0.5)
+    damage = _deal_damage(state, actor, targets[0], 2.3, "magical", rng, events, pierce=0.5)
     _element_rider(state, actor, targets[0], damage, events)
 
 
 def _mending_light(state, actor, targets, rng, events):
     target = targets[0]
-    _heal(target, actor["stats"]["arcana"] * 1.8 + target["maxHp"] * 0.05, events, source=actor)
+    _heal(state, target, actor["stats"]["arcana"] * 1.8 + target["maxHp"] * 0.05, events,
+          source=actor)
     _cleanse(target, events)
 
 
 def _sanctuary(state, actor, targets, rng, events):
     for target in targets:
-        _heal(target, actor["stats"]["arcana"] * 1.0, events, source=actor)
+        _heal(state, target, actor["stats"]["arcana"] * 1.0, events, source=actor)
         _apply_status(state, target, "regen", 3, events)
 
 
 def _rebirth_hymn(state, actor, targets, rng, events):
     target = targets[0]
-    target["hp"] = max(1, round(target["maxHp"] * 0.5))
+    target["hp"] = max(1, round(target["maxHp"] * 0.5 * surge_heal_multiplier(state)))
     events.append({"type": "revive", "source": actor["id"], "target": target["id"],
                    "hp": target["hp"]})
     _apply_status(state, target, "empower", 2, events)
@@ -437,14 +481,14 @@ def _rebirth_hymn(state, actor, targets, rng, events):
 
 def _hexing_shiv(state, actor, targets, rng, events):
     target = targets[0]
-    _deal_damage(actor, target, 1.0, "hybrid", rng, events)
+    _deal_damage(state, actor, target, 1.0, "hybrid", rng, events)
     _apply_status(state, target, "weaken", 2, events)
     _apply_status(state, target, "expose", 2, events)
 
 
 def _aether_siphon(state, actor, targets, rng, events):
     for target in targets:
-        _deal_damage(actor, target, 0.5, "hybrid", rng, events)
+        _deal_damage(state, actor, target, 0.5, "hybrid", rng, events)
         _apply_status(state, target, "slow", 2, events)
     enemy_side = _opponent(actor["side"])
     stolen = min(2, state["aether"][enemy_side])
@@ -457,7 +501,7 @@ def _aether_siphon(state, actor, targets, rng, events):
 
 def _grand_deception(state, actor, targets, rng, events):
     for target in targets:
-        _deal_damage(actor, target, 0.9, "hybrid", rng, events)
+        _deal_damage(state, actor, target, 0.9, "hybrid", rng, events)
     for ally in _team(state, actor["side"]):
         _cleanse(ally, events)
         _apply_status(state, ally, "empower", 2, events)
@@ -471,25 +515,25 @@ def _companion_attack(state, actor, rng, events):
         return
     target = rng.choice(options)
     events.append({"type": "companion", "actor": actor["id"], "target": target["id"]})
-    _deal_damage(actor, target, COMPANION_MULTIPLIER, "hybrid", rng, events,
+    _deal_damage(state, actor, target, COMPANION_MULTIPLIER, "hybrid", rng, events,
                  extra={"companion": True})
 
 
 def _call_companion(state, actor, targets, rng, events):
-    _deal_damage(actor, targets[0], 0.8, "hybrid", rng, events)
+    _deal_damage(state, actor, targets[0], 0.8, "hybrid", rng, events)
     _apply_status(state, actor, "companion", COMPANION_TURNS, events)
 
 
 def _beast_rampage(state, actor, targets, rng, events):
     bonded = _has(actor, "companion")
     for target in targets:
-        _deal_damage(actor, target, 0.75, "hybrid", rng, events)
+        _deal_damage(state, actor, target, 0.75, "hybrid", rng, events)
         if bonded:
             _apply_status(state, target, "expose", 2, events)
 
 
 def _primal_awakening(state, actor, targets, rng, events):
-    _deal_damage(actor, targets[0], 2.0, "hybrid", rng, events)
+    _deal_damage(state, actor, targets[0], 2.0, "hybrid", rng, events)
     _apply_status(state, actor, "companion", COMPANION_TURNS, events)
     _apply_status(state, actor, "empower", 2, events)
 
@@ -737,13 +781,13 @@ def _make_duo_effect(skill_id):
                 for multiplier, kind in spec.get("hits", []):
                     if not _alive(target):
                         break
-                    _deal_damage(actor, target, multiplier, kind, rng, events,
+                    _deal_damage(state, actor, target, multiplier, kind, rng, events,
                                  pierce=spec.get("pierce", 0.0))
                 if spec.get("foe_status"):
                     _apply_status(state, target, *spec["foe_status"], events)
         for ally in _team(state, actor["side"]):
             if spec.get("heal"):
-                _heal(ally, ally["maxHp"] * spec["heal"], events, source=actor)
+                _heal(state, ally, ally["maxHp"] * spec["heal"], events, source=actor)
             if spec.get("cleanse"):
                 _cleanse(ally, events)
             for status, turns, shield in spec.get("team_status", []):
@@ -1180,6 +1224,8 @@ def _start_round(state, rng, events):
     living.sort(key=lambda u: (effective_celerity(u), rng.random()), reverse=True)
     state["queue"] = [u["id"] for u in living]
     events.append({"type": "round", "round": state["round"], "order": state["queue"]})
+    if surge_level(state):
+        events.append({"type": "surge", "round": state["round"], **public_surge(state)})
 
 
 def _next_actor(state, rng, events):
@@ -1206,7 +1252,7 @@ def _start_turn(state, actor, events, rng=None):
         if not _alive(actor):
             return False
     if _has(actor, "regen"):
-        _heal(actor, actor["maxHp"] * REGEN_RATIO, events, status="regen")
+        _heal(state, actor, actor["maxHp"] * REGEN_RATIO, events, status="regen")
     if _has(actor, "companion"):
         _companion_attack(state, actor, rng or random.Random(), events)
         if not _team(state, _opponent(actor["side"])):
@@ -1669,6 +1715,7 @@ def public_state(state, viewer="player"):
         ),
         "round": state["round"],
         "maxRounds": MAX_ROUNDS,
+        "surge": public_surge(state),
         "aether": _view_aether(state["aether"], viewer),
         "maxAether": MAX_AETHER,
         "turn": view_id(state["turn"], viewer),

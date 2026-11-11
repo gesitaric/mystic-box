@@ -103,6 +103,14 @@ export function describeEvent(event, names) {
   switch (event.type) {
     case "round":
       return { text: `— Round ${event.round} —`, kind: "round" };
+    case "surge":
+      return {
+        text:
+          event.healPenaltyPercent >= 100
+            ? `🌊 The Aether surges: damage +${event.damageBonusPercent}%, healing is gone.`
+            : `🌊 The Aether surges: damage +${event.damageBonusPercent}%, healing −${event.healPenaltyPercent}%.`,
+        kind: "surge",
+      };
     case "skill":
       return { text: `${name(event.actor)} uses ${event.skillName}.`, kind: "skill", side: event.actor?.[0] };
     case "damage": {
@@ -201,6 +209,8 @@ export function eventDelay(event) {
       return 1800;
     case "duo":
       return 900;
+    case "surge":
+      return 700;
     case "lastWords":
       return 2000;
     case "bond":
