@@ -22,7 +22,15 @@ as regras do que é só do online:
   (até MAX_LIVE_DUELS aparecem na lista). Quem assiste só lê: não joga vezes
   vencidas nem grava nada. Um duelo cuja vez venceu há mais de
   LIVE_DUEL_GRACE_SECONDS sai da lista (os dois jogadores saíram).
+- Reações: os dois jogadores e quem assiste podem mandar reações durante o
+  duelo, só com os emojis de REACTIONS (nada de texto livre). Cada pessoa
+  espera REACTION_COOLDOWN_SECONDS entre uma e outra e manda no máximo
+  MAX_REACTIONS_PER_WINDOW a cada REACTION_WINDOW_SECONDS. Reações não mexem
+  na batalha (nem na vez, nem no tempo de turno) e somem depois de
+  REACTION_TTL_SECONDS; não entram no histórico do duelo.
 """
+
+import math
 
 from . import battle
 
@@ -40,6 +48,30 @@ PRESENCE_SECONDS = 60
 MAX_ONLINE_PLAYERS = 50
 MAX_LIVE_DUELS = 20
 LIVE_DUEL_GRACE_SECONDS = 30
+
+# Reações (id, emoji). O cliente só manda o id; o emoji sai daqui.
+REACTIONS = (
+    ("clap", "👏"),
+    ("fire", "🔥"),
+    ("laugh", "😂"),
+    ("wow", "😮"),
+    ("sweat", "😅"),
+    ("cry", "😢"),
+    ("angry", "😠"),
+    ("gg", "🤝"),
+)
+REACTION_EMOJIS = dict(REACTIONS)
+REACTION_COOLDOWN_SECONDS = 2
+REACTION_WINDOW_SECONDS = 30
+MAX_REACTIONS_PER_WINDOW = 8
+REACTION_TTL_SECONDS = 60
+# Reações devolvidas por consulta (as mais recentes).
+MAX_REACTIONS_PER_POLL = 20
+# O cursor devolvido fica um pouco para trás do relógio do servidor, para não
+# perder uma reação gravada ao mesmo tempo por outra requisição. O cliente
+# ignora as que já mostrou (pelo id).
+REACTION_CURSOR_LAG_MS = 3000
+SPECTATOR_SIDE = "spectator"
 
 
 def challenge_active(expires_at, now):
@@ -174,6 +206,104 @@ def live_list(entries, now):
     return live[:MAX_LIVE_DUELS]
 
 
+# ---------------------------------------------------------------- reações ---
+
+
+class ReactionLimited(Exception):
+    """Reação enviada antes da hora; `retry_after` em segundos."""
+
+    def __init__(self, retry_after):
+        super().__init__("Too many reactions. Wait a moment.")
+        self.retry_after = max(1, int(retry_after))
+
+
+def is_reaction(reaction_id):
+    return isinstance(reaction_id, str) and reaction_id in REACTION_EMOJIS
+
+
+def reaction_quota(sender, now_ms):
+    """Novo controle de envio de quem reage, ou ReactionLimited.
+
+    `sender`: None (primeira reação) ou {"lastAt", "windowStart", "count"},
+    com os instantes em milissegundos.
+    """
+    now_ms = int(now_ms)
+    if sender is None:
+        return {"lastAt": now_ms, "windowStart": now_ms, "count": 1}
+    cooldown_ends = int(sender["lastAt"]) + REACTION_COOLDOWN_SECONDS * 1000
+    if now_ms < cooldown_ends:
+        raise ReactionLimited(math.ceil((cooldown_ends - now_ms) / 1000))
+    window_ends = int(sender["windowStart"]) + REACTION_WINDOW_SECONDS * 1000
+    if now_ms >= window_ends:
+        return {"lastAt": now_ms, "windowStart": now_ms, "count": 1}
+    if int(sender["count"]) >= MAX_REACTIONS_PER_WINDOW:
+        raise ReactionLimited(math.ceil((window_ends - now_ms) / 1000))
+    return {
+        "lastAt": now_ms,
+        "windowStart": int(sender["windowStart"]),
+        "count": int(sender["count"]) + 1,
+    }
+
+
+def reaction_key(at_ms, nonce):
+    """Chave de ordenação de uma reação (ordem de envio)."""
+    return f"r#{int(at_ms):013d}#{nonce}"
+
+
+def reaction_range(since_ms):
+    """Faixa de chaves das reações enviadas depois de `since_ms`."""
+    return reaction_key(int(since_ms) + 1, ""), "r#~"
+
+
+def reaction_cursor(now_ms):
+    return max(0, int(now_ms) - REACTION_CURSOR_LAG_MS)
+
+
+def view_reaction(reaction, viewer_side, viewer_id):
+    """Reação vista por quem pede.
+
+    `reaction`: {"key", "reaction", "side", "username", "senderId"}; `side` é
+    o lado guardado do jogador que reagiu ou SPECTATOR_SIDE. Para um jogador,
+    o próprio lado é sempre "player" (como no resto do duelo); quem assiste
+    (`viewer_side` None) vê os lados como estão guardados.
+    """
+    side = reaction["side"]
+    if viewer_side is not None and side in SIDES:
+        side = "player" if side == viewer_side else "enemy"
+    return {
+        "id": reaction["key"],
+        "reaction": reaction["reaction"],
+        "emoji": REACTION_EMOJIS.get(reaction["reaction"], ""),
+        "side": side,
+        "username": reaction.get("username"),
+        "isYou": reaction["senderId"] == viewer_id,
+    }
+
+
+def recent_reactions(reactions, since_ms, now_ms, viewer_side, viewer_id):
+    """Reações depois de `since_ms` ainda válidas, em ordem, vistas por quem pede.
+
+    `reactions`: [{"key", "at", "expiresAt", ...}] (expiresAt em segundos).
+    """
+    now_seconds = int(now_ms) // 1000
+    fresh = [
+        reaction
+        for reaction in reactions
+        if int(reaction["at"]) > int(since_ms)
+        and int(reaction["expiresAt"]) > now_seconds
+        and reaction["reaction"] in REACTION_EMOJIS
+    ]
+    fresh.sort(key=lambda reaction: reaction["key"])
+    return [
+        view_reaction(reaction, viewer_side, viewer_id)
+        for reaction in fresh[-MAX_REACTIONS_PER_POLL:]
+    ]
+
+
+def reaction_options():
+    return [{"id": reaction_id, "emoji": emoji} for reaction_id, emoji in REACTIONS]
+
+
 # ------------------------------------------------------------------- visão ---
 
 
@@ -205,6 +335,8 @@ def public_duel(state, side, now, players):
     view["maxMissedTurns"] = MAX_MISSED_TURNS
     view["you"] = players.get(side)
     view["opponent"] = players.get(opponent_side(side))
+    view["reactionOptions"] = reaction_options()
+    view["reactionCooldownSeconds"] = REACTION_COOLDOWN_SECONDS
     return view
 
 
@@ -222,6 +354,8 @@ def public_spectator(state, now, players):
     view["missedTurns"] = dict(state["missed"])
     view["players"] = {side: players.get(side) for side in SIDES}
     view["winner"] = battle.winner_side(state)
+    view["reactionOptions"] = reaction_options()
+    view["reactionCooldownSeconds"] = REACTION_COOLDOWN_SECONDS
     return view
 
 
@@ -254,4 +388,9 @@ def public_rules():
         "presenceSeconds": PRESENCE_SECONDS,
         "maxOnlinePlayers": MAX_ONLINE_PLAYERS,
         "maxLiveDuels": MAX_LIVE_DUELS,
+        "reactions": reaction_options(),
+        "reactionCooldownSeconds": REACTION_COOLDOWN_SECONDS,
+        "reactionWindowSeconds": REACTION_WINDOW_SECONDS,
+        "maxReactionsPerWindow": MAX_REACTIONS_PER_WINDOW,
+        "reactionTtlSeconds": REACTION_TTL_SECONDS,
     }

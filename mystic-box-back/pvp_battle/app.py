@@ -11,6 +11,14 @@ Rotas:
 - GET /pvp/watch?battleId=X&since=N: o duelo visto por quem assiste (qualquer
   jogador com sessão que não seja um dos dois), com os eventos depois do lote
   N. Só lê: vezes vencidas ficam para a próxima requisição dos jogadores.
+- POST /pvp/battle/reactions: {"battleId", "reaction"} manda uma reação (só os
+  emojis de mystic_shared.pvp.REACTIONS) num duelo ativo. Vale para os dois
+  jogadores e para quem assiste; o limite de envio é conferido no servidor.
+
+As duas leituras aceitam `reactionsSince` (cursor devolvido em
+`reactionsCursor` na resposta anterior) e devolvem em `reactions` as reações
+enviadas depois dele, junto com o resto (inclusive na resposta `unchanged`).
+As reações ficam em PvpReactionsTable (somem pelo TTL) e não mexem no duelo.
 
 As regras da batalha são as de mystic_shared.battle; o tempo de turno e o
 abandono, de mystic_shared.pvp. Vezes com o tempo esgotado são jogadas no
@@ -22,6 +30,7 @@ jogadores são gravados numa só transação.
 
 import json
 import os
+import secrets
 import time
 from datetime import datetime, timezone
 
@@ -49,6 +58,8 @@ PVP_BATTLES_TABLE = os.environ.get("PVP_BATTLES_TABLE")
 PVP_PLAYERS_TABLE = os.environ.get("PVP_PLAYERS_TABLE")
 USER_PROGRESS_TABLE = os.environ.get("USER_PROGRESS_TABLE")
 USER_WALLET_TABLE = os.environ.get("USER_WALLET_TABLE")
+PVP_REACTIONS_TABLE = os.environ.get("PVP_REACTIONS_TABLE")
+USER_PROFILES_TABLE = os.environ.get("USER_PROFILES_TABLE")
 
 # Duelos somem sozinhos (TTL) um dia depois da última ação; o ponteiro de um
 # duelo que acabou, uma semana depois.
@@ -67,6 +78,7 @@ FINISH_ATTEMPTS = 3
 BATTLE_ROUTE = "/pvp/battle"
 ACTION_ROUTE = "/pvp/battle/actions"
 WATCH_ROUTE = "/pvp/watch"
+REACTION_ROUTE = "/pvp/battle/reactions"
 
 # Criado uma vez por container e reaproveitado entre invocações.
 _client = None
@@ -204,6 +216,62 @@ def get_progress(user_id):
         int(item.get("losses", {}).get("N", "0")),
         "experience" in item,
     )
+
+
+def now_ms():
+    return int(time.time() * 1000)
+
+
+def load_reactions(battle_id, since_ms):
+    """Reações guardadas do duelo enviadas depois de `since_ms`."""
+    start, end = pvp.reaction_range(since_ms)
+    result = get_client().query(
+        TableName=PVP_REACTIONS_TABLE,
+        KeyConditionExpression="battleId = :battleId AND reactionKey BETWEEN :start AND :end",
+        ExpressionAttributeValues={
+            ":battleId": {"S": battle_id},
+            ":start": {"S": start},
+            ":end": {"S": end},
+        },
+    )
+    reactions = []
+    for item in result.get("Items", []):
+        key = item["reactionKey"]["S"]
+        if not key.startswith("r#"):
+            continue
+        reactions.append(
+            {
+                "key": key,
+                "at": int(item["at"]["N"]),
+                "expiresAt": int(item["expiresAt"]["N"]),
+                "reaction": item["reaction"]["S"],
+                "side": item["side"]["S"],
+                "username": item.get("username", {}).get("S"),
+                "senderId": item["senderId"]["S"],
+            }
+        )
+    return reactions
+
+
+def reactions_payload(event, battle_id, viewer_side, user_id):
+    """Reações novas para a resposta de leitura, se o cliente pediu.
+
+    Sem cursor válido em `reactionsSince`, só devolve o cursor (as reações
+    começam dali). Se a leitura falhar, o duelo sai mesmo assim, sem elas.
+    """
+    params = event.get("queryStringParameters") or {}
+    if "reactionsSince" not in params:
+        return {}
+    since = parse_since(params.get("reactionsSince"))
+    now = now_ms()
+    reactions = []
+    if since is not None:
+        try:
+            stored = load_reactions(battle_id, since)
+        except ClientError:
+            return {}
+        reactions = pvp.recent_reactions(stored, since, now, viewer_side, user_id)
+    return {"reactions": reactions, "reactionsCursor": pvp.reaction_cursor(now)}
 
 
 # ---------------------------------------------------------------- gravação ---
@@ -358,7 +426,7 @@ def store(duel):
 # ------------------------------------------------------------------- rotas ---
 
 
-def duel_response(status_code, duel, since):
+def duel_response(status_code, duel, since, extra=None):
     now = int(time.time())
     events, complete = pvp.events_since(duel.state, since, duel.side)
     return response(
@@ -368,11 +436,12 @@ def duel_response(status_code, duel, since):
             "events": events,
             "complete": complete,
             "result": duel.state.get("results", {}).get(duel.side),
+            **(extra or {}),
         },
     )
 
 
-def unchanged_response(duel):
+def unchanged_response(duel, extra=None):
     """Nada mudou desde o lote que o cliente tem: só o tempo de turno."""
     now = int(time.time())
     return response(
@@ -385,6 +454,7 @@ def unchanged_response(duel):
                 "status": duel.state["status"],
                 "turnSecondsLeft": pvp.turn_seconds_left(duel.state, now),
             },
+            **(extra or {}),
         },
     )
 
@@ -411,9 +481,10 @@ def current(user_id, event):
                 duel = load_duel(user_id, battle_id)
     except ClientError:
         return response(500, {"message": "Could not load the duel."})
+    extra = reactions_payload(event, duel.battle_id, duel.side, user_id)
     if since is not None and since == duel.state["seq"]:
-        return unchanged_response(duel)
-    return duel_response(200, duel, since)
+        return unchanged_response(duel, extra)
+    return duel_response(200, duel, since, extra)
 
 
 def watch(user_id, event):
@@ -431,8 +502,9 @@ def watch(user_id, event):
     duel = Duel(None, item)
     if duel.has_player(user_id):
         return response(409, {"message": "You are playing this duel.", "battleId": battle_id})
+    extra = reactions_payload(event, battle_id, None, user_id)
     if since is not None and since == duel.state["seq"]:
-        return unchanged_response(duel)
+        return unchanged_response(duel, extra)
 
     now = int(time.time())
     players = duel.public_players()
@@ -444,6 +516,7 @@ def watch(user_id, event):
             "events": events,
             "complete": complete,
             "result": pvp.spectator_result(duel.state, players),
+            **extra,
         },
     )
 
@@ -504,6 +577,121 @@ def act(user_id, event):
     return duel_response(200, duel, since)
 
 
+def spectator_username(user_id):
+    item = get_item(USER_PROFILES_TABLE, {"userId": {"S": user_id}})
+    return (item or {}).get("username", {}).get("S")
+
+
+def react(user_id, event):
+    """Reação de um jogador ou de quem assiste. Não mexe no duelo."""
+    try:
+        body = parse_body(event)
+    except ValueError as error:
+        return response(400, {"message": str(error)})
+
+    battle_id = body.get("battleId")
+    reaction_id = body.get("reaction")
+    if not is_short_string(battle_id) or not pvp.is_reaction(reaction_id):
+        return response(400, {"message": "Invalid reaction."})
+
+    sender_key = {"battleId": {"S": battle_id}, "reactionKey": {"S": f"s#{user_id}"}}
+    try:
+        item = get_item(PVP_BATTLES_TABLE, {"battleId": {"S": battle_id}})
+        if not item:
+            return response(404, {"message": "Duel not found."})
+        if item.get("status", {}).get("S") != "active":
+            return response(409, {"message": "This duel is over."})
+        players = json.loads(item["players"]["S"])
+        side = next((s for s in SIDES if players[s]["userId"] == user_id), None)
+        if side is not None:
+            username = players[side]["username"]
+        else:
+            side = pvp.SPECTATOR_SIDE
+            username = spectator_username(user_id)
+        sender_item = get_item(PVP_REACTIONS_TABLE, sender_key)
+    except ClientError:
+        return response(500, {"message": "Could not send the reaction."})
+
+    sender = None
+    if sender_item:
+        sender = {
+            "lastAt": int(sender_item["lastAt"]["N"]),
+            "windowStart": int(sender_item["windowStart"]["N"]),
+            "count": int(sender_item["count"]["N"]),
+        }
+    at = now_ms()
+    try:
+        quota = pvp.reaction_quota(sender, at)
+    except pvp.ReactionLimited as limited:
+        return response(
+            429, {"message": str(limited), "retryAfterSeconds": limited.retry_after}
+        )
+
+    key = pvp.reaction_key(at, secrets.token_hex(4))
+    reaction_item = {
+        "battleId": {"S": battle_id},
+        "reactionKey": {"S": key},
+        "at": {"N": str(at)},
+        "reaction": {"S": reaction_id},
+        "side": {"S": side},
+        "senderId": {"S": user_id},
+        "expiresAt": {"N": str(at // 1000 + pvp.REACTION_TTL_SECONDS)},
+    }
+    if username:
+        reaction_item["username"] = {"S": username}
+    sender_put = {
+        "TableName": PVP_REACTIONS_TABLE,
+        "Item": {
+            **sender_key,
+            "lastAt": {"N": str(quota["lastAt"])},
+            "windowStart": {"N": str(quota["windowStart"])},
+            "count": {"N": str(quota["count"])},
+            "expiresAt": {
+                "N": str(at // 1000 + pvp.REACTION_WINDOW_SECONDS + pvp.REACTION_TTL_SECONDS)
+            },
+        },
+    }
+    # Duas reações ao mesmo tempo: só a que leu o controle atual passa.
+    if sender:
+        sender_put["ConditionExpression"] = "lastAt = :lastAt"
+        sender_put["ExpressionAttributeValues"] = {":lastAt": {"N": str(sender["lastAt"])}}
+    else:
+        sender_put["ConditionExpression"] = "attribute_not_exists(reactionKey)"
+    try:
+        get_client().transact_write_items(
+            TransactItems=[
+                {"Put": sender_put},
+                {"Put": {"TableName": PVP_REACTIONS_TABLE, "Item": reaction_item}},
+            ]
+        )
+    except ClientError as error:
+        if get_failed_conditions(error):
+            return response(
+                429,
+                {
+                    "message": "Too many reactions. Wait a moment.",
+                    "retryAfterSeconds": pvp.REACTION_COOLDOWN_SECONDS,
+                },
+            )
+        return response(500, {"message": "Could not send the reaction."})
+
+    stored = {
+        "key": key,
+        "reaction": reaction_id,
+        "side": side,
+        "username": username,
+        "senderId": user_id,
+    }
+    viewer_side = None if side == pvp.SPECTATOR_SIDE else side
+    return response(
+        201,
+        {
+            "reaction": pvp.view_reaction(stored, viewer_side, user_id),
+            "reactionCooldownSeconds": pvp.REACTION_COOLDOWN_SECONDS,
+        },
+    )
+
+
 def lambda_handler(event, context):
     method = event.get("httpMethod")
     if method == "OPTIONS":
@@ -520,4 +708,6 @@ def lambda_handler(event, context):
         return act(user_id, event)
     if method == "GET" and resource == WATCH_ROUTE:
         return watch(user_id, event)
+    if method == "POST" and resource == REACTION_ROUTE:
+        return react(user_id, event)
     return response(404, {"message": "Not found."})

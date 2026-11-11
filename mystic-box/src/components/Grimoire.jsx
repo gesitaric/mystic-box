@@ -894,6 +894,23 @@ function DuelsPage({ pvp }) {
         <li>Miss {pvp.maxMissedTurns} turns in a row and you abandon the duel.</li>
         <li>If {pvp.maxRounds} rounds pass with both teams standing, it is a draw.</li>
       </ul>
+      {pvp.reactions?.length > 0 && (
+        <>
+          <h3 className="gr-heading">Reactions</h3>
+          <ul className="gr-list">
+            <li>
+              Both duelists and anyone watching can react during a duel, with emojis only:{" "}
+              {pvp.reactions.map((reaction) => reaction.emoji).join(" ")}
+            </li>
+            <li>
+              Wait {formatDuration(pvp.reactionCooldownSeconds)} between reactions, and send at
+              most {pvp.maxReactionsPerWindow} every{" "}
+              {formatDuration(pvp.reactionWindowSeconds)}.
+            </li>
+            <li>Reactions never change the duel: not the turn, not the clock.</li>
+          </ul>
+        </>
+      )}
       <h3 className="gr-heading">Experience</h3>
       <ul className="gr-list">
         <li>Victory: {pvp.winExperience} XP.</li>

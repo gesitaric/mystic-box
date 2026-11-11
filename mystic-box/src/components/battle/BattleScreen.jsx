@@ -8,6 +8,7 @@ import LevelUpCelebration from "./LevelUpCelebration";
 import PvpLobby from "./PvpLobby";
 import TeamSetup, { SkillList, StatGrid } from "./TeamSetup";
 import { SessionExpired, arenaRequest } from "./arenaApi";
+import { ReactionLayer, ReactionPicker } from "./BattleReactions";
 import "../../styles/battle.css";
 import {
   ELEMENT_STYLE,
@@ -36,6 +37,13 @@ const DUEL_POLL_GROWTH = 1.5;
 const DUEL_POLL_MAX_MS = 5000;
 // Folga depois do fim do turno antes de conferir o que o servidor fez.
 const TURN_END_MARGIN_MS = 1000;
+// Reações: quanto tempo cada emoji fica subindo na tela. Depois de alguém
+// reagir, o duelo é consultado a cada REACTION_POLL_MS por REACTION_ACTIVE_MS
+// (inclusive na própria vez, quando normalmente não se consulta).
+const REACTION_FLOAT_MS = 2600;
+const REACTION_POLL_MS = 2000;
+const REACTION_ACTIVE_MS = 15000;
+const MAX_REACTIONS_ON_SCREEN = 12;
 
 const DUEL_LIST = { screen: "arena", arena: "pvp", duel: "list" };
 
@@ -656,6 +664,14 @@ function BattleScreen({
   const [rosterCards, setRosterCards] = useState(null);
   // Aba visível: com a aba escondida o duelo não é consultado.
   const [pageVisible, setPageVisible] = useState(() => document.visibilityState !== "hidden");
+  // Reações do duelo: as que estão na tela, até quando o envio espera (do
+  // servidor) e até quando o duelo é consultado mais vezes por causa delas.
+  const [reactions, setReactions] = useState([]);
+  const [reactionWaitUntil, setReactionWaitUntil] = useState(0);
+  const [reactionActiveUntil, setReactionActiveUntil] = useState(0);
+  // Cursor das reações devolvido pelo servidor (null = ainda não pediu).
+  const reactionCursor = useRef(null);
+  const seenReactions = useRef(new Set());
   const busyRef = useRef(false);
   const floatId = useRef(0);
   const logEnd = useRef(null);
@@ -690,6 +706,30 @@ function BattleScreen({
     [apiUrl, session, onSessionExpired]
   );
 
+  // Novo duelo na tela: as reações recomeçam do zero.
+  const resetReactions = useCallback(() => {
+    reactionCursor.current = null;
+    seenReactions.current = new Set();
+    setReactions([]);
+    setReactionActiveUntil(0);
+  }, []);
+
+  // Mostra as reações que chegaram (cada uma uma vez só).
+  const showReactions = useCallback((list) => {
+    const fresh = (list ?? []).filter((reaction) => !seenReactions.current.has(reaction.id));
+    if (fresh.length === 0) return;
+    for (const reaction of fresh) seenReactions.current.add(reaction.id);
+    if (seenReactions.current.size > 200) {
+      seenReactions.current = new Set([...seenReactions.current].slice(-100));
+    }
+    setReactionActiveUntil(Date.now() + REACTION_ACTIVE_MS);
+    setReactions((current) => [...current, ...fresh].slice(-MAX_REACTIONS_ON_SCREEN));
+    const ids = new Set(fresh.map((reaction) => reaction.id));
+    setTimeout(() => {
+      setReactions((current) => current.filter((reaction) => !ids.has(reaction.id)));
+    }, REACTION_FLOAT_MS);
+  }, []);
+
   const loadCurrent = useCallback(async () => {
     setPhase("loading");
     setError("");
@@ -709,6 +749,7 @@ function BattleScreen({
       // Um duelo em andamento tem prioridade: o tempo de turno está correndo.
       if (activeDuel) {
         seqRef.current = activeDuel.seq;
+        resetReactions();
         setupPath.current = { screen: "arena", arena: "pvp", duel: "list" };
         setView(received(activeDuel));
         setLog([{ id: "resume", text: "Duel resumed.", kind: "round" }]);
@@ -727,7 +768,7 @@ function BattleScreen({
       setError("Could not reach the arena.");
       setPhase("error");
     }
-  }, [request]);
+  }, [request, resetReactions]);
 
   useEffect(() => {
     // Carrega da API ao abrir a tela (o estado vem da resposta).
@@ -1013,6 +1054,7 @@ function BattleScreen({
       const { ok, data } = await request("/pvp/battle?since=0");
       if (!ok || !data.battle) return;
       seqRef.current = data.battle.seq;
+      resetReactions();
       setupPath.current = { screen: "arena", arena: "pvp", duel: "list" };
       setResult(null);
       setSelectedSkill(null);
@@ -1034,7 +1076,7 @@ function BattleScreen({
     } finally {
       enteringDuel.current = false;
     }
-  }, [request]);
+  }, [request, resetReactions]);
 
   // Abre o duelo de outros jogadores para assistir (só leitura).
   const watchDuel = useCallback(
@@ -1059,6 +1101,7 @@ function BattleScreen({
         const { battle } = data;
         seqRef.current = battle.seq;
         idlePolls.current = 0;
+        resetReactions();
         setSelectedSkill(null);
         setInspectedId(null);
         setAutoMode(false);
@@ -1082,20 +1125,27 @@ function BattleScreen({
         openingWatch.current = null;
       }
     },
-    [request, enterDuel]
+    [request, enterDuel, resetReactions]
   );
 
   // Busca o que mudou no duelo desde o último lote recebido.
   const syncDuel = useCallback(async () => {
     const battleId = battleIdRef.current;
+    // Sem cursor ainda, o servidor só devolve o cursor (as reações começam ali).
+    const reactionsSince = `&reactionsSince=${reactionCursor.current ?? ""}`;
     const path = spectatingRef.current
-      ? `/pvp/watch?battleId=${encodeURIComponent(battleId)}&since=${seqRef.current}`
-      : `/pvp/battle?since=${seqRef.current}${battleId ? `&battleId=${encodeURIComponent(battleId)}` : ""}`;
+      ? `/pvp/watch?battleId=${encodeURIComponent(battleId)}&since=${seqRef.current}${reactionsSince}`
+      : `/pvp/battle?since=${seqRef.current}${battleId ? `&battleId=${encodeURIComponent(battleId)}` : ""}${reactionsSince}`;
     const { ok, data } = await request(path);
     if (!ok || !data.battle) return;
+    if (data.reactionsCursor != null) reactionCursor.current = data.reactionsCursor;
+    const reacted = (data.reactions ?? []).some(
+      (reaction) => !seenReactions.current.has(reaction.id)
+    );
+    showReactions(data.reactions);
     if (data.unchanged) {
-      // Nada novo: só atualiza o tempo de turno.
-      idlePolls.current += 1;
+      // Nada novo: só atualiza o tempo de turno (e mostra as reações).
+      idlePolls.current = reacted ? 0 : idlePolls.current + 1;
       setView((current) =>
         current
           ? { ...current, turnSecondsLeft: data.battle.turnSecondsLeft, receivedAt: Date.now() }
@@ -1111,7 +1161,41 @@ function BattleScreen({
     } else {
       setView(received(data.battle));
     }
-  }, [request]);
+  }, [request, showReactions]);
+
+  const sendReaction = useCallback(
+    async (reactionId) => {
+      if (!view || view.mode !== "pvp") return;
+      try {
+        const { ok, status, data } = await request("/pvp/battle/reactions", {
+          method: "POST",
+          body: JSON.stringify({ battleId: view.battleId, reaction: reactionId }),
+        });
+        if (ok) {
+          showReactions([data.reaction]);
+          setReactionWaitUntil(Date.now() + (data.reactionCooldownSeconds ?? 0) * 1000);
+          return;
+        }
+        if (status === 429) {
+          setReactionWaitUntil(Date.now() + (data.retryAfterSeconds ?? 1) * 1000);
+          return;
+        }
+        setError(data.message ?? "Could not send the reaction.");
+      } catch (reactionError) {
+        if (reactionError instanceof SessionExpired) return;
+        console.error(reactionError);
+      }
+    },
+    [view, request, showReactions]
+  );
+
+  // Libera a paleta quando acaba a espera dada pelo servidor.
+  useEffect(() => {
+    const wait = reactionWaitUntil - Date.now();
+    if (wait <= 0) return undefined;
+    const timer = setTimeout(() => setReactionWaitUntil(0), wait);
+    return () => clearTimeout(timer);
+  }, [reactionWaitUntil]);
 
   const sendAction = useCallback(
     async (action) => {
@@ -1202,10 +1286,25 @@ function BattleScreen({
       idlePolls.current < 0
         ? 0
         : Math.min(DUEL_POLL_MAX_MS, DUEL_POLL_MS * DUEL_POLL_GROWTH ** idlePolls.current);
+    // Alguém reagiu há pouco (ou ainda não há cursor das reações): consulta
+    // com mais frequência para as reações chegarem, mesmo na própria vez.
+    const now = Date.now();
+    const reactionPoll =
+      reactionCursor.current == null
+        ? DUEL_POLL_MS
+        : reactionActiveUntil > now
+          ? REACTION_POLL_MS
+          : null;
     if (view.yourTurn && delay > 0) {
-      if (view.turnSecondsLeft == null) return undefined;
-      const elapsed = Date.now() - (view.receivedAt ?? Date.now());
-      delay = Math.max(DUEL_POLL_MS, view.turnSecondsLeft * 1000 - elapsed + TURN_END_MARGIN_MS);
+      const elapsed = now - (view.receivedAt ?? now);
+      const turnEnd =
+        view.turnSecondsLeft == null
+          ? null
+          : Math.max(DUEL_POLL_MS, view.turnSecondsLeft * 1000 - elapsed + TURN_END_MARGIN_MS);
+      if (turnEnd == null && reactionPoll == null) return undefined;
+      delay = Math.min(turnEnd ?? Infinity, reactionPoll ?? Infinity);
+    } else if (reactionPoll != null) {
+      delay = Math.min(delay, reactionPoll);
     }
     const timer = setTimeout(() => {
       syncDuel().catch((pollError) => {
@@ -1217,7 +1316,7 @@ function BattleScreen({
       });
     }, delay);
     return () => clearTimeout(timer);
-  }, [inDuel, pageVisible, view, playback, busy, syncDuel]);
+  }, [inDuel, pageVisible, view, playback, busy, syncDuel, reactionActiveUntil]);
 
   // Relógio da tela para o tempo de turno do duelo.
   useEffect(() => {
@@ -1586,6 +1685,13 @@ function BattleScreen({
           · Round {view.round}/{view.maxRounds}
         </span>
         <SurgeChip surge={view.surge} round={view.round} />
+        {duel && view.status === "active" && view.reactionOptions?.length > 0 && (
+          <ReactionPicker
+            options={view.reactionOptions}
+            coolingDown={reactionWaitUntil > 0}
+            onSend={(reactionId) => void sendReaction(reactionId)}
+          />
+        )}
         <button
           type="button"
           className="battle-menu-button"
@@ -1755,6 +1861,8 @@ function BattleScreen({
           </p>
         )}
       </div>
+
+      {duel && <ReactionLayer reactions={reactions} />}
 
       {inspectedUnit && (
         <UnitDetails

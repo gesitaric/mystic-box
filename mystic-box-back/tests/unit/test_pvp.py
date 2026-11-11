@@ -26,6 +26,7 @@ TABLES = {
     "wallet": ("userId", None),
     "ascensions": ("userId", "file_name"),
     "presence": ("lobbyId", "userId"),
+    "reactions": ("battleId", "reactionKey"),
 }
 
 
@@ -70,6 +71,7 @@ def db(monkeypatch, clock):
         "USER_WALLET_TABLE": "wallet",
         "CARD_ASCENSIONS_TABLE": "ascensions",
         "PVP_PRESENCE_TABLE": "presence",
+        "PVP_REACTIONS_TABLE": "reactions",
     }
     for module in (pvp_battle, pvp_challenges):
         monkeypatch.setattr(module, "_client", fake)
@@ -907,3 +909,130 @@ def test_spectator_sees_who_won(authenticated_event, db):
     }
     end = next(e for e in body["events"] if e["type"] == "end")
     assert end["winner"] == "player" and end["reason"] == "forfeit"
+
+
+# ---------------------------------------------------------------- reações ---
+
+
+def react(authenticated_event, user, battle_id, reaction):
+    return call(
+        pvp_battle,
+        request(authenticated_event, user, "POST", "/pvp/battle/reactions",
+                {"battleId": battle_id, "reaction": reaction}),
+    )
+
+
+def poll(authenticated_event, user, battle_id, reactions_since, since=None):
+    query = {"battleId": battle_id, "reactionsSince": str(reactions_since)}
+    if since is not None:
+        query["since"] = str(since)
+    route = "/pvp/watch" if user == CAROL else "/pvp/battle"
+    return call(pvp_battle, request(authenticated_event, user, "GET", route, query=query))
+
+
+def test_reaction_quota_cooldown_and_window():
+    quota = pvp.reaction_quota(None, 0)
+    assert quota == {"lastAt": 0, "windowStart": 0, "count": 1}
+    with pytest.raises(pvp.ReactionLimited) as limited:
+        pvp.reaction_quota(quota, 500)
+    assert limited.value.retry_after == 2
+
+    step = pvp.REACTION_COOLDOWN_SECONDS * 1000
+    at = 0
+    for _ in range(pvp.MAX_REACTIONS_PER_WINDOW - 1):
+        at += step
+        quota = pvp.reaction_quota(quota, at)
+    assert quota["count"] == pvp.MAX_REACTIONS_PER_WINDOW
+    with pytest.raises(pvp.ReactionLimited) as limited:
+        pvp.reaction_quota(quota, at + step)
+    window_ms = pvp.REACTION_WINDOW_SECONDS * 1000
+    assert limited.value.retry_after == -(-(window_ms - at - step) // 1000)
+    # Nova janela: começa a contar de novo.
+    assert pvp.reaction_quota(quota, window_ms)["count"] == 1
+
+
+def test_recent_reactions_flip_sides_and_skip_old():
+    reactions = [
+        {"key": pvp.reaction_key(2000, "b"), "at": 2000, "expiresAt": 100,
+         "reaction": "fire", "side": "enemy", "username": "Bob", "senderId": BOB},
+        {"key": pvp.reaction_key(1000, "a"), "at": 1000, "expiresAt": 100,
+         "reaction": "clap", "side": "player", "username": "Alice", "senderId": ALICE},
+        {"key": pvp.reaction_key(3000, "c"), "at": 3000, "expiresAt": 1,
+         "reaction": "wow", "side": "spectator", "username": None, "senderId": CAROL},
+    ]
+    seen = pvp.recent_reactions(reactions, 500, 4000, "enemy", BOB)
+    assert [(r["emoji"], r["side"], r["isYou"]) for r in seen] == [
+        ("👏", "enemy", False),
+        ("🔥", "player", True),
+    ]
+    assert pvp.recent_reactions(reactions, 1000, 4000, None, CAROL)[0]["side"] == "enemy"
+
+
+def test_players_and_spectators_see_reactions(authenticated_event, db, clock):
+    battle_id = start_duel(authenticated_event)
+    _, first = poll(authenticated_event, BOB, battle_id, "")
+    assert first["reactions"] == []
+    cursor = first["reactionsCursor"]
+
+    status, body = react(authenticated_event, ALICE, battle_id, "fire")
+    assert status == 201, body
+    assert body["reaction"]["emoji"] == "🔥" and body["reaction"]["isYou"] is True
+    assert body["reaction"]["side"] == "player"
+    clock["value"] += 1
+    status, body = react(authenticated_event, CAROL, battle_id, "clap")
+    assert status == 201, body
+    assert body["reaction"]["side"] == "spectator"
+
+    # Bob vê Alice do lado inimigo, mesmo sem nada novo no duelo.
+    _, seen = poll(authenticated_event, BOB, battle_id, cursor, since=first["battle"]["seq"])
+    assert seen["unchanged"] is True
+    assert [(r["username"], r["emoji"], r["side"]) for r in seen["reactions"]] == [
+        ("Alice", "🔥", "enemy"),
+        ("Carol", "👏", "spectator"),
+    ]
+    # Quem assiste vê os lados como estão guardados.
+    _, watched = poll(authenticated_event, CAROL, battle_id, cursor)
+    assert [(r["username"], r["side"], r["isYou"]) for r in watched["reactions"]] == [
+        ("Alice", "player", False),
+        ("Carol", "spectator", True),
+    ]
+    # Reações não mexem no duelo.
+    assert stored_state(db, battle_id)["seq"] == first["battle"]["seq"]
+
+
+def test_reactions_need_the_cursor(authenticated_event, db):
+    battle_id = start_duel(authenticated_event)
+    _, body = current(authenticated_event, ALICE)
+    assert "reactions" not in body
+
+
+def test_reaction_cooldown_is_checked_on_the_server(authenticated_event, db, clock):
+    battle_id = start_duel(authenticated_event)
+    assert react(authenticated_event, ALICE, battle_id, "fire")[0] == 201
+    status, body = react(authenticated_event, ALICE, battle_id, "fire")
+    assert status == 429 and body["retryAfterSeconds"] == pvp.REACTION_COOLDOWN_SECONDS
+    # Cada pessoa tem o próprio limite.
+    assert react(authenticated_event, BOB, battle_id, "gg")[0] == 201
+    clock["value"] += pvp.REACTION_COOLDOWN_SECONDS
+    assert react(authenticated_event, ALICE, battle_id, "fire")[0] == 201
+
+
+@pytest.mark.parametrize("reaction", ["", "💩", "hello world", None, 3])
+def test_reaction_must_be_on_the_list(authenticated_event, db, reaction):
+    battle_id = start_duel(authenticated_event)
+    assert react(authenticated_event, ALICE, battle_id, reaction)[0] == 400
+
+
+def test_reactions_only_in_active_duels(authenticated_event, db):
+    assert react(authenticated_event, ALICE, "nope", "fire")[0] == 404
+    battle_id = start_duel(authenticated_event)
+    act(authenticated_event, BOB, {"battleId": battle_id, "type": "forfeit"})
+    assert react(authenticated_event, CAROL, battle_id, "fire")[0] == 409
+
+
+def test_old_reactions_are_not_sent(authenticated_event, db, clock):
+    battle_id = start_duel(authenticated_event)
+    react(authenticated_event, ALICE, battle_id, "fire")
+    clock["value"] += pvp.REACTION_TTL_SECONDS + 1
+    _, body = poll(authenticated_event, BOB, battle_id, 0)
+    assert body["reactions"] == []
