@@ -27,6 +27,12 @@ def test_get_rules_is_public_and_uses_server_constants(apigw_event):
     assert data["progression"]["maxLevel"] == progression.MAX_LEVEL
     assert data["battle"]["teamSize"] == battle.TEAM_SIZE
     assert data["battle"]["aether"]["max"] == battle.MAX_AETHER
+    assert data["battle"]["surge"] == {
+        "startRound": battle.SURGE_START_ROUND,
+        "damagePerRoundPercent": round(battle.SURGE_DAMAGE_PER_ROUND * 100, 1),
+        "healPerRoundPercent": round(battle.SURGE_HEAL_PER_ROUND * 100, 1),
+        "noHealRound": battle.SURGE_NO_HEAL_ROUND,
+    }
     assert {d["id"] for d in data["battle"]["difficulties"]} == set(battle.DIFFICULTIES)
     assert {s["id"] for s in data["battle"]["statuses"]} == set(battle.STATUSES)
 

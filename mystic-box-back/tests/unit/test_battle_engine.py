@@ -186,8 +186,8 @@ def test_guard_halves_damage():
     guarded = json.loads(json.dumps(defender))
     guarded["statuses"]["guard"] = {"turns": 1}
 
-    normal = battle._deal_damage(attacker, defender, 1.0, "physical", FixedRng(), [])
-    reduced = battle._deal_damage(attacker, guarded, 1.0, "physical", FixedRng(), [])
+    normal = battle._deal_damage(None, attacker, defender, 1.0, "physical", FixedRng(), [])
+    reduced = battle._deal_damage(None, attacker, guarded, 1.0, "physical", FixedRng(), [])
 
     assert reduced == pytest.approx(normal / 2, abs=1)
 
@@ -198,7 +198,7 @@ def test_shield_absorbs_damage():
     defender["statuses"]["shield"] = {"turns": 2, "value": 1000}
     events = []
 
-    battle._deal_damage(attacker, defender, 1.0, "physical", FixedRng(), events)
+    battle._deal_damage(None, attacker, defender, 1.0, "physical", FixedRng(), events)
 
     assert defender["hp"] == defender["maxHp"]
     assert events[0]["amount"] == 0 and events[0]["absorbed"] > 0
@@ -212,8 +212,8 @@ def test_element_advantage_increases_damage():
     tide["stats"] = dict(gale["stats"])
     events = []
 
-    strong = battle._deal_damage(ember, gale, 1.0, "physical", FixedRng(), events)
-    weak = battle._deal_damage(ember, tide, 1.0, "physical", FixedRng(), events)
+    strong = battle._deal_damage(None, ember, gale, 1.0, "physical", FixedRng(), events)
+    weak = battle._deal_damage(None, ember, tide, 1.0, "physical", FixedRng(), events)
 
     assert events[0]["effectiveness"] == "strong"
     assert events[1]["effectiveness"] == "weak"
@@ -498,13 +498,13 @@ def test_rivals_on_opposite_sides_face_off_and_hit_harder():
 
     gorvane, brannoc, corvus = unit(state, "p0"), unit(state, "e0"), unit(state, "e1")
     hits = []
-    battle._deal_damage(gorvane, brannoc, 1.0, "physical", FixedRng(), hits)
+    battle._deal_damage(None, gorvane, brannoc, 1.0, "physical", FixedRng(), hits)
     rival_hit = hits[0]
     assert rival_hit["rival"] is True
     plain = []
     gorvane["rivals"] = []
     brannoc["hp"] = brannoc["maxHp"]
-    battle._deal_damage(gorvane, brannoc, 1.0, "physical", FixedRng(), plain)
+    battle._deal_damage(None, gorvane, brannoc, 1.0, "physical", FixedRng(), plain)
     assert "rival" not in plain[0]
     assert rival_hit["amount"] > plain[0]["amount"]
     assert corvus["rivals"] == []
@@ -667,3 +667,89 @@ def test_bonded_cards_on_opposite_sides_only_exchange_words():
     seen_by_rival = next(e for e in battle.view_events(events, "enemy")
                          if e["type"] == "bondTorn")
     assert (seen_by_rival["actor"], seen_by_rival["target"]) == ("e0", "p0")
+
+
+# ------------------------------------------------------------ Maré de Aether ---
+
+
+def test_surge_starts_at_its_round_and_grows():
+    state, _ = new_battle()
+    state["round"] = battle.SURGE_START_ROUND - 1
+    assert battle.surge_level(state) == 0
+    assert battle.surge_damage_multiplier(state) == 1
+    assert battle.surge_heal_multiplier(state) == 1
+
+    state["round"] = battle.SURGE_START_ROUND + 1
+    assert battle.surge_level(state) == 2
+    assert battle.surge_damage_multiplier(state) == pytest.approx(
+        1 + 2 * battle.SURGE_DAMAGE_PER_ROUND)
+    assert battle.surge_heal_multiplier(state) == pytest.approx(
+        1 - 2 * battle.SURGE_HEAL_PER_ROUND)
+
+    state["round"] = battle.SURGE_NO_HEAL_ROUND
+    assert battle.surge_heal_multiplier(state) == 0
+    state["round"] = battle.SURGE_NO_HEAL_ROUND - 1
+    assert battle.surge_heal_multiplier(state) > 0
+
+
+def test_surge_increases_damage():
+    state, _ = new_battle()
+    attacker = battle.build_unit(cards.get_character("kael.jfif"), "enemy", 0, 1)
+    defender = battle.build_unit(cards.get_character("rowan.jfif"), "player", 0, 1)
+    defender["maxHp"] = defender["hp"] = 100000
+
+    state["round"] = 1
+    normal = battle._deal_damage(state, attacker, defender, 1.0, "physical", FixedRng(), [])
+    state["round"] = battle.SURGE_START_ROUND
+    surged = battle._deal_damage(state, attacker, defender, 1.0, "physical", FixedRng(), [])
+
+    assert surged == pytest.approx(normal * (1 + battle.SURGE_DAMAGE_PER_ROUND), abs=1)
+
+
+def test_surge_reduces_healing_until_zero():
+    state, _ = new_battle()
+    target = unit(state, "p0")
+    target["hp"] = 1
+
+    state["round"] = battle.SURGE_START_ROUND
+    healed = battle._heal(state, target, 100, [])
+    assert healed == round(100 * (1 - battle.SURGE_HEAL_PER_ROUND))
+
+    state["round"] = battle.SURGE_NO_HEAL_ROUND
+    events = []
+    assert battle._heal(state, target, 100, events) == 0
+    assert events[0]["amount"] == 0
+
+
+def test_surge_event_and_public_state():
+    state, _ = new_battle()
+    state["round"] = battle.SURGE_START_ROUND - 1
+    state["queue"] = []
+    events = []
+    battle._start_round(state, random.Random(1), events)
+
+    surge = next(e for e in events if e["type"] == "surge")
+    assert surge["round"] == battle.SURGE_START_ROUND
+    assert surge["level"] == 1
+    assert surge["damageBonusPercent"] == round(battle.SURGE_DAMAGE_PER_ROUND * 100)
+    assert surge["healPenaltyPercent"] == round(battle.SURGE_HEAL_PER_ROUND * 100)
+    assert battle.public_state(state)["surge"]["level"] == 1
+
+
+def test_no_surge_event_before_its_round():
+    state, events = new_battle()
+    assert all(e["type"] != "surge" for e in events)
+    assert battle.public_state(state)["surge"]["level"] == 0
+
+
+def test_defensive_mirror_ends_before_round_limit():
+    """Vanguarda + duas Místicas dos dois lados não fica em empate eterno."""
+    challenger = team("leoric.jfif", "seraphiel.jfif", "lunara.jfif")
+    opponent = team("uriel.jfif", "elysia.jfif", "sylva.jfif")
+    for seed in range(20):
+        rng = random.Random(seed)
+        state, _ = battle.create_pvp_battle("duel", challenger, 30, opponent, 30, rng)
+        while state["status"] == "active":
+            side = unit(state, state["turn"])["side"]
+            battle.play_turn(state, {"type": "auto"}, rng, side=side)
+        assert state["endReason"] != "timeout"
