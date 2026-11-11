@@ -121,6 +121,12 @@ def _battle_rules():
             "perTurn": battle.AETHER_PER_TURN,
             "basicSkillBonus": battle.BASIC_SKILL_AETHER,
         },
+        "surge": {
+            "startRound": battle.SURGE_START_ROUND,
+            "damagePerRoundPercent": _percent(battle.SURGE_DAMAGE_PER_ROUND),
+            "healPerRoundPercent": _percent(battle.SURGE_HEAL_PER_ROUND),
+            "noHealRound": battle.SURGE_NO_HEAL_ROUND,
+        },
         "damage": {
             "defenseConstant": battle.DEFENSE_CONSTANT,
             "variancePercent": _percent(battle.DAMAGE_VARIANCE),

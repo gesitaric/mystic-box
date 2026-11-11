@@ -115,6 +115,30 @@ function needsTarget(action) {
 }
 
 // Ressonância de região do time (calculada no servidor). Tocar abre o efeito.
+// Maré de Aether: os números vêm do estado da batalha (`surge`).
+function SurgeChip({ surge, round }) {
+  if (!surge) return null;
+  if (surge.level > 0) {
+    return (
+      <span
+        className="battle-surge is-active"
+        title="Aether Surge: every round, attacks hit harder and healing gets weaker."
+      >
+        🌊 +{surge.damageBonusPercent}% dmg · −{surge.healPenaltyPercent}% heal
+      </span>
+    );
+  }
+  const roundsLeft = surge.startRound - round;
+  if (roundsLeft > 0 && roundsLeft <= 2) {
+    return (
+      <span className="battle-surge" title="Aether Surge: attacks hit harder and healing gets weaker.">
+        🌊 Surge in {roundsLeft}
+      </span>
+    );
+  }
+  return null;
+}
+
 function ResonanceChip({ resonance, side }) {
   if (!resonance) return null;
   return (
@@ -812,6 +836,9 @@ function BattleScreen({
           break;
         case "resonance":
           sfx.status(true);
+          break;
+        case "surge":
+          sfx.status(false);
           break;
         case "duo":
           sfx.cast(unitsById[event.target]?.element, false);
@@ -1657,6 +1684,7 @@ function BattleScreen({
               : view.difficultyLabel}{" "}
           · Round {view.round}/{view.maxRounds}
         </span>
+        <SurgeChip surge={view.surge} round={view.round} />
         {duel && view.status === "active" && view.reactionOptions?.length > 0 && (
           <ReactionPicker
             options={view.reactionOptions}

@@ -1666,6 +1666,28 @@
   color: #a8e6ff;
 }
 
+.battle-log-entry.is-surge {
+  color: #ffb38a;
+  font-weight: 700;
+}
+
+.battle-surge {
+  flex-shrink: 0;
+  padding: 3px 8px;
+  border: 1px solid rgba(159, 216, 255, 0.45);
+  border-radius: 999px;
+  color: #9fd8ff;
+  font-size: 11px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.battle-surge.is-active {
+  border-color: rgba(255, 179, 138, 0.6);
+  color: #ffb38a;
+  box-shadow: 0 0 10px rgba(255, 140, 90, 0.35);
+}
+
 .battle-float.is-resonance {
   top: 40%;
   color: #9fe6ff;
