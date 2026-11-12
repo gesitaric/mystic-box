@@ -1,0 +1,1346 @@
+{
+  "regions": [
+    {
+      "region": "hrimvald",
+      "regionName": "Hrimvald",
+      "cleared": 0,
+      "total": 3,
+      "complete": false,
+      "epilogue": null,
+      "stages": [
+        {
+          "stage": 1,
+          "name": "Wolf Tracks",
+          "intro": "Fenric's hunting party mistakes you for poachers in the northern snow.",
+          "boss": false,
+          "enemies": [
+            {
+              "file_name": "fenric.jfif",
+              "name": "Fenric",
+              "rarity": 4
+            },
+            {
+              "file_name": "tavik.jfif",
+              "name": "Tavik",
+              "rarity": 4
+            },
+            {
+              "file_name": "verdana.jfif",
+              "name": "Verdana",
+              "rarity": 4
+            }
+          ],
+          "enemyLevel": 1,
+          "experience": 50,
+          "reward": 30,
+          "cleared": false,
+          "unlocked": true
+        },
+        {
+          "stage": 2,
+          "name": "The Frozen Lake",
+          "intro": "Glacius guards the lake where Hrimfang's old pack sleeps under the ice.",
+          "boss": false,
+          "enemies": [
+            {
+              "file_name": "glacius.jfif",
+              "name": "Glacius",
+              "rarity": 4
+            },
+            {
+              "file_name": "fenric.jfif",
+              "name": "Fenric",
+              "rarity": 4
+            },
+            {
+              "file_name": "tavik.jfif",
+              "name": "Tavik",
+              "rarity": 4
+            }
+          ],
+          "enemyLevel": 1,
+          "experience": 70,
+          "reward": 50,
+          "cleared": false,
+          "unlocked": false
+        },
+        {
+          "stage": 3,
+          "name": "The Knight of the Frostgate",
+          "intro": "Boreas stands at the Frostgate with her squire and the lost son of the pack.",
+          "boss": true,
+          "enemies": [
+            {
+              "file_name": "boreas.jfif",
+              "name": "Boreas",
+              "rarity": 5
+            },
+            {
+              "file_name": "glacius.jfif",
+              "name": "Glacius",
+              "rarity": 4
+            },
+            {
+              "file_name": "fenric.jfif",
+              "name": "Fenric",
+              "rarity": 4
+            }
+          ],
+          "enemyLevel": 3,
+          "experience": 110,
+          "reward": 100,
+          "cleared": false,
+          "unlocked": false
+        }
+      ]
+    },
+    {
+      "region": "zephyrine",
+      "regionName": "The Zephyrine Isles",
+      "cleared": 0,
+      "total": 3,
+      "complete": false,
+      "epilogue": null,
+      "stages": [
+        {
+          "stage": 1,
+          "name": "Sky Guard Patrol",
+          "intro": "A patrol of the sky guard intercepts your airship, with two stowaways from Cogsreach on board.",
+          "boss": false,
+          "enemies": [
+            {
+              "file_name": "kyrielle.jfif",
+              "name": "Kyrielle",
+              "rarity": 5
+            },
+            {
+              "file_name": "dorian.jfif",
+              "name": "Dorian",
+              "rarity": 4
+            },
+            {
+              "file_name": "brina.jfif",
+              "name": "Brina",
+              "rarity": 3
+            }
+          ],
+          "enemyLevel": 1,
+          "experience": 50,
+          "reward": 30,
+          "cleared": false,
+          "unlocked": true
+        },
+        {
+          "stage": 2,
+          "name": "The Sovereign's Citadel",
+          "intro": "Draemir receives you in his citadel, with his niece and the boy from the burning mountain.",
+          "boss": false,
+          "enemies": [
+            {
+              "file_name": "draemir.jfif",
+              "name": "Draemir",
+              "rarity": 5
+            },
+            {
+              "file_name": "drakara.jfif",
+              "name": "Drakara",
+              "rarity": 5
+            },
+            {
+              "file_name": "pyralis.jfif",
+              "name": "Pyralis",
+              "rarity": 4
+            }
+          ],
+          "enemyLevel": 1,
+          "experience": 70,
+          "reward": 50,
+          "cleared": false,
+          "unlocked": false
+        },
+        {
+          "stage": 3,
+          "name": "The Drifting Throne",
+          "intro": "The empress herself takes the field, flanked by her captain and the oldest dragon in the sky.",
+          "boss": true,
+          "enemies": [
+            {
+              "file_name": "vaelora.jfif",
+              "name": "Vaelora",
+              "rarity": 5
+            },
+            {
+              "file_name": "kyrielle.jfif",
+              "name": "Kyrielle",
+              "rarity": 5
+            },
+            {
+              "file_name": "draemir.jfif",
+              "name": "Draemir",
+              "rarity": 5
+            }
+          ],
+          "enemyLevel": 3,
+          "experience": 110,
+          "reward": 100,
+          "cleared": false,
+          "unlocked": false
+        }
+      ]
+    },
+    {
+      "region": "nocthaven",
+      "regionName": "Nocthaven",
+      "cleared": 0,
+      "total": 3,
+      "complete": false,
+      "epilogue": null,
+      "stages": [
+        {
+          "stage": 1,
+          "name": "The Crypt Gates",
+          "intro": "The keepers of the crypts do not let strangers pass, least of all strangers who carry the Box's mark.",
+          "boss": false,
+          "enemies": [
+            {
+              "file_name": "morwen.jfif",
+              "name": "Morwen",
+              "rarity": 4
+            },
+            {
+              "file_name": "nocturna.jfif",
+              "name": "Nocturna",
+              "rarity": 4
+            },
+            {
+              "file_name": "amethia.jfif",
+              "name": "Amethia",
+              "rarity": 4
+            }
+          ],
+          "enemyLevel": 1,
+          "experience": 50,
+          "reward": 30,
+          "cleared": false,
+          "unlocked": true
+        },
+        {
+          "stage": 2,
+          "name": "The Shadow Court",
+          "intro": "Zarathor's court gathers: the tyrant, his assassin and the widow sworn to kill him, side by side for one night.",
+          "boss": false,
+          "enemies": [
+            {
+              "file_name": "zarathor.jfif",
+              "name": "Zarathor",
+              "rarity": 5
+            },
+            {
+              "file_name": "vesper.jfif",
+              "name": "Vesper",
+              "rarity": 4
+            },
+            {
+              "file_name": "morwen.jfif",
+              "name": "Morwen",
+              "rarity": 4
+            }
+          ],
+          "enemyLevel": 1,
+          "experience": 70,
+          "reward": 50,
+          "cleared": false,
+          "unlocked": false
+        },
+        {
+          "stage": 3,
+          "name": "The Last Warden",
+          "intro": "In the high tower, Malachar closes his tome. His jester laughs. A raven of violet fire watches from the window.",
+          "boss": true,
+          "enemies": [
+            {
+              "file_name": "malachar.jfif",
+              "name": "Malachar",
+              "rarity": 5
+            },
+            {
+              "file_name": "mortis.jfif",
+              "name": "Mortis",
+              "rarity": 5
+            },
+            {
+              "file_name": "ravenna.png",
+              "name": "Ravenna",
+              "rarity": 4
+            }
+          ],
+          "enemyLevel": 3,
+          "experience": 110,
+          "reward": 100,
+          "cleared": false,
+          "unlocked": false
+        }
+      ]
+    },
+    {
+      "region": "skyspire",
+      "regionName": "The Skyspire",
+      "cleared": 0,
+      "total": 3,
+      "complete": false,
+      "epilogue": null,
+      "stages": [
+        {
+          "stage": 1,
+          "name": "The Observatory Steps",
+          "intro": "The huntress, the archer and an apprentice from Greenhollow guard the way to the observatory.",
+          "boss": false,
+          "enemies": [
+            {
+              "file_name": "stellara.jfif",
+              "name": "Stellara",
+              "rarity": 4
+            },
+            {
+              "file_name": "lyra.png",
+              "name": "Lyra",
+              "rarity": 5
+            },
+            {
+              "file_name": "albin.jfif",
+              "name": "Albin",
+              "rarity": 3
+            }
+          ],
+          "enemyLevel": 1,
+          "experience": 50,
+          "reward": 30,
+          "cleared": false,
+          "unlocked": true
+        },
+        {
+          "stage": 2,
+          "name": "The Drifting Cathedral",
+          "intro": "Elysia's cathedral is anchored for one night. Its guardians do not like visitors.",
+          "boss": false,
+          "enemies": [
+            {
+              "file_name": "elysia.jfif",
+              "name": "Elysia",
+              "rarity": 5
+            },
+            {
+              "file_name": "uriel.jfif",
+              "name": "Uriel",
+              "rarity": 5
+            },
+            {
+              "file_name": "seraphiel.jfif",
+              "name": "Seraphiel",
+              "rarity": 5
+            }
+          ],
+          "enemyLevel": 1,
+          "experience": 70,
+          "reward": 50,
+          "cleared": false,
+          "unlocked": false
+        },
+        {
+          "stage": 3,
+          "name": "Where Stars Fall",
+          "intro": "Astra draws the stars down onto the battlefield. Lyra keeps shooting more of them loose.",
+          "boss": true,
+          "enemies": [
+            {
+              "file_name": "astra.jfif",
+              "name": "Astra",
+              "rarity": 5
+            },
+            {
+              "file_name": "lyra.png",
+              "name": "Lyra",
+              "rarity": 5
+            },
+            {
+              "file_name": "uriel.jfif",
+              "name": "Uriel",
+              "rarity": 5
+            }
+          ],
+          "enemyLevel": 3,
+          "experience": 110,
+          "reward": 100,
+          "cleared": false,
+          "unlocked": false
+        }
+      ]
+    },
+    {
+      "region": "greenhollow",
+      "regionName": "Greenhollow Vale",
+      "cleared": 0,
+      "total": 3,
+      "complete": false,
+      "epilogue": null,
+      "stages": [
+        {
+          "stage": 1,
+          "name": "Market Day Brawl",
+          "intro": "A misunderstanding at the market turns into a brawl. The farm boy swings his grandfather's sword.",
+          "boss": false,
+          "enemies": [
+            {
+              "file_name": "tobin.jfif",
+              "name": "Tobin",
+              "rarity": 3
+            },
+            {
+              "file_name": "albin.jfif",
+              "name": "Albin",
+              "rarity": 3
+            },
+            {
+              "file_name": "wren.jfif",
+              "name": "Wren",
+              "rarity": 3
+            }
+          ],
+          "enemyLevel": 1,
+          "experience": 50,
+          "reward": 30,
+          "cleared": false,
+          "unlocked": true
+        },
+        {
+          "stage": 2,
+          "name": "The Mirewood",
+          "intro": "Glowing mushrooms, a runaway slime and an alchemist who does not want to be followed.",
+          "boss": false,
+          "enemies": [
+            {
+              "file_name": "silas.jfif",
+              "name": "Silas",
+              "rarity": 3
+            },
+            {
+              "file_name": "wren.jfif",
+              "name": "Wren",
+              "rarity": 3
+            },
+            {
+              "file_name": "maelis.jfif",
+              "name": "Maelis",
+              "rarity": 3
+            }
+          ],
+          "enemyLevel": 1,
+          "experience": 70,
+          "reward": 50,
+          "cleared": false,
+          "unlocked": false
+        },
+        {
+          "stage": 3,
+          "name": "The Witch of the Swamp",
+          "intro": "Grizelda has been expecting you. She even made tea.",
+          "boss": true,
+          "enemies": [
+            {
+              "file_name": "grizelda.jfif",
+              "name": "Grizelda",
+              "rarity": 4
+            },
+            {
+              "file_name": "silas.jfif",
+              "name": "Silas",
+              "rarity": 3
+            },
+            {
+              "file_name": "wren.jfif",
+              "name": "Wren",
+              "rarity": 3
+            }
+          ],
+          "enemyLevel": 3,
+          "experience": 110,
+          "reward": 100,
+          "cleared": false,
+          "unlocked": false
+        }
+      ]
+    },
+    {
+      "region": "sylvaran",
+      "regionName": "The Sylvaran Wilds",
+      "cleared": 0,
+      "total": 3,
+      "complete": false,
+      "epilogue": null,
+      "stages": [
+        {
+          "stage": 1,
+          "name": "The Archers' Glade",
+          "intro": "Two rival archers and a young ranger test every traveler who enters the Wilds.",
+          "boss": false,
+          "enemies": [
+            {
+              "file_name": "faelyn.jfif",
+              "name": "Faelyn",
+              "rarity": 4
+            },
+            {
+              "file_name": "rosalind.jfif",
+              "name": "Rosalind",
+              "rarity": 4
+            },
+            {
+              "file_name": "rowan.jfif",
+              "name": "Rowan",
+              "rarity": 3
+            }
+          ],
+          "enemyLevel": 1,
+          "experience": 50,
+          "reward": 30,
+          "cleared": false,
+          "unlocked": true
+        },
+        {
+          "stage": 2,
+          "name": "The Moon Garden",
+          "intro": "The moon flowers are wilting, and their keepers will not let anyone near them.",
+          "boss": false,
+          "enemies": [
+            {
+              "file_name": "elowen.jfif",
+              "name": "Elowen",
+              "rarity": 4
+            },
+            {
+              "file_name": "liesel.jfif",
+              "name": "Liesel",
+              "rarity": 3
+            },
+            {
+              "file_name": "verdana.jfif",
+              "name": "Verdana",
+              "rarity": 4
+            }
+          ],
+          "enemyLevel": 1,
+          "experience": 70,
+          "reward": 50,
+          "cleared": false,
+          "unlocked": false
+        },
+        {
+          "stage": 3,
+          "name": "The Old Grove",
+          "intro": "Under the oldest tree, the master archer and the voice of the grove guard the child the forest gave birth to.",
+          "boss": true,
+          "enemies": [
+            {
+              "file_name": "thalion.jfif",
+              "name": "Thalion",
+              "rarity": 4
+            },
+            {
+              "file_name": "sylva.jfif",
+              "name": "Sylva",
+              "rarity": 4
+            },
+            {
+              "file_name": "verdana.jfif",
+              "name": "Verdana",
+              "rarity": 4
+            }
+          ],
+          "enemyLevel": 3,
+          "experience": 110,
+          "reward": 100,
+          "cleared": false,
+          "unlocked": false
+        }
+      ]
+    },
+    {
+      "region": "aurelian",
+      "regionName": "The Aurelian Dominion",
+      "cleared": 0,
+      "total": 3,
+      "complete": false,
+      "epilogue": null,
+      "stages": [
+        {
+          "stage": 1,
+          "name": "Ithrel's Doors",
+          "intro": "The shelter of Ithrel defends its doors from anyone who looks like trouble. You look like trouble.",
+          "boss": false,
+          "enemies": [
+            {
+              "file_name": "annelise.jfif",
+              "name": "Annelise",
+              "rarity": 3
+            },
+            {
+              "file_name": "maelis.jfif",
+              "name": "Maelis",
+              "rarity": 3
+            },
+            {
+              "file_name": "albin.jfif",
+              "name": "Albin",
+              "rarity": 3
+            }
+          ],
+          "enemyLevel": 1,
+          "experience": 50,
+          "reward": 30,
+          "cleared": false,
+          "unlocked": true
+        },
+        {
+          "stage": 2,
+          "name": "The Temple of Solmarr",
+          "intro": "The priestess of noon and her stonemason guard the rebuilt temple.",
+          "boss": false,
+          "enemies": [
+            {
+              "file_name": "solara.jfif",
+              "name": "Solara",
+              "rarity": 4
+            },
+            {
+              "file_name": "cassius.png",
+              "name": "Cassius",
+              "rarity": 4
+            },
+            {
+              "file_name": "valeria.jfif",
+              "name": "Valeria",
+              "rarity": 4
+            }
+          ],
+          "enemyLevel": 1,
+          "experience": 70,
+          "reward": 50,
+          "cleared": false,
+          "unlocked": false
+        },
+        {
+          "stage": 3,
+          "name": "The Lion's Gate",
+          "intro": "The last lion knight and the golden twins hold the capital's gate, together for the first time since the Sundering.",
+          "boss": true,
+          "enemies": [
+            {
+              "file_name": "leoric.jfif",
+              "name": "Leoric",
+              "rarity": 5
+            },
+            {
+              "file_name": "aurelius.jfif",
+              "name": "Aurelius",
+              "rarity": 4
+            },
+            {
+              "file_name": "valeria.jfif",
+              "name": "Valeria",
+              "rarity": 4
+            }
+          ],
+          "enemyLevel": 3,
+          "experience": 110,
+          "reward": 100,
+          "cleared": false,
+          "unlocked": false
+        }
+      ]
+    },
+    {
+      "region": "hoshigane",
+      "regionName": "The Hoshigane Isles",
+      "cleared": 0,
+      "total": 3,
+      "complete": false,
+      "epilogue": null,
+      "stages": [
+        {
+          "stage": 1,
+          "name": "The Dojo Steps",
+          "intro": "The younger brother wants to prove himself. He brought friends.",
+          "boss": false,
+          "enemies": [
+            {
+              "file_name": "ryuji.jfif",
+              "name": "Ryuji",
+              "rarity": 3
+            },
+            {
+              "file_name": "hayato.jfif",
+              "name": "Hayato",
+              "rarity": 4
+            },
+            {
+              "file_name": "jory.jfif",
+              "name": "Jory",
+              "rarity": 3
+            }
+          ],
+          "enemyLevel": 1,
+          "experience": 50,
+          "reward": 30,
+          "cleared": false,
+          "unlocked": true
+        },
+        {
+          "stage": 2,
+          "name": "The Burned Castle",
+          "intro": "In the ruins of the Tonbo castle, a shadow guards the last dragonfly swordsman.",
+          "boss": false,
+          "enemies": [
+            {
+              "file_name": "kage.jfif",
+              "name": "Kage",
+              "rarity": 4
+            },
+            {
+              "file_name": "kaito.jfif",
+              "name": "Kaito",
+              "rarity": 4
+            },
+            {
+              "file_name": "ryuji.jfif",
+              "name": "Ryuji",
+              "rarity": 3
+            }
+          ],
+          "enemyLevel": 1,
+          "experience": 70,
+          "reward": 50,
+          "cleared": false,
+          "unlocked": false
+        },
+        {
+          "stage": 3,
+          "name": "Twin Petals",
+          "intro": "Kaito and Hayato draw as one under the cherry trees. Kage watches from the branches.",
+          "boss": true,
+          "enemies": [
+            {
+              "file_name": "kaito.jfif",
+              "name": "Kaito",
+              "rarity": 4
+            },
+            {
+              "file_name": "hayato.jfif",
+              "name": "Hayato",
+              "rarity": 4
+            },
+            {
+              "file_name": "kage.jfif",
+              "name": "Kage",
+              "rarity": 4
+            }
+          ],
+          "enemyLevel": 3,
+          "experience": 110,
+          "reward": 100,
+          "cleared": false,
+          "unlocked": false
+        }
+      ]
+    },
+    {
+      "region": "spirehollow",
+      "regionName": "Spirehollow",
+      "cleared": 0,
+      "total": 3,
+      "complete": false,
+      "epilogue": null,
+      "stages": [
+        {
+          "stage": 1,
+          "name": "Rooftop Chase",
+          "intro": "A pickpocket, a con artist and a relic hunter would like your purse.",
+          "boss": false,
+          "enemies": [
+            {
+              "file_name": "jory.jfif",
+              "name": "Jory",
+              "rarity": 3
+            },
+            {
+              "file_name": "vexa.jfif",
+              "name": "Vexa",
+              "rarity": 3
+            },
+            {
+              "file_name": "kael.jfif",
+              "name": "Kael",
+              "rarity": 3
+            }
+          ],
+          "enemyLevel": 1,
+          "experience": 50,
+          "reward": 30,
+          "cleared": false,
+          "unlocked": true
+        },
+        {
+          "stage": 2,
+          "name": "The Guild's Enforcer",
+          "intro": "The thieves' guild sends its enforcer, and a card sharp who owes everyone money.",
+          "boss": false,
+          "enemies": [
+            {
+              "file_name": "corvus.jfif",
+              "name": "Corvus",
+              "rarity": 3
+            },
+            {
+              "file_name": "lucan.jfif",
+              "name": "Lucan",
+              "rarity": 4
+            },
+            {
+              "file_name": "vexa.jfif",
+              "name": "Vexa",
+              "rarity": 3
+            }
+          ],
+          "enemyLevel": 1,
+          "experience": 70,
+          "reward": 50,
+          "cleared": false,
+          "unlocked": false
+        },
+        {
+          "stage": 3,
+          "name": "The Masked Contract",
+          "intro": "The masked assassin, the rooftop hunter and the enforcer who never catches her meet on the highest spire.",
+          "boss": true,
+          "enemies": [
+            {
+              "file_name": "vesper.jfif",
+              "name": "Vesper",
+              "rarity": 4
+            },
+            {
+              "file_name": "nyra.jfif",
+              "name": "Nyra",
+              "rarity": 4
+            },
+            {
+              "file_name": "corvus.jfif",
+              "name": "Corvus",
+              "rarity": 3
+            }
+          ],
+          "enemyLevel": 3,
+          "experience": 110,
+          "reward": 100,
+          "cleared": false,
+          "unlocked": false
+        }
+      ]
+    },
+    {
+      "region": "ironfang",
+      "regionName": "The Ironfang Highlands",
+      "cleared": 0,
+      "total": 3,
+      "complete": false,
+      "epilogue": null,
+      "stages": [
+        {
+          "stage": 1,
+          "name": "The Clan Road",
+          "intro": "Clan warriors block the mountain road, as they have for three hundred years.",
+          "boss": false,
+          "enemies": [
+            {
+              "file_name": "brannoc.jfif",
+              "name": "Brannoc",
+              "rarity": 3
+            },
+            {
+              "file_name": "garrick.jfif",
+              "name": "Garrick",
+              "rarity": 3
+            },
+            {
+              "file_name": "torvin.jfif",
+              "name": "Torvin",
+              "rarity": 3
+            }
+          ],
+          "enemyLevel": 1,
+          "experience": 50,
+          "reward": 30,
+          "cleared": false,
+          "unlocked": true
+        },
+        {
+          "stage": 2,
+          "name": "The Rune Library",
+          "intro": "The scholar of runes is reading something he should not. His guards would rather you did not interrupt.",
+          "boss": false,
+          "enemies": [
+            {
+              "file_name": "eldric.png",
+              "name": "Eldric",
+              "rarity": 4
+            },
+            {
+              "file_name": "brannoc.jfif",
+              "name": "Brannoc",
+              "rarity": 3
+            },
+            {
+              "file_name": "garrick.jfif",
+              "name": "Garrick",
+              "rarity": 3
+            }
+          ],
+          "enemyLevel": 1,
+          "experience": 70,
+          "reward": 50,
+          "cleared": false,
+          "unlocked": false
+        },
+        {
+          "stage": 3,
+          "name": "The Warlord Who Cannot Die",
+          "intro": "Gorvane comes down from his throne of axes, with his son and his scholar at his side.",
+          "boss": true,
+          "enemies": [
+            {
+              "file_name": "gorvane.jfif",
+              "name": "Gorvane",
+              "rarity": 5
+            },
+            {
+              "file_name": "eldric.png",
+              "name": "Eldric",
+              "rarity": 4
+            },
+            {
+              "file_name": "brannoc.jfif",
+              "name": "Brannoc",
+              "rarity": 3
+            }
+          ],
+          "enemyLevel": 3,
+          "experience": 110,
+          "reward": 100,
+          "cleared": false,
+          "unlocked": false
+        }
+      ]
+    },
+    {
+      "region": "thalassar",
+      "regionName": "The Thalassar Coast",
+      "cleared": 0,
+      "total": 3,
+      "complete": false,
+      "epilogue": null,
+      "stages": [
+        {
+          "stage": 1,
+          "name": "The Tidewatch Shore",
+          "intro": "The Tidewatch patrols the shore with a spellbreaker and a puppeteer who hums hymns.",
+          "boss": false,
+          "enemies": [
+            {
+              "file_name": "isolde.jfif",
+              "name": "Isolde",
+              "rarity": 4
+            },
+            {
+              "file_name": "maren.jfif",
+              "name": "Maren",
+              "rarity": 4
+            },
+            {
+              "file_name": "odette.jfif",
+              "name": "Odette",
+              "rarity": 4
+            }
+          ],
+          "enemyLevel": 1,
+          "experience": 50,
+          "reward": 30,
+          "cleared": false,
+          "unlocked": true
+        },
+        {
+          "stage": 2,
+          "name": "The Drowned Temple",
+          "intro": "The winged priestess has come down to the drowned temple to take back what she lost.",
+          "boss": false,
+          "enemies": [
+            {
+              "file_name": "celestine.png",
+              "name": "Celestine",
+              "rarity": 5
+            },
+            {
+              "file_name": "odette.jfif",
+              "name": "Odette",
+              "rarity": 4
+            },
+            {
+              "file_name": "maren.jfif",
+              "name": "Maren",
+              "rarity": 4
+            }
+          ],
+          "enemyLevel": 1,
+          "experience": 70,
+          "reward": 50,
+          "cleared": false,
+          "unlocked": false
+        },
+        {
+          "stage": 3,
+          "name": "The Tide-Witch's Song",
+          "intro": "Under the full moon, Lunara sings, and the sisters of the tide stand with her.",
+          "boss": true,
+          "enemies": [
+            {
+              "file_name": "lunara.jfif",
+              "name": "Lunara",
+              "rarity": 5
+            },
+            {
+              "file_name": "celestine.png",
+              "name": "Celestine",
+              "rarity": 5
+            },
+            {
+              "file_name": "isolde.jfif",
+              "name": "Isolde",
+              "rarity": 4
+            }
+          ],
+          "enemyLevel": 3,
+          "experience": 110,
+          "reward": 100,
+          "cleared": false,
+          "unlocked": false
+        }
+      ]
+    },
+    {
+      "region": "cinderpeak",
+      "regionName": "Cinderpeak",
+      "cleared": 0,
+      "total": 3,
+      "complete": false,
+      "epilogue": null,
+      "stages": [
+        {
+          "stage": 1,
+          "name": "Lava Fields",
+          "intro": "The heir of the Everfire, his best friend and a herbalist with a fox made of fire.",
+          "boss": false,
+          "enemies": [
+            {
+              "file_name": "torvin.jfif",
+              "name": "Torvin",
+              "rarity": 3
+            },
+            {
+              "file_name": "pyralis.jfif",
+              "name": "Pyralis",
+              "rarity": 4
+            },
+            {
+              "file_name": "liesel.jfif",
+              "name": "Liesel",
+              "rarity": 3
+            }
+          ],
+          "enemyLevel": 1,
+          "experience": 50,
+          "reward": 30,
+          "cleared": false,
+          "unlocked": true
+        },
+        {
+          "stage": 2,
+          "name": "The Dragon's Nest",
+          "intro": "Drakara guards her mother's nest. Nobody gets near the egg.",
+          "boss": false,
+          "enemies": [
+            {
+              "file_name": "drakara.jfif",
+              "name": "Drakara",
+              "rarity": 5
+            },
+            {
+              "file_name": "pyralis.jfif",
+              "name": "Pyralis",
+              "rarity": 4
+            },
+            {
+              "file_name": "torvin.jfif",
+              "name": "Torvin",
+              "rarity": 3
+            }
+          ],
+          "enemyLevel": 1,
+          "experience": 70,
+          "reward": 50,
+          "cleared": false,
+          "unlocked": false
+        },
+        {
+          "stage": 3,
+          "name": "The Everfire",
+          "intro": "In the heart of the volcano, the knight who swallowed the flame waits with the two people he cannot tell the truth to.",
+          "boss": true,
+          "enemies": [
+            {
+              "file_name": "ignis.jfif",
+              "name": "Ignis",
+              "rarity": 5
+            },
+            {
+              "file_name": "drakara.jfif",
+              "name": "Drakara",
+              "rarity": 5
+            },
+            {
+              "file_name": "pyralis.jfif",
+              "name": "Pyralis",
+              "rarity": 4
+            }
+          ],
+          "enemyLevel": 3,
+          "experience": 110,
+          "reward": 100,
+          "cleared": false,
+          "unlocked": false
+        }
+      ]
+    },
+    {
+      "region": "cogsreach",
+      "regionName": "Cogsreach",
+      "cleared": 0,
+      "total": 3,
+      "complete": false,
+      "epilogue": null,
+      "stages": [
+        {
+          "stage": 1,
+          "name": "Foundry Raid",
+          "intro": "You walk into the middle of a vault robbery. The outlaws do not like witnesses.",
+          "boss": false,
+          "enemies": [
+            {
+              "file_name": "scarlett.jfif",
+              "name": "Scarlett",
+              "rarity": 4
+            },
+            {
+              "file_name": "brina.jfif",
+              "name": "Brina",
+              "rarity": 3
+            },
+            {
+              "file_name": "kael.jfif",
+              "name": "Kael",
+              "rarity": 3
+            }
+          ],
+          "enemyLevel": 1,
+          "experience": 50,
+          "reward": 30,
+          "cleared": false,
+          "unlocked": true
+        },
+        {
+          "stage": 2,
+          "name": "The Storm Tower",
+          "intro": "The storm tower of Voltaris is failing, and its keepers think you are here to make it worse.",
+          "boss": false,
+          "enemies": [
+            {
+              "file_name": "ophira.jfif",
+              "name": "Ophira",
+              "rarity": 4
+            },
+            {
+              "file_name": "maren.jfif",
+              "name": "Maren",
+              "rarity": 4
+            },
+            {
+              "file_name": "dorian.jfif",
+              "name": "Dorian",
+              "rarity": 4
+            }
+          ],
+          "enemyLevel": 1,
+          "experience": 70,
+          "reward": 50,
+          "cleared": false,
+          "unlocked": false
+        },
+        {
+          "stage": 3,
+          "name": "Overclock",
+          "intro": "The guard, the outlaw and the gunsmith, for once on the same side.",
+          "boss": true,
+          "enemies": [
+            {
+              "file_name": "dorian.jfif",
+              "name": "Dorian",
+              "rarity": 4
+            },
+            {
+              "file_name": "scarlett.jfif",
+              "name": "Scarlett",
+              "rarity": 4
+            },
+            {
+              "file_name": "brina.jfif",
+              "name": "Brina",
+              "rarity": 3
+            }
+          ],
+          "enemyLevel": 3,
+          "experience": 110,
+          "reward": 100,
+          "cleared": false,
+          "unlocked": false
+        }
+      ]
+    }
+  ],
+  "collection": [
+    {
+      "region": "hrimvald",
+      "regionName": "Hrimvald",
+      "owned": 1,
+      "total": 3,
+      "complete": false,
+      "claimed": false,
+      "reward": 120
+    },
+    {
+      "region": "zephyrine",
+      "regionName": "The Zephyrine Isles",
+      "owned": 1,
+      "total": 3,
+      "complete": false,
+      "claimed": false,
+      "reward": 120
+    },
+    {
+      "region": "nocthaven",
+      "regionName": "Nocthaven",
+      "owned": 3,
+      "total": 7,
+      "complete": false,
+      "claimed": false,
+      "reward": 280
+    },
+    {
+      "region": "skyspire",
+      "regionName": "The Skyspire",
+      "owned": 0,
+      "total": 5,
+      "complete": false,
+      "claimed": false,
+      "reward": 200
+    },
+    {
+      "region": "greenhollow",
+      "regionName": "Greenhollow Vale",
+      "owned": 2,
+      "total": 6,
+      "complete": false,
+      "claimed": false,
+      "reward": 240
+    },
+    {
+      "region": "sylvaran",
+      "regionName": "The Sylvaran Wilds",
+      "owned": 6,
+      "total": 9,
+      "complete": false,
+      "claimed": false,
+      "reward": 360
+    },
+    {
+      "region": "aurelian",
+      "regionName": "The Aurelian Dominion",
+      "owned": 1,
+      "total": 7,
+      "complete": false,
+      "claimed": false,
+      "reward": 280
+    },
+    {
+      "region": "hoshigane",
+      "regionName": "The Hoshigane Isles",
+      "owned": 3,
+      "total": 4,
+      "complete": false,
+      "claimed": false,
+      "reward": 160
+    },
+    {
+      "region": "spirehollow",
+      "regionName": "Spirehollow",
+      "owned": 4,
+      "total": 7,
+      "complete": false,
+      "claimed": false,
+      "reward": 280
+    },
+    {
+      "region": "ironfang",
+      "regionName": "The Ironfang Highlands",
+      "owned": 2,
+      "total": 4,
+      "complete": false,
+      "claimed": false,
+      "reward": 160
+    },
+    {
+      "region": "thalassar",
+      "regionName": "The Thalassar Coast",
+      "owned": 2,
+      "total": 5,
+      "complete": false,
+      "claimed": false,
+      "reward": 200
+    },
+    {
+      "region": "cinderpeak",
+      "regionName": "Cinderpeak",
+      "owned": 2,
+      "total": 4,
+      "complete": false,
+      "claimed": false,
+      "reward": 160
+    },
+    {
+      "region": "cogsreach",
+      "regionName": "Cogsreach",
+      "owned": 2,
+      "total": 4,
+      "complete": false,
+      "claimed": false,
+      "reward": 160
+    }
+  ],
+  "level": 1
+}

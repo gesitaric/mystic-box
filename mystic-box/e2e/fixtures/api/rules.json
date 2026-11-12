@@ -1,0 +1,994 @@
+{
+  "summon": {
+    "cardsPerSummon": 3,
+    "cooldownSeconds": 3600,
+    "tokenTtlSeconds": 1800,
+    "rarityChances": [
+      {
+        "rarity": 5,
+        "cardCount": 18,
+        "chance": 4.5
+      },
+      {
+        "rarity": 4,
+        "cardCount": 33,
+        "chance": 44.4
+      },
+      {
+        "rarity": 3,
+        "cardCount": 17,
+        "chance": 51.2
+      }
+    ],
+    "lastCardRarityChances": [
+      {
+        "rarity": 5,
+        "cardCount": 18,
+        "chance": 8.5
+      },
+      {
+        "rarity": 4,
+        "cardCount": 33,
+        "chance": 49.8
+      },
+      {
+        "rarity": 3,
+        "cardCount": 17,
+        "chance": 41.7
+      }
+    ],
+    "totalCards": 68,
+    "omen": {
+      "summonMultiplier": 3,
+      "experienceBonusPercent": 25
+    }
+  },
+  "shop": {
+    "maxListingQuantity": 10,
+    "maxActiveListings": 30,
+    "listingPrices": [
+      {
+        "rarity": 5,
+        "min": 125,
+        "max": 12500
+      },
+      {
+        "rarity": 4,
+        "min": 25,
+        "max": 2500
+      },
+      {
+        "rarity": 3,
+        "min": 5,
+        "max": 500
+      }
+    ]
+  },
+  "progression": {
+    "maxLevel": 50,
+    "baseLevelExperience": 100,
+    "levelExperienceStep": 30,
+    "levelUpShardsPerLevel": 10,
+    "levelStatBonusPercent": 3,
+    "examples": [
+      {
+        "level": 1,
+        "experienceToNext": 100,
+        "shardsOnReach": 20
+      },
+      {
+        "level": 2,
+        "experienceToNext": 130,
+        "shardsOnReach": 30
+      },
+      {
+        "level": 5,
+        "experienceToNext": 220,
+        "shardsOnReach": 60
+      },
+      {
+        "level": 10,
+        "experienceToNext": 370,
+        "shardsOnReach": 110
+      },
+      {
+        "level": 20,
+        "experienceToNext": 670,
+        "shardsOnReach": 210
+      },
+      {
+        "level": 49,
+        "experienceToNext": 1540,
+        "shardsOnReach": 500
+      }
+    ]
+  },
+  "battle": {
+    "teamSize": 3,
+    "maxRounds": 30,
+    "aether": {
+      "starting": 2,
+      "max": 10,
+      "perTurn": 1,
+      "basicSkillBonus": 1
+    },
+    "surge": {
+      "startRound": 8,
+      "damagePerRoundPercent": 20,
+      "healPerRoundPercent": 20,
+      "noHealRound": 12
+    },
+    "damage": {
+      "defenseConstant": 50,
+      "variancePercent": 10,
+      "criticalMultiplier": 1.5,
+      "hybridPowerPercent": 70,
+      "maxFate": 50
+    },
+    "stats": [
+      {
+        "id": "vitality",
+        "label": "Vitality",
+        "description": "Hit points. At 0 the card falls."
+      },
+      {
+        "id": "might",
+        "label": "Might",
+        "description": "Physical power: Strike (when higher than Arcana) and weapon skills."
+      },
+      {
+        "id": "arcana",
+        "label": "Arcana",
+        "description": "Magical power: spells and heals."
+      },
+      {
+        "id": "bulwark",
+        "label": "Bulwark",
+        "description": "Defense against physical damage."
+      },
+      {
+        "id": "resolve",
+        "label": "Resolve",
+        "description": "Defense against magical damage."
+      },
+      {
+        "id": "celerity",
+        "label": "Celerity",
+        "description": "Speed. Higher Celerity acts earlier in the round."
+      },
+      {
+        "id": "fate",
+        "label": "Fate",
+        "description": "Chance (%) of a critical hit."
+      }
+    ],
+    "rarityScaling": [
+      {
+        "rarity": 5,
+        "statMultiplier": 1.45,
+        "celerityBonus": 2,
+        "fateBonus": 4,
+        "archetypeSkills": 3
+      },
+      {
+        "rarity": 4,
+        "statMultiplier": 1.2,
+        "celerityBonus": 1,
+        "fateBonus": 2,
+        "archetypeSkills": 2
+      },
+      {
+        "rarity": 3,
+        "statMultiplier": 1,
+        "celerityBonus": 0,
+        "fateBonus": 0,
+        "archetypeSkills": 1
+      }
+    ],
+    "elements": {
+      "advantageMultiplier": 1.3,
+      "disadvantageMultiplier": 0.8,
+      "list": [
+        {
+          "id": "ember",
+          "label": "Ember",
+          "strongAgainst": [
+            "gale"
+          ],
+          "weakAgainst": [
+            "tide"
+          ],
+          "rider": "Sets the target ablaze (Burn)."
+        },
+        {
+          "id": "gale",
+          "label": "Gale",
+          "strongAgainst": [
+            "terra"
+          ],
+          "weakAgainst": [
+            "ember"
+          ],
+          "rider": "Tears the target's guard open (Expose)."
+        },
+        {
+          "id": "terra",
+          "label": "Terra",
+          "strongAgainst": [
+            "volt"
+          ],
+          "weakAgainst": [
+            "gale"
+          ],
+          "rider": "Crushes the target's strength (Weaken)."
+        },
+        {
+          "id": "volt",
+          "label": "Volt",
+          "strongAgainst": [
+            "tide"
+          ],
+          "weakAgainst": [
+            "terra"
+          ],
+          "rider": "Lightning arcs to the weakest other foe for 35% of the damage."
+        },
+        {
+          "id": "tide",
+          "label": "Tide",
+          "strongAgainst": [
+            "ember"
+          ],
+          "weakAgainst": [
+            "volt"
+          ],
+          "rider": "Drenches the target (Slow)."
+        },
+        {
+          "id": "lumen",
+          "label": "Lumen",
+          "strongAgainst": [
+            "umbra"
+          ],
+          "weakAgainst": [],
+          "rider": "Heals the most wounded ally for 30% of the damage."
+        },
+        {
+          "id": "umbra",
+          "label": "Umbra",
+          "strongAgainst": [
+            "lumen"
+          ],
+          "weakAgainst": [],
+          "rider": "Drains 35% of the damage as vitality."
+        }
+      ]
+    },
+    "basicSkills": [
+      {
+        "id": "strike",
+        "name": "Strike",
+        "description": "Basic attack with the card's best power. Generates +1 extra Aether.",
+        "cost": 0,
+        "target": "enemy"
+      },
+      {
+        "id": "guard",
+        "name": "Guard",
+        "description": "Halves damage taken until this card's next turn. Generates +1 extra Aether.",
+        "cost": 0,
+        "target": "self"
+      }
+    ],
+    "archetypes": [
+      {
+        "id": "vanguard",
+        "label": "Vanguard",
+        "description": "Stalwart guardian who draws fire and shields allies.",
+        "baseStats": {
+          "vitality": 135,
+          "might": 22,
+          "arcana": 10,
+          "bulwark": 25,
+          "resolve": 19,
+          "celerity": 9,
+          "fate": 5
+        },
+        "skills": [
+          {
+            "id": "bastion_call",
+            "name": "Bastion Call",
+            "description": "Taunts all foes for 2 turns and raises a shield worth 25% of max vitality.",
+            "cost": 3,
+            "target": "self",
+            "unlockRarity": 3,
+            "supreme": false
+          },
+          {
+            "id": "tremor_slam",
+            "name": "Tremor Slam",
+            "description": "Physical blow to every foe (0.8x) with 35% chance to Stun each.",
+            "cost": 5,
+            "target": "all_enemies",
+            "unlockRarity": 4,
+            "supreme": false
+          },
+          {
+            "id": "unbreakable_oath",
+            "name": "Unbreakable Oath",
+            "description": "Supreme. Shields every ally for 30% of this card's max vitality and puts them on Guard.",
+            "cost": 7,
+            "target": "all_allies",
+            "unlockRarity": 5,
+            "supreme": true
+          }
+        ]
+      },
+      {
+        "id": "duelist",
+        "label": "Duelist",
+        "description": "Swift blade that strikes hard and often.",
+        "baseStats": {
+          "vitality": 98,
+          "might": 31,
+          "arcana": 8,
+          "bulwark": 15,
+          "resolve": 12,
+          "celerity": 15,
+          "fate": 14
+        },
+        "skills": [
+          {
+            "id": "rending_flurry",
+            "name": "Rending Flurry",
+            "description": "Two quick physical slashes (0.75x each).",
+            "cost": 3,
+            "target": "enemy",
+            "unlockRarity": 3,
+            "supreme": false
+          },
+          {
+            "id": "execution_arc",
+            "name": "Execution Arc",
+            "description": "Heavy physical strike (1.5x), 60% stronger against foes below 40% vitality.",
+            "cost": 5,
+            "target": "enemy",
+            "unlockRarity": 4,
+            "supreme": false
+          },
+          {
+            "id": "thousand_cuts",
+            "name": "Thousand Cuts",
+            "description": "Supreme. Five physical slashes (0.55x) on random foes, each one Weakening its target.",
+            "cost": 7,
+            "target": "all_enemies",
+            "unlockRarity": 5,
+            "supreme": true
+          }
+        ]
+      },
+      {
+        "id": "arcanist",
+        "label": "Arcanist",
+        "description": "Wielder of raw elements, fragile but devastating.",
+        "baseStats": {
+          "vitality": 92,
+          "might": 8,
+          "arcana": 33,
+          "bulwark": 12,
+          "resolve": 19,
+          "celerity": 12,
+          "fate": 9
+        },
+        "skills": [
+          {
+            "id": "elemental_bolt",
+            "name": "Elemental Bolt",
+            "description": "Magical bolt (1.45x) carrying this card's element effect.",
+            "cost": 3,
+            "target": "enemy",
+            "unlockRarity": 3,
+            "supreme": false
+          },
+          {
+            "id": "arcane_tempest",
+            "name": "Arcane Tempest",
+            "description": "Magical storm (0.8x) on every foe, each hit carrying the element effect.",
+            "cost": 5,
+            "target": "all_enemies",
+            "unlockRarity": 4,
+            "supreme": false
+          },
+          {
+            "id": "cataclysm",
+            "name": "Cataclysm",
+            "description": "Supreme. Devastating spell (2.3x) that ignores half of the target's Resolve, with the element effect.",
+            "cost": 7,
+            "target": "enemy",
+            "unlockRarity": 5,
+            "supreme": true
+          }
+        ]
+      },
+      {
+        "id": "mystic",
+        "label": "Mystic",
+        "description": "Channels light and life to mend and revive allies.",
+        "baseStats": {
+          "vitality": 104,
+          "might": 10,
+          "arcana": 25,
+          "bulwark": 14,
+          "resolve": 23,
+          "celerity": 11,
+          "fate": 6
+        },
+        "skills": [
+          {
+            "id": "mending_light",
+            "name": "Mending Light",
+            "description": "Heals one ally based on Arcana and removes its debuffs.",
+            "cost": 3,
+            "target": "ally",
+            "unlockRarity": 3,
+            "supreme": false
+          },
+          {
+            "id": "sanctuary",
+            "name": "Sanctuary",
+            "description": "Heals every ally and grants Regen for 3 turns.",
+            "cost": 5,
+            "target": "all_allies",
+            "unlockRarity": 4,
+            "supreme": false
+          },
+          {
+            "id": "rebirth_hymn",
+            "name": "Rebirth Hymn",
+            "description": "Supreme. Brings a fallen ally back with 50% vitality and Empowers it.",
+            "cost": 7,
+            "target": "fallen_ally",
+            "unlockRarity": 5,
+            "supreme": true
+          }
+        ]
+      },
+      {
+        "id": "trickster",
+        "label": "Trickster",
+        "description": "Cunning schemer who curses foes and steals Aether.",
+        "baseStats": {
+          "vitality": 92,
+          "might": 25,
+          "arcana": 25,
+          "bulwark": 12,
+          "resolve": 14,
+          "celerity": 18,
+          "fate": 12
+        },
+        "skills": [
+          {
+            "id": "hexing_shiv",
+            "name": "Hexing Shiv",
+            "description": "Cursed stab (1.0x hybrid) that Weakens and Exposes the target.",
+            "cost": 3,
+            "target": "enemy",
+            "unlockRarity": 3,
+            "supreme": false
+          },
+          {
+            "id": "aether_siphon",
+            "name": "Aether Siphon",
+            "description": "Light hybrid hit (0.5x) that Slows every foe and steals up to 2 of their Aether.",
+            "cost": 5,
+            "target": "all_enemies",
+            "unlockRarity": 4,
+            "supreme": false
+          },
+          {
+            "id": "grand_deception",
+            "name": "Grand Deception",
+            "description": "Supreme. Hybrid hit (0.9x) on every foe, then cleanses and Empowers all allies.",
+            "cost": 7,
+            "target": "all_enemies",
+            "unlockRarity": 5,
+            "supreme": true
+          }
+        ]
+      },
+      {
+        "id": "summoner",
+        "label": "Summoner",
+        "description": "Fights beside a bonded monster that keeps striking foes.",
+        "baseStats": {
+          "vitality": 100,
+          "might": 24,
+          "arcana": 27,
+          "bulwark": 15,
+          "resolve": 18,
+          "celerity": 13,
+          "fate": 9
+        },
+        "skills": [
+          {
+            "id": "call_companion",
+            "name": "Call Companion",
+            "description": "The bonded monster pounces on a foe (0.8x hybrid) and stays for 3 turns as a Companion.",
+            "cost": 3,
+            "target": "enemy",
+            "unlockRarity": 3,
+            "supreme": false
+          },
+          {
+            "id": "beast_rampage",
+            "name": "Beast Rampage",
+            "description": "Hybrid assault on every foe (0.75x). With a Companion out, also Exposes them.",
+            "cost": 5,
+            "target": "all_enemies",
+            "unlockRarity": 4,
+            "supreme": false
+          },
+          {
+            "id": "primal_awakening",
+            "name": "Primal Awakening",
+            "description": "Supreme. The monster reveals its true form: massive hybrid blow (2.0x), then stays as a Companion and Empowers this card.",
+            "cost": 7,
+            "target": "enemy",
+            "unlockRarity": 5,
+            "supreme": true
+          }
+        ]
+      }
+    ],
+    "statuses": [
+      {
+        "id": "burn",
+        "label": "Burn",
+        "kind": "debuff",
+        "description": "Loses 7% of max vitality at the start of each turn."
+      },
+      {
+        "id": "stun",
+        "label": "Stun",
+        "kind": "debuff",
+        "description": "Skips the next turn."
+      },
+      {
+        "id": "weaken",
+        "label": "Weaken",
+        "kind": "debuff",
+        "description": "Deals 25% less damage."
+      },
+      {
+        "id": "expose",
+        "label": "Expose",
+        "kind": "debuff",
+        "description": "Takes 25% more damage."
+      },
+      {
+        "id": "slow",
+        "label": "Slow",
+        "kind": "debuff",
+        "description": "Celerity reduced by 40%: acts later in the round."
+      },
+      {
+        "id": "shield",
+        "label": "Shield",
+        "kind": "buff",
+        "description": "Absorbs incoming damage."
+      },
+      {
+        "id": "taunt",
+        "label": "Taunt",
+        "kind": "buff",
+        "description": "Single-target attacks must aim at this card."
+      },
+      {
+        "id": "regen",
+        "label": "Regen",
+        "kind": "buff",
+        "description": "Recovers 8% of max vitality at the start of each turn."
+      },
+      {
+        "id": "empower",
+        "label": "Empower",
+        "kind": "buff",
+        "description": "Deals 30% more damage."
+      },
+      {
+        "id": "guard",
+        "label": "Guard",
+        "kind": "buff",
+        "description": "Takes 50% less damage until its next turn."
+      },
+      {
+        "id": "companion",
+        "label": "Companion",
+        "kind": "buff",
+        "description": "Its bonded monster strikes a foe (0.75x hybrid) at the start of each of this card's turns."
+      }
+    ],
+    "difficulties": [
+      {
+        "id": "novice",
+        "label": "Novice",
+        "description": "Weaker foes, mostly common cards.",
+        "minLevel": 1,
+        "levelOffset": -2,
+        "enemyPowerPercent": 85,
+        "rarityChances": [
+          {
+            "rarity": 5,
+            "chance": 5
+          },
+          {
+            "rarity": 4,
+            "chance": 25
+          },
+          {
+            "rarity": 3,
+            "chance": 70
+          }
+        ],
+        "winExperience": 40,
+        "lossExperience": 12
+      },
+      {
+        "id": "adept",
+        "label": "Adept",
+        "description": "Foes of your level with more rare cards.",
+        "minLevel": 3,
+        "levelOffset": 0,
+        "enemyPowerPercent": 90,
+        "rarityChances": [
+          {
+            "rarity": 5,
+            "chance": 15
+          },
+          {
+            "rarity": 4,
+            "chance": 45
+          },
+          {
+            "rarity": 3,
+            "chance": 40
+          }
+        ],
+        "winExperience": 70,
+        "lossExperience": 21
+      },
+      {
+        "id": "master",
+        "label": "Master",
+        "description": "Stronger foes led by legendary cards.",
+        "minLevel": 6,
+        "levelOffset": 2,
+        "enemyPowerPercent": 100,
+        "rarityChances": [
+          {
+            "rarity": 5,
+            "chance": 35
+          },
+          {
+            "rarity": 4,
+            "chance": 50
+          },
+          {
+            "rarity": 3,
+            "chance": 15
+          }
+        ],
+        "winExperience": 110,
+        "lossExperience": 33
+      }
+    ],
+    "resonances": [
+      {
+        "region": "hrimvald",
+        "regionName": "Hrimvald",
+        "name": "Frostgate Howl",
+        "description": "The wind-wolves howl: every foe starts Slowed for 2 turns."
+      },
+      {
+        "region": "zephyrine",
+        "regionName": "The Zephyrine Isles",
+        "name": "Tailwind",
+        "description": "The isles' winds carry the team: +20% celerity."
+      },
+      {
+        "region": "nocthaven",
+        "regionName": "Nocthaven",
+        "name": "Grave Chill",
+        "description": "The cold of the crypts seeps in: every foe starts Weakened for 2 turns."
+      },
+      {
+        "region": "skyspire",
+        "regionName": "The Skyspire",
+        "name": "Starlit Ward",
+        "description": "Starlight wraps the team in a shield worth 15% of max vitality."
+      },
+      {
+        "region": "greenhollow",
+        "regionName": "Greenhollow Vale",
+        "name": "Hearth and Harvest",
+        "description": "A taste of home: the team starts with Regen for 3 turns."
+      },
+      {
+        "region": "sylvaran",
+        "regionName": "The Sylvaran Wilds",
+        "name": "Rootbound",
+        "description": "The roots lend their strength: +12% vitality."
+      },
+      {
+        "region": "aurelian",
+        "regionName": "The Aurelian Dominion",
+        "name": "Lion's Oath",
+        "description": "Shields locked like the old Order: +12% bulwark and resolve."
+      },
+      {
+        "region": "hoshigane",
+        "regionName": "The Hoshigane Isles",
+        "name": "First Petal",
+        "description": "The first cut decides the duel: the team starts Empowered for 2 turns."
+      },
+      {
+        "region": "spirehollow",
+        "regionName": "Spirehollow",
+        "name": "Rooftop Ambush",
+        "description": "Strike from the shadows: every foe starts Exposed for 2 turns."
+      },
+      {
+        "region": "ironfang",
+        "regionName": "The Ironfang Highlands",
+        "name": "Clan Fury",
+        "description": "The war drums of the clans: +15% might."
+      },
+      {
+        "region": "thalassar",
+        "regionName": "The Thalassar Coast",
+        "name": "Tide Hymn",
+        "description": "The drowned temples sing along: +15% arcana."
+      },
+      {
+        "region": "cinderpeak",
+        "regionName": "Cinderpeak",
+        "name": "Everfire Spark",
+        "description": "The mountain's flame burns in the team: +3 starting Aether."
+      },
+      {
+        "region": "cogsreach",
+        "regionName": "Cogsreach",
+        "name": "Overclock",
+        "description": "Gears spin up: +2 starting Aether and +10% celerity."
+      }
+    ],
+    "duos": [
+      {
+        "pair": [
+          "Astra",
+          "Lyra"
+        ],
+        "id": "falling_star_volley",
+        "name": "Falling Star Volley",
+        "description": "Lyra fires, Astra pulls the stars down: magical blow to every foe (1.4x) that Exposes them for 2 turns.",
+        "cost": 5,
+        "target": "all_enemies",
+        "duo": true
+      },
+      {
+        "pair": [
+          "Malachar",
+          "Mortis"
+        ],
+        "id": "last_laugh",
+        "name": "Last Laugh of Nocthaven",
+        "description": "The master reads, the jester laughs: magical blow to every foe (1.3x) that Weakens them for 2 turns.",
+        "cost": 5,
+        "target": "all_enemies",
+        "duo": true
+      },
+      {
+        "pair": [
+          "Ignis",
+          "Drakara"
+        ],
+        "id": "everfire_rekindled",
+        "name": "Everfire Rekindled",
+        "description": "Father and daughter breathe the same flame: hybrid blow to every foe (1.4x) that Burns them for 3 turns.",
+        "cost": 5,
+        "target": "all_enemies",
+        "duo": true
+      },
+      {
+        "pair": [
+          "Boreas",
+          "Glacius"
+        ],
+        "id": "frostgate_stand",
+        "name": "Frostgate Stand",
+        "description": "Knight and squire hold the gate: the team gains a shield worth 25% of max vitality and every foe is Slowed for 2 turns.",
+        "cost": 5,
+        "target": "all_allies",
+        "duo": true
+      },
+      {
+        "pair": [
+          "Kaito",
+          "Hayato"
+        ],
+        "id": "twin_petal_draw",
+        "name": "Twin Petal Draw",
+        "description": "Two rivals draw as one: two physical cuts on a foe (1.3x each) that ignore 30% of its bulwark.",
+        "cost": 5,
+        "target": "enemy",
+        "duo": true
+      },
+      {
+        "pair": [
+          "Seraphiel",
+          "Annelise"
+        ],
+        "id": "ithrels_mercy",
+        "name": "Ithrel's Mercy",
+        "description": "The shelter opens its doors: heals every ally for 30% of max vitality, cleanses curses and grants Regen for 2 turns.",
+        "cost": 5,
+        "target": "all_allies",
+        "duo": true
+      },
+      {
+        "pair": [
+          "Elowen",
+          "Verdana"
+        ],
+        "id": "moonbloom",
+        "name": "Moonbloom",
+        "description": "The moon flowers open for the child of the forest: heals every ally for 25% of max vitality and grants Regen for 3 turns.",
+        "cost": 5,
+        "target": "all_allies",
+        "duo": true
+      },
+      {
+        "pair": [
+          "Vaelora",
+          "Kyrielle"
+        ],
+        "id": "sky_guard_storm",
+        "name": "Storm of the Sky Guard",
+        "description": "The empress calls the wind, her captain rides it: magical blow to every foe (1.3x) that Slows them for 2 turns.",
+        "cost": 5,
+        "target": "all_enemies",
+        "duo": true
+      },
+      {
+        "pair": [
+          "Aurelius",
+          "Valeria"
+        ],
+        "id": "gate_and_charge",
+        "name": "Gate and Charge",
+        "description": "This time, both: physical blow to every foe (1.2x) and the team is Empowered for 2 turns.",
+        "cost": 5,
+        "target": "all_enemies",
+        "duo": true
+      },
+      {
+        "pair": [
+          "Scarlett",
+          "Brina"
+        ],
+        "id": "family_arsenal",
+        "name": "Family Arsenal",
+        "description": "The cousins open the secret workshop: physical blow to every foe (1.3x) that Burns them for 2 turns.",
+        "cost": 5,
+        "target": "all_enemies",
+        "duo": true
+      }
+    ],
+    "bonds": {
+      "statBonusPercent": 6,
+      "griefStatus": "Empower",
+      "griefTurns": 2,
+      "rivalDamagePercent": 20
+    },
+    "rewards": {
+      "lossExperiencePercent": 30,
+      "lossExperiencePerDefeat": 5,
+      "forfeitExperience": 0
+    }
+  },
+  "ascension": {
+    "maxLevel": 3,
+    "statBonusPercent": 5,
+    "skillUnlockLevel": 3,
+    "levels": [
+      {
+        "level": 1,
+        "copies": 1,
+        "statBonusPercent": 5,
+        "unlocksSkill": false
+      },
+      {
+        "level": 2,
+        "copies": 2,
+        "statBonusPercent": 10,
+        "unlocksSkill": false
+      },
+      {
+        "level": 3,
+        "copies": 3,
+        "statBonusPercent": 15,
+        "unlocksSkill": true
+      }
+    ],
+    "skillsByRarity": [
+      {
+        "rarity": 5,
+        "base": 3,
+        "ascended": 3
+      },
+      {
+        "rarity": 4,
+        "base": 2,
+        "ascended": 3
+      },
+      {
+        "rarity": 3,
+        "base": 1,
+        "ascended": 2
+      }
+    ]
+  },
+  "pvp": {
+    "teamSize": 3,
+    "challengeTtlSeconds": 600,
+    "maxOutgoingChallenges": 5,
+    "turnSeconds": 60,
+    "maxMissedTurns": 3,
+    "winExperience": 90,
+    "lossExperience": 27,
+    "lossExperiencePerDefeat": 5,
+    "maxRounds": 30,
+    "lobbyRefreshSeconds": 20,
+    "presenceSeconds": 60,
+    "maxOnlinePlayers": 50,
+    "maxLiveDuels": 20,
+    "reactions": [
+      {
+        "id": "clap",
+        "emoji": "👏"
+      },
+      {
+        "id": "fire",
+        "emoji": "🔥"
+      },
+      {
+        "id": "laugh",
+        "emoji": "😂"
+      },
+      {
+        "id": "wow",
+        "emoji": "😮"
+      },
+      {
+        "id": "sweat",
+        "emoji": "😅"
+      },
+      {
+        "id": "cry",
+        "emoji": "😢"
+      },
+      {
+        "id": "angry",
+        "emoji": "😠"
+      },
+      {
+        "id": "gg",
+        "emoji": "🤝"
+      }
+    ],
+    "reactionCooldownSeconds": 2,
+    "reactionWindowSeconds": 30,
+    "maxReactionsPerWindow": 8,
+    "reactionTtlSeconds": 60
+  }
+}

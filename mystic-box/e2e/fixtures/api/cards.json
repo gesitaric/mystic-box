@@ -1,0 +1,3379 @@
+{
+  "cards": [
+    {
+      "file_name": "vaelora.jfif",
+      "name": "Vaelora",
+      "rarity": 5,
+      "quantity": 1,
+      "firstObtainedAt": "2026-11-12T01:38:39+00:00",
+      "lastObtainedAt": "2026-11-12T01:38:39+00:00",
+      "listingPriceRange": {
+        "min": 125,
+        "max": 12500
+      },
+      "maxListingQuantity": 1,
+      "battle": {
+        "element": "gale",
+        "elementLabel": "Gale",
+        "strongAgainst": [
+          "terra"
+        ],
+        "archetype": "summoner",
+        "archetypeLabel": "Summoner",
+        "archetypeDescription": "Fights beside a bonded monster that keeps striking foes.",
+        "stats": {
+          "vitality": 152,
+          "might": 32,
+          "arcana": 42,
+          "bulwark": 23,
+          "resolve": 26,
+          "celerity": 16,
+          "fate": 13
+        },
+        "skills": [
+          {
+            "id": "strike",
+            "name": "Strike",
+            "description": "Basic attack with the card's best power. Generates +1 extra Aether.",
+            "cost": 0,
+            "target": "enemy"
+          },
+          {
+            "id": "guard",
+            "name": "Guard",
+            "description": "Halves damage taken until this card's next turn. Generates +1 extra Aether.",
+            "cost": 0,
+            "target": "self"
+          },
+          {
+            "id": "call_companion",
+            "name": "Call Companion",
+            "description": "The bonded monster pounces on a foe (0.8x hybrid) and stays for 3 turns as a Companion.",
+            "cost": 3,
+            "target": "enemy"
+          },
+          {
+            "id": "beast_rampage",
+            "name": "Beast Rampage",
+            "description": "Hybrid assault on every foe (0.75x). With a Companion out, also Exposes them.",
+            "cost": 5,
+            "target": "all_enemies"
+          },
+          {
+            "id": "primal_awakening",
+            "name": "Primal Awakening",
+            "description": "Supreme. The monster reveals its true form: massive hybrid blow (2.0x), then stays as a Companion and Empowers this card.",
+            "cost": 7,
+            "target": "enemy"
+          }
+        ],
+        "duos": [
+          {
+            "partner": "kyrielle.jfif",
+            "skill": {
+              "id": "sky_guard_storm",
+              "name": "Storm of the Sky Guard",
+              "description": "The empress calls the wind, her captain rides it: magical blow to every foe (1.3x) that Slows them for 2 turns.",
+              "cost": 5,
+              "target": "all_enemies",
+              "duo": true
+            }
+          }
+        ]
+      },
+      "lore": {
+        "title": "Empress of the Floating Isles",
+        "story": [
+          "When the Sundering tore the western hills into the sky, a young noblewoman named Vaelora refused to let them fall. She bound the winds with a jeweled scepter and steered the broken land into the clouds, and the survivors crowned her empress of the Zephyrine Isles.",
+          "Her crystal dragon, Lirien, hatched from a gem in her crown on the day she was crowned. Her sky guard is led by Kyrielle and her storm dragon, and her court is visited each year by the dragon sovereign Draemir, whose citadel drifts at the edge of her isles.",
+          "She is elegant, merciless toward tyrants and endlessly generous toward travelers. When her isles drift over a realm at war, the fighting tends to stop, not out of fear, but because no one wants to be the one Lirien decides to dislike."
+        ],
+        "region": {
+          "id": "zephyrine",
+          "name": "The Zephyrine Isles",
+          "element": "gale",
+          "resonance": {
+            "region": "zephyrine",
+            "regionName": "The Zephyrine Isles",
+            "name": "Tailwind",
+            "description": "The isles' winds carry the team: +20% celerity."
+          }
+        },
+        "bonds": [
+          {
+            "name": "Draemir",
+            "file_name": "draemir.jfif",
+            "rarity": 5,
+            "relation": "An ancient ally who visits her court every year.",
+            "owned": false
+          },
+          {
+            "name": "Kyrielle",
+            "file_name": "kyrielle.jfif",
+            "rarity": 5,
+            "relation": "Captain of her sky guard and her most trusted rider.",
+            "owned": false
+          }
+        ],
+        "rivals": [],
+        "secret": {
+          "title": "The Drift",
+          "unlockAscension": 1,
+          "unlocked": false,
+          "text": null
+        }
+      },
+      "ascension": {
+        "level": 0,
+        "max": 3,
+        "statBonusPercent": 0,
+        "nextCost": 1,
+        "nextStatBonusPercent": 5,
+        "canAscend": false,
+        "skillUnlockLevel": 3,
+        "unlocksSkill": false
+      }
+    },
+    {
+      "file_name": "amethia.jfif",
+      "name": "Amethia",
+      "rarity": 4,
+      "quantity": 1,
+      "firstObtainedAt": "2026-11-12T01:38:39+00:00",
+      "lastObtainedAt": "2026-11-12T01:38:39+00:00",
+      "listingPriceRange": {
+        "min": 25,
+        "max": 2500
+      },
+      "maxListingQuantity": 1,
+      "battle": {
+        "element": "umbra",
+        "elementLabel": "Umbra",
+        "strongAgainst": [
+          "lumen"
+        ],
+        "archetype": "arcanist",
+        "archetypeLabel": "Arcanist",
+        "archetypeDescription": "Wielder of raw elements, fragile but devastating.",
+        "stats": {
+          "vitality": 111,
+          "might": 10,
+          "arcana": 40,
+          "bulwark": 15,
+          "resolve": 21,
+          "celerity": 14,
+          "fate": 11
+        },
+        "skills": [
+          {
+            "id": "strike",
+            "name": "Strike",
+            "description": "Basic attack with the card's best power. Generates +1 extra Aether.",
+            "cost": 0,
+            "target": "enemy"
+          },
+          {
+            "id": "guard",
+            "name": "Guard",
+            "description": "Halves damage taken until this card's next turn. Generates +1 extra Aether.",
+            "cost": 0,
+            "target": "self"
+          },
+          {
+            "id": "elemental_bolt",
+            "name": "Elemental Bolt",
+            "description": "Magical bolt (1.45x) carrying this card's element effect.",
+            "cost": 3,
+            "target": "enemy"
+          },
+          {
+            "id": "arcane_tempest",
+            "name": "Arcane Tempest",
+            "description": "Magical storm (0.8x) on every foe, each hit carrying the element effect.",
+            "cost": 5,
+            "target": "all_enemies"
+          }
+        ],
+        "duos": []
+      },
+      "lore": {
+        "title": "The Starlit Librarian",
+        "story": [
+          "Amethia catalogs spells the way other librarians catalog books, and she has never lost a single one. She guards the Warden Archive of Nocthaven, the library Malachar left behind, including the dangerous shelves that read their readers back.",
+          "She is the younger sister of the sorceress Nocturna, and the two have not spoken since Nocturna left the archive to serve Zarathor. Amethia sends her a letter every year anyway. None have been answered, but none have been returned either.",
+          "She is gentle, patient and very hard to anger, which makes it all the more terrifying when she finally opens one of those books in battle."
+        ],
+        "region": {
+          "id": "nocthaven",
+          "name": "Nocthaven",
+          "element": "umbra",
+          "resonance": {
+            "region": "nocthaven",
+            "regionName": "Nocthaven",
+            "name": "Grave Chill",
+            "description": "The cold of the crypts seeps in: every foe starts Weakened for 2 turns."
+          }
+        },
+        "bonds": [
+          {
+            "name": "Malachar",
+            "file_name": "malachar.jfif",
+            "rarity": 5,
+            "relation": "She guards his books, and the guilt written in their margins.",
+            "owned": false
+          },
+          {
+            "name": "Nocturna",
+            "file_name": "nocturna.jfif",
+            "rarity": 4,
+            "relation": "Her elder sister. Writes to her every year.",
+            "owned": true
+          }
+        ],
+        "rivals": [],
+        "secret": {
+          "title": "The Torn Page",
+          "unlockAscension": 1,
+          "unlocked": false,
+          "text": null
+        }
+      },
+      "ascension": {
+        "level": 0,
+        "max": 3,
+        "statBonusPercent": 0,
+        "nextCost": 1,
+        "nextStatBonusPercent": 5,
+        "canAscend": false,
+        "skillUnlockLevel": 3,
+        "unlocksSkill": true
+      }
+    },
+    {
+      "file_name": "dorian.jfif",
+      "name": "Dorian",
+      "rarity": 4,
+      "quantity": 1,
+      "firstObtainedAt": "2026-11-12T01:38:41+00:00",
+      "lastObtainedAt": "2026-11-12T01:38:41+00:00",
+      "listingPriceRange": {
+        "min": 25,
+        "max": 2500
+      },
+      "maxListingQuantity": 1,
+      "battle": {
+        "element": "volt",
+        "elementLabel": "Volt",
+        "strongAgainst": [
+          "tide"
+        ],
+        "archetype": "vanguard",
+        "archetypeLabel": "Vanguard",
+        "archetypeDescription": "Stalwart guardian who draws fire and shields allies.",
+        "stats": {
+          "vitality": 156,
+          "might": 26,
+          "arcana": 12,
+          "bulwark": 30,
+          "resolve": 22,
+          "celerity": 10,
+          "fate": 7
+        },
+        "skills": [
+          {
+            "id": "strike",
+            "name": "Strike",
+            "description": "Basic attack with the card's best power. Generates +1 extra Aether.",
+            "cost": 0,
+            "target": "enemy"
+          },
+          {
+            "id": "guard",
+            "name": "Guard",
+            "description": "Halves damage taken until this card's next turn. Generates +1 extra Aether.",
+            "cost": 0,
+            "target": "self"
+          },
+          {
+            "id": "bastion_call",
+            "name": "Bastion Call",
+            "description": "Taunts all foes for 2 turns and raises a shield worth 25% of max vitality.",
+            "cost": 3,
+            "target": "self"
+          },
+          {
+            "id": "tremor_slam",
+            "name": "Tremor Slam",
+            "description": "Physical blow to every foe (0.8x) with 35% chance to Stun each.",
+            "cost": 5,
+            "target": "all_enemies"
+          }
+        ],
+        "duos": []
+      },
+      "lore": {
+        "title": "The Clockwork Dragoon",
+        "story": [
+          "As a lonely boy in Brasshelm, Dorian watched a silver storm dragon fly over the city walls with a rider on its back. He spent the next five years building a dragon of his own out of scrap and captured lightning, and named it Spark.",
+          "Now he guards the walls of Brasshelm with Spark at his side and a crackling glaive in his hands. The barons have ordered him to catch the outlaw Scarlett nine times. He has failed nine times, very carefully.",
+          "His one dream is to meet the dragon rider from his childhood. He does not know her name is Kyrielle, or that she would love to meet Spark."
+        ],
+        "region": {
+          "id": "cogsreach",
+          "name": "Cogsreach",
+          "element": "volt",
+          "resonance": {
+            "region": "cogsreach",
+            "regionName": "Cogsreach",
+            "name": "Overclock",
+            "description": "Gears spin up: +2 starting Aether and +10% celerity."
+          }
+        },
+        "bonds": [
+          {
+            "name": "Kyrielle",
+            "file_name": "kyrielle.jfif",
+            "rarity": 5,
+            "relation": "The dragon rider from his childhood. Built Spark because of her.",
+            "owned": false
+          },
+          {
+            "name": "Scarlett",
+            "file_name": "scarlett.jfif",
+            "rarity": 4,
+            "relation": "The outlaw he has very carefully failed to catch.",
+            "owned": false
+          }
+        ],
+        "rivals": [
+          {
+            "name": "Scarlett",
+            "file_name": "scarlett.jfif",
+            "rarity": 4,
+            "line": "Ten is a nice round number to finally catch you."
+          }
+        ],
+        "secret": {
+          "title": "Spark's Heart",
+          "unlockAscension": 1,
+          "unlocked": false,
+          "text": null
+        }
+      },
+      "ascension": {
+        "level": 0,
+        "max": 3,
+        "statBonusPercent": 0,
+        "nextCost": 1,
+        "nextStatBonusPercent": 5,
+        "canAscend": false,
+        "skillUnlockLevel": 3,
+        "unlocksSkill": true
+      }
+    },
+    {
+      "file_name": "eldric.png",
+      "name": "Eldric",
+      "rarity": 4,
+      "quantity": 1,
+      "firstObtainedAt": "2026-11-12T01:38:39+00:00",
+      "lastObtainedAt": "2026-11-12T01:38:39+00:00",
+      "listingPriceRange": {
+        "min": 25,
+        "max": 2500
+      },
+      "maxListingQuantity": 1,
+      "battle": {
+        "element": "terra",
+        "elementLabel": "Terra",
+        "strongAgainst": [
+          "volt"
+        ],
+        "archetype": "arcanist",
+        "archetypeLabel": "Arcanist",
+        "archetypeDescription": "Wielder of raw elements, fragile but devastating.",
+        "stats": {
+          "vitality": 116,
+          "might": 10,
+          "arcana": 39,
+          "bulwark": 15,
+          "resolve": 21,
+          "celerity": 13,
+          "fate": 11
+        },
+        "skills": [
+          {
+            "id": "strike",
+            "name": "Strike",
+            "description": "Basic attack with the card's best power. Generates +1 extra Aether.",
+            "cost": 0,
+            "target": "enemy"
+          },
+          {
+            "id": "guard",
+            "name": "Guard",
+            "description": "Halves damage taken until this card's next turn. Generates +1 extra Aether.",
+            "cost": 0,
+            "target": "self"
+          },
+          {
+            "id": "elemental_bolt",
+            "name": "Elemental Bolt",
+            "description": "Magical bolt (1.45x) carrying this card's element effect.",
+            "cost": 3,
+            "target": "enemy"
+          },
+          {
+            "id": "arcane_tempest",
+            "name": "Arcane Tempest",
+            "description": "Magical storm (0.8x) on every foe, each hit carrying the element effect.",
+            "cost": 5,
+            "target": "all_enemies"
+          }
+        ],
+        "duos": []
+      },
+      "lore": {
+        "title": "The Rune-Serpent Scholar",
+        "story": [
+          "Eldric spent ten years in a windowless library in the Ironfang Highlands, translating the runes that appeared in the mountains after the Sundering. When he spoke the last word, the runes rose from the page and coiled into a serpent of blue light that has followed him ever since.",
+          "The silver in his hair came from that night. So did a terrible suspicion: the runes are the Hollow's own writing, and the same runes glow on the axe of Gorvane, the warlord who cannot die.",
+          "He follows Gorvane from battle to battle, taking notes. Gorvane tolerates him, mostly because Eldric is the only one who has ever promised to find a way for him to rest."
+        ],
+        "region": {
+          "id": "ironfang",
+          "name": "The Ironfang Highlands",
+          "element": "terra",
+          "resonance": {
+            "region": "ironfang",
+            "regionName": "The Ironfang Highlands",
+            "name": "Clan Fury",
+            "description": "The war drums of the clans: +15% might."
+          }
+        },
+        "bonds": [
+          {
+            "name": "Gorvane",
+            "file_name": "gorvane.jfif",
+            "rarity": 5,
+            "relation": "The warlord whose axe bears the Hollow's runes.",
+            "owned": false
+          }
+        ],
+        "rivals": [
+          {
+            "name": "Grizelda",
+            "file_name": "grizelda.jfif",
+            "rarity": 4,
+            "line": "The serpent told me your name, Warden."
+          }
+        ],
+        "secret": {
+          "title": "The Serpent's Name",
+          "unlockAscension": 1,
+          "unlocked": false,
+          "text": null
+        }
+      },
+      "ascension": {
+        "level": 0,
+        "max": 3,
+        "statBonusPercent": 0,
+        "nextCost": 1,
+        "nextStatBonusPercent": 5,
+        "canAscend": false,
+        "skillUnlockLevel": 3,
+        "unlocksSkill": true
+      }
+    },
+    {
+      "file_name": "elowen.jfif",
+      "name": "Elowen",
+      "rarity": 4,
+      "quantity": 3,
+      "firstObtainedAt": "2026-11-12T01:38:39+00:00",
+      "lastObtainedAt": "2026-11-12T01:38:40+00:00",
+      "listingPriceRange": {
+        "min": 25,
+        "max": 2500
+      },
+      "maxListingQuantity": 3,
+      "battle": {
+        "element": "terra",
+        "elementLabel": "Terra",
+        "strongAgainst": [
+          "volt"
+        ],
+        "archetype": "mystic",
+        "archetypeLabel": "Mystic",
+        "archetypeDescription": "Channels light and life to mend and revive allies.",
+        "stats": {
+          "vitality": 120,
+          "might": 11,
+          "arcana": 29,
+          "bulwark": 18,
+          "resolve": 28,
+          "celerity": 12,
+          "fate": 8
+        },
+        "skills": [
+          {
+            "id": "strike",
+            "name": "Strike",
+            "description": "Basic attack with the card's best power. Generates +1 extra Aether.",
+            "cost": 0,
+            "target": "enemy"
+          },
+          {
+            "id": "guard",
+            "name": "Guard",
+            "description": "Halves damage taken until this card's next turn. Generates +1 extra Aether.",
+            "cost": 0,
+            "target": "self"
+          },
+          {
+            "id": "mending_light",
+            "name": "Mending Light",
+            "description": "Heals one ally based on Arcana and removes its debuffs.",
+            "cost": 3,
+            "target": "ally"
+          },
+          {
+            "id": "sanctuary",
+            "name": "Sanctuary",
+            "description": "Heals every ally and grants Regen for 3 turns.",
+            "cost": 5,
+            "target": "all_allies"
+          }
+        ],
+        "duos": [
+          {
+            "partner": "verdana.jfif",
+            "skill": {
+              "id": "moonbloom",
+              "name": "Moonbloom",
+              "description": "The moon flowers open for the child of the forest: heals every ally for 25% of max vitality and grants Regen for 3 turns.",
+              "cost": 5,
+              "target": "all_allies",
+              "duo": true
+            }
+          }
+        ]
+      },
+      "lore": {
+        "title": "The Night-Blooming Healer",
+        "story": [
+          "Elowen tends the moon-flower forest of Lirael, where flowers bloom only under the moon. She knows the name of every plant, and every plant knows hers, which is why the forest grows paths for her that it hides from everyone else.",
+          "One spring night she found a baby sleeping in a nest of flowers and raised her with her sister Sylva; the baby was Verdana. Years later she took on a young herbalist, Liesel, as her apprentice.",
+          "Her golden staff carries the forest's life into battle, closing wounds and calming fears. She smiles often, and her smile is said to be the best medicine she has."
+        ],
+        "region": {
+          "id": "sylvaran",
+          "name": "The Sylvaran Wilds",
+          "element": "terra",
+          "resonance": {
+            "region": "sylvaran",
+            "regionName": "The Sylvaran Wilds",
+            "name": "Rootbound",
+            "description": "The roots lend their strength: +12% vitality."
+          }
+        },
+        "bonds": [
+          {
+            "name": "Sylva",
+            "file_name": "sylva.jfif",
+            "rarity": 4,
+            "relation": "Her younger sister, the voice of the old grove.",
+            "owned": true
+          },
+          {
+            "name": "Verdana",
+            "file_name": "verdana.jfif",
+            "rarity": 4,
+            "relation": "The baby she found in a nest of flowers.",
+            "owned": false
+          },
+          {
+            "name": "Liesel",
+            "file_name": "liesel.jfif",
+            "rarity": 3,
+            "relation": "Her apprentice.",
+            "owned": true
+          }
+        ],
+        "rivals": [],
+        "secret": {
+          "title": "The Dying Flowers",
+          "unlockAscension": 1,
+          "unlocked": false,
+          "text": null
+        }
+      },
+      "ascension": {
+        "level": 0,
+        "max": 3,
+        "statBonusPercent": 0,
+        "nextCost": 1,
+        "nextStatBonusPercent": 5,
+        "canAscend": true,
+        "skillUnlockLevel": 3,
+        "unlocksSkill": true
+      }
+    },
+    {
+      "file_name": "fenric.jfif",
+      "name": "Fenric",
+      "rarity": 4,
+      "quantity": 1,
+      "firstObtainedAt": "2026-11-12T01:38:40+00:00",
+      "lastObtainedAt": "2026-11-12T01:38:40+00:00",
+      "listingPriceRange": {
+        "min": 25,
+        "max": 2500
+      },
+      "maxListingQuantity": 1,
+      "battle": {
+        "element": "umbra",
+        "elementLabel": "Umbra",
+        "strongAgainst": [
+          "lumen"
+        ],
+        "archetype": "duelist",
+        "archetypeLabel": "Duelist",
+        "archetypeDescription": "Swift blade that strikes hard and often.",
+        "stats": {
+          "vitality": 118,
+          "might": 36,
+          "arcana": 10,
+          "bulwark": 17,
+          "resolve": 14,
+          "celerity": 15,
+          "fate": 15
+        },
+        "skills": [
+          {
+            "id": "strike",
+            "name": "Strike",
+            "description": "Basic attack with the card's best power. Generates +1 extra Aether.",
+            "cost": 0,
+            "target": "enemy"
+          },
+          {
+            "id": "guard",
+            "name": "Guard",
+            "description": "Halves damage taken until this card's next turn. Generates +1 extra Aether.",
+            "cost": 0,
+            "target": "self"
+          },
+          {
+            "id": "rending_flurry",
+            "name": "Rending Flurry",
+            "description": "Two quick physical slashes (0.75x each).",
+            "cost": 3,
+            "target": "enemy"
+          },
+          {
+            "id": "execution_arc",
+            "name": "Execution Arc",
+            "description": "Heavy physical strike (1.5x), 60% stronger against foes below 40% vitality.",
+            "cost": 5,
+            "target": "enemy"
+          }
+        ],
+        "duos": []
+      },
+      "lore": {
+        "title": "The Wolf Without a Pack",
+        "story": [
+          "Fenric was born in Hrimvald under a black moon, half man and half wolf, a child of the wind-wolf pack that lost its leader, Hrimfang, on the night of the Sundering. The pack blamed his strange birth for their bad luck and cast him out.",
+          "He went south into the Sylvaran Wilds and made the dark woods his home, learning to shoot arrows that glow with green spirit-fire. The shaman Tavik and his spirit-wolf Kesh are the closest thing to family he has.",
+          "His howl carries far on cold nights, far enough to reach the Frostgate. The knight who holds it, Boreas, carries the last of Hrimfang's strength. Fenric does not know that she has been looking for him for twenty years."
+        ],
+        "region": {
+          "id": "hrimvald",
+          "name": "Hrimvald",
+          "element": "tide",
+          "resonance": {
+            "region": "hrimvald",
+            "regionName": "Hrimvald",
+            "name": "Frostgate Howl",
+            "description": "The wind-wolves howl: every foe starts Slowed for 2 turns."
+          }
+        },
+        "bonds": [
+          {
+            "name": "Boreas",
+            "file_name": "boreas.jfif",
+            "rarity": 5,
+            "relation": "The knight of the Frostgate. He does not know she is looking for him.",
+            "owned": false
+          },
+          {
+            "name": "Tavik",
+            "file_name": "tavik.jfif",
+            "rarity": 4,
+            "relation": "The closest thing he has to family.",
+            "owned": false
+          },
+          {
+            "name": "Verdana",
+            "file_name": "verdana.jfif",
+            "rarity": 4,
+            "relation": "He becomes gentle when Puff sits on his lap. He denies it.",
+            "owned": false
+          }
+        ],
+        "rivals": [],
+        "secret": {
+          "title": "Born the Same Night",
+          "unlockAscension": 1,
+          "unlocked": false,
+          "text": null
+        }
+      },
+      "ascension": {
+        "level": 0,
+        "max": 3,
+        "statBonusPercent": 0,
+        "nextCost": 1,
+        "nextStatBonusPercent": 5,
+        "canAscend": false,
+        "skillUnlockLevel": 3,
+        "unlocksSkill": true
+      }
+    },
+    {
+      "file_name": "hayato.jfif",
+      "name": "Hayato",
+      "rarity": 4,
+      "quantity": 1,
+      "firstObtainedAt": "2026-11-12T01:38:40+00:00",
+      "lastObtainedAt": "2026-11-12T01:38:40+00:00",
+      "listingPriceRange": {
+        "min": 25,
+        "max": 2500
+      },
+      "maxListingQuantity": 1,
+      "battle": {
+        "element": "gale",
+        "elementLabel": "Gale",
+        "strongAgainst": [
+          "terra"
+        ],
+        "archetype": "duelist",
+        "archetypeLabel": "Duelist",
+        "archetypeDescription": "Swift blade that strikes hard and often.",
+        "stats": {
+          "vitality": 122,
+          "might": 35,
+          "arcana": 10,
+          "bulwark": 19,
+          "resolve": 13,
+          "celerity": 16,
+          "fate": 15
+        },
+        "skills": [
+          {
+            "id": "strike",
+            "name": "Strike",
+            "description": "Basic attack with the card's best power. Generates +1 extra Aether.",
+            "cost": 0,
+            "target": "enemy"
+          },
+          {
+            "id": "guard",
+            "name": "Guard",
+            "description": "Halves damage taken until this card's next turn. Generates +1 extra Aether.",
+            "cost": 0,
+            "target": "self"
+          },
+          {
+            "id": "rending_flurry",
+            "name": "Rending Flurry",
+            "description": "Two quick physical slashes (0.75x each).",
+            "cost": 3,
+            "target": "enemy"
+          },
+          {
+            "id": "execution_arc",
+            "name": "Execution Arc",
+            "description": "Heavy physical strike (1.5x), 60% stronger against foes below 40% vitality.",
+            "cost": 5,
+            "target": "enemy"
+          }
+        ],
+        "duos": [
+          {
+            "partner": "kaito.jfif",
+            "skill": {
+              "id": "twin_petal_draw",
+              "name": "Twin Petal Draw",
+              "description": "Two rivals draw as one: two physical cuts on a foe (1.3x each) that ignore 30% of its bulwark.",
+              "cost": 5,
+              "target": "enemy",
+              "duo": true
+            }
+          }
+        ]
+      },
+      "lore": {
+        "title": "The Blade of Falling Petals",
+        "story": [
+          "Hayato trained at the Temple of a Thousand Lanterns, where students learn to cut a cherry petal in half before it touches the ground. He was the first in a century to cut it into four.",
+          "He met Kaito when both were twelve, in a duel that ended in a draw and a lifelong rivalry. His younger brother Ryuji has never been able to cut a single petal, and Hayato secretly envies him for having the courage to fight with his fists instead.",
+          "His katana carries the wind of the mountain passes, and he fights with a calm that unsettles his enemies. He believes a duel is won in the breath before the first strike."
+        ],
+        "region": {
+          "id": "hoshigane",
+          "name": "The Hoshigane Isles",
+          "element": "gale",
+          "resonance": {
+            "region": "hoshigane",
+            "regionName": "The Hoshigane Isles",
+            "name": "First Petal",
+            "description": "The first cut decides the duel: the team starts Empowered for 2 turns."
+          }
+        },
+        "bonds": [
+          {
+            "name": "Kaito",
+            "file_name": "kaito.jfif",
+            "rarity": 4,
+            "relation": "His rival and closest friend.",
+            "owned": true
+          },
+          {
+            "name": "Ryuji",
+            "file_name": "ryuji.jfif",
+            "rarity": 3,
+            "relation": "His younger brother. Secretly proud of him.",
+            "owned": true
+          }
+        ],
+        "rivals": [
+          {
+            "name": "Kaito",
+            "file_name": "kaito.jfif",
+            "rarity": 4,
+            "line": "And the first one either of us can lose."
+          }
+        ],
+        "secret": {
+          "title": "The Draw",
+          "unlockAscension": 1,
+          "unlocked": false,
+          "text": null
+        }
+      },
+      "ascension": {
+        "level": 0,
+        "max": 3,
+        "statBonusPercent": 0,
+        "nextCost": 1,
+        "nextStatBonusPercent": 5,
+        "canAscend": false,
+        "skillUnlockLevel": 3,
+        "unlocksSkill": true
+      }
+    },
+    {
+      "file_name": "kaito.jfif",
+      "name": "Kaito",
+      "rarity": 4,
+      "quantity": 2,
+      "firstObtainedAt": "2026-11-12T01:38:38+00:00",
+      "lastObtainedAt": "2026-11-12T01:38:39+00:00",
+      "listingPriceRange": {
+        "min": 25,
+        "max": 2500
+      },
+      "maxListingQuantity": 2,
+      "battle": {
+        "element": "gale",
+        "elementLabel": "Gale",
+        "strongAgainst": [
+          "terra"
+        ],
+        "archetype": "duelist",
+        "archetypeLabel": "Duelist",
+        "archetypeDescription": "Swift blade that strikes hard and often.",
+        "stats": {
+          "vitality": 116,
+          "might": 36,
+          "arcana": 9,
+          "bulwark": 17,
+          "resolve": 14,
+          "celerity": 15,
+          "fate": 15
+        },
+        "skills": [
+          {
+            "id": "strike",
+            "name": "Strike",
+            "description": "Basic attack with the card's best power. Generates +1 extra Aether.",
+            "cost": 0,
+            "target": "enemy"
+          },
+          {
+            "id": "guard",
+            "name": "Guard",
+            "description": "Halves damage taken until this card's next turn. Generates +1 extra Aether.",
+            "cost": 0,
+            "target": "self"
+          },
+          {
+            "id": "rending_flurry",
+            "name": "Rending Flurry",
+            "description": "Two quick physical slashes (0.75x each).",
+            "cost": 3,
+            "target": "enemy"
+          },
+          {
+            "id": "execution_arc",
+            "name": "Execution Arc",
+            "description": "Heavy physical strike (1.5x), 60% stronger against foes below 40% vitality.",
+            "cost": 5,
+            "target": "enemy"
+          }
+        ],
+        "duos": [
+          {
+            "partner": "hayato.jfif",
+            "skill": {
+              "id": "twin_petal_draw",
+              "name": "Twin Petal Draw",
+              "description": "Two rivals draw as one: two physical cuts on a foe (1.3x each) that ignore 30% of its bulwark.",
+              "cost": 5,
+              "target": "enemy",
+              "duo": true
+            }
+          }
+        ]
+      },
+      "lore": {
+        "title": "The Last Dragonfly",
+        "story": [
+          "Kaito wears the dragonfly crest of the Tonbo clan, whose castle burned the night after the Sundering while the islands were still shaking. Masked assassins of the Kurokage, the shadow clan, did it on a rival lord's orders. Kaito, eleven years old, survived by hiding in the castle well.",
+          "He is the last swordsman of his clan, wandering the Hoshigane Isles with a blade drawn faster than the wind. His rival and closest friend, Hayato, has beaten him in exactly as many duels as he has lost to him.",
+          "Kaito hunts the Kurokage still. He does not know that the quiet fighter with blue fire in his fists, the one who has saved his life twice, was raised by them."
+        ],
+        "region": {
+          "id": "hoshigane",
+          "name": "The Hoshigane Isles",
+          "element": "gale",
+          "resonance": {
+            "region": "hoshigane",
+            "regionName": "The Hoshigane Isles",
+            "name": "First Petal",
+            "description": "The first cut decides the duel: the team starts Empowered for 2 turns."
+          }
+        },
+        "bonds": [
+          {
+            "name": "Hayato",
+            "file_name": "hayato.jfif",
+            "rarity": 4,
+            "relation": "His rival and closest friend.",
+            "owned": true
+          },
+          {
+            "name": "Kage",
+            "file_name": "kage.jfif",
+            "rarity": 4,
+            "relation": "A stranger who saved his life twice.",
+            "owned": false
+          }
+        ],
+        "rivals": [
+          {
+            "name": "Hayato",
+            "file_name": "hayato.jfif",
+            "rarity": 4,
+            "line": "Our hundredth duel."
+          }
+        ],
+        "secret": {
+          "title": "The Child in the Shadows",
+          "unlockAscension": 1,
+          "unlocked": false,
+          "text": null
+        }
+      },
+      "ascension": {
+        "level": 0,
+        "max": 3,
+        "statBonusPercent": 0,
+        "nextCost": 1,
+        "nextStatBonusPercent": 5,
+        "canAscend": true,
+        "skillUnlockLevel": 3,
+        "unlocksSkill": true
+      }
+    },
+    {
+      "file_name": "lucan.jfif",
+      "name": "Lucan",
+      "rarity": 4,
+      "quantity": 2,
+      "firstObtainedAt": "2026-11-12T01:38:40+00:00",
+      "lastObtainedAt": "2026-11-12T01:38:41+00:00",
+      "listingPriceRange": {
+        "min": 25,
+        "max": 2500
+      },
+      "maxListingQuantity": 2,
+      "battle": {
+        "element": "umbra",
+        "elementLabel": "Umbra",
+        "strongAgainst": [
+          "lumen"
+        ],
+        "archetype": "trickster",
+        "archetypeLabel": "Trickster",
+        "archetypeDescription": "Cunning schemer who curses foes and steals Aether.",
+        "stats": {
+          "vitality": 112,
+          "might": 29,
+          "arcana": 29,
+          "bulwark": 13,
+          "resolve": 15,
+          "celerity": 18,
+          "fate": 13
+        },
+        "skills": [
+          {
+            "id": "strike",
+            "name": "Strike",
+            "description": "Basic attack with the card's best power. Generates +1 extra Aether.",
+            "cost": 0,
+            "target": "enemy"
+          },
+          {
+            "id": "guard",
+            "name": "Guard",
+            "description": "Halves damage taken until this card's next turn. Generates +1 extra Aether.",
+            "cost": 0,
+            "target": "self"
+          },
+          {
+            "id": "hexing_shiv",
+            "name": "Hexing Shiv",
+            "description": "Cursed stab (1.0x hybrid) that Weakens and Exposes the target.",
+            "cost": 3,
+            "target": "enemy"
+          },
+          {
+            "id": "aether_siphon",
+            "name": "Aether Siphon",
+            "description": "Light hybrid hit (0.5x) that Slows every foe and steals up to 2 of their Aether.",
+            "cost": 5,
+            "target": "all_enemies"
+          }
+        ],
+        "duos": []
+      },
+      "lore": {
+        "title": "The Rooftop Scoundrel",
+        "story": [
+          "Lucan steals from nobles, lies to guards and flirts with everyone, all with the same crooked smile. His daggers trail black smoke, a gift from a shadow-imp named Grit that he won in a card game against Mortis, who claims he let him win.",
+          "He and Nyra were once the best pair of thieves in Spirehollow. She quit; he did not. He tells everyone he does not miss her. Grit, perched on his shoulder, rolls its eyes every time.",
+          "Together Lucan and Grit are the most annoying pair in the city, and the most effective."
+        ],
+        "region": {
+          "id": "spirehollow",
+          "name": "Spirehollow",
+          "element": "umbra",
+          "resonance": {
+            "region": "spirehollow",
+            "regionName": "Spirehollow",
+            "name": "Rooftop Ambush",
+            "description": "Strike from the shadows: every foe starts Exposed for 2 turns."
+          }
+        },
+        "bonds": [
+          {
+            "name": "Mortis",
+            "file_name": "mortis.jfif",
+            "rarity": 5,
+            "relation": "Won Grit from him in a card game. Probably.",
+            "owned": false
+          },
+          {
+            "name": "Nyra",
+            "file_name": "nyra.jfif",
+            "rarity": 4,
+            "relation": "Tells everyone he does not miss her.",
+            "owned": true
+          },
+          {
+            "name": "Vexa",
+            "file_name": "vexa.jfif",
+            "rarity": 3,
+            "relation": "Has tried to con her back for years.",
+            "owned": true
+          }
+        ],
+        "rivals": [
+          {
+            "name": "Vexa",
+            "file_name": "vexa.jfif",
+            "rarity": 3,
+            "line": "Make it a hundred. I will pay you in IOUs."
+          }
+        ],
+        "secret": {
+          "title": "Grit's Real Job",
+          "unlockAscension": 1,
+          "unlocked": false,
+          "text": null
+        }
+      },
+      "ascension": {
+        "level": 0,
+        "max": 3,
+        "statBonusPercent": 0,
+        "nextCost": 1,
+        "nextStatBonusPercent": 5,
+        "canAscend": true,
+        "skillUnlockLevel": 3,
+        "unlocksSkill": true
+      }
+    },
+    {
+      "file_name": "maren.jfif",
+      "name": "Maren",
+      "rarity": 4,
+      "quantity": 1,
+      "firstObtainedAt": "2026-11-12T01:38:39+00:00",
+      "lastObtainedAt": "2026-11-12T01:38:39+00:00",
+      "listingPriceRange": {
+        "min": 25,
+        "max": 2500
+      },
+      "maxListingQuantity": 1,
+      "battle": {
+        "element": "tide",
+        "elementLabel": "Tide",
+        "strongAgainst": [
+          "ember"
+        ],
+        "archetype": "trickster",
+        "archetypeLabel": "Trickster",
+        "archetypeDescription": "Cunning schemer who curses foes and steals Aether.",
+        "stats": {
+          "vitality": 113,
+          "might": 31,
+          "arcana": 31,
+          "bulwark": 15,
+          "resolve": 18,
+          "celerity": 20,
+          "fate": 15
+        },
+        "skills": [
+          {
+            "id": "strike",
+            "name": "Strike",
+            "description": "Basic attack with the card's best power. Generates +1 extra Aether.",
+            "cost": 0,
+            "target": "enemy"
+          },
+          {
+            "id": "guard",
+            "name": "Guard",
+            "description": "Halves damage taken until this card's next turn. Generates +1 extra Aether.",
+            "cost": 0,
+            "target": "self"
+          },
+          {
+            "id": "hexing_shiv",
+            "name": "Hexing Shiv",
+            "description": "Cursed stab (1.0x hybrid) that Weakens and Exposes the target.",
+            "cost": 3,
+            "target": "enemy"
+          },
+          {
+            "id": "aether_siphon",
+            "name": "Aether Siphon",
+            "description": "Light hybrid hit (0.5x) that Slows every foe and steals up to 2 of their Aether.",
+            "cost": 5,
+            "target": "all_enemies"
+          }
+        ],
+        "duos": []
+      },
+      "lore": {
+        "title": "The Tidal Spellbreaker",
+        "story": [
+          "Maren was the most brilliant student of the storm tower of Voltaris, in Cogsreach, until she discovered how easily spells could be unraveled and started unraveling her master's. Expelled, she left with her staff and a library's worth of secrets. Her friend Ophira still writes to her.",
+          "She settled on the Thalassar Coast, where the drowned temples are full of old wards that need breaking and old curses that need lifting. Isolde's Tidewatch hires her more often than either of them admits.",
+          "She fights by twisting her enemies' magic like a riptide, turning their strength against them. Few mages want to duel her twice."
+        ],
+        "region": {
+          "id": "thalassar",
+          "name": "The Thalassar Coast",
+          "element": "tide",
+          "resonance": {
+            "region": "thalassar",
+            "regionName": "The Thalassar Coast",
+            "name": "Tide Hymn",
+            "description": "The drowned temples sing along: +15% arcana."
+          }
+        },
+        "bonds": [
+          {
+            "name": "Ophira",
+            "file_name": "ophira.jfif",
+            "rarity": 4,
+            "relation": "Her friend from the storm tower. Still writes every month.",
+            "owned": false
+          },
+          {
+            "name": "Isolde",
+            "file_name": "isolde.jfif",
+            "rarity": 4,
+            "relation": "The Tidewatch hires her more often than either admits.",
+            "owned": false
+          }
+        ],
+        "rivals": [
+          {
+            "name": "Ophira",
+            "file_name": "ophira.jfif",
+            "rarity": 4,
+            "line": "You are holding that tower up alone. Let me help or let me win."
+          }
+        ],
+        "secret": {
+          "title": "The Spell She Broke",
+          "unlockAscension": 1,
+          "unlocked": false,
+          "text": null
+        }
+      },
+      "ascension": {
+        "level": 0,
+        "max": 3,
+        "statBonusPercent": 0,
+        "nextCost": 1,
+        "nextStatBonusPercent": 5,
+        "canAscend": false,
+        "skillUnlockLevel": 3,
+        "unlocksSkill": true
+      }
+    },
+    {
+      "file_name": "nocturna.jfif",
+      "name": "Nocturna",
+      "rarity": 4,
+      "quantity": 1,
+      "firstObtainedAt": "2026-11-12T01:38:39+00:00",
+      "lastObtainedAt": "2026-11-12T01:38:39+00:00",
+      "listingPriceRange": {
+        "min": 25,
+        "max": 2500
+      },
+      "maxListingQuantity": 1,
+      "battle": {
+        "element": "umbra",
+        "elementLabel": "Umbra",
+        "strongAgainst": [
+          "lumen"
+        ],
+        "archetype": "arcanist",
+        "archetypeLabel": "Arcanist",
+        "archetypeDescription": "Wielder of raw elements, fragile but devastating.",
+        "stats": {
+          "vitality": 116,
+          "might": 9,
+          "arcana": 37,
+          "bulwark": 14,
+          "resolve": 22,
+          "celerity": 12,
+          "fate": 11
+        },
+        "skills": [
+          {
+            "id": "strike",
+            "name": "Strike",
+            "description": "Basic attack with the card's best power. Generates +1 extra Aether.",
+            "cost": 0,
+            "target": "enemy"
+          },
+          {
+            "id": "guard",
+            "name": "Guard",
+            "description": "Halves damage taken until this card's next turn. Generates +1 extra Aether.",
+            "cost": 0,
+            "target": "self"
+          },
+          {
+            "id": "elemental_bolt",
+            "name": "Elemental Bolt",
+            "description": "Magical bolt (1.45x) carrying this card's element effect.",
+            "cost": 3,
+            "target": "enemy"
+          },
+          {
+            "id": "arcane_tempest",
+            "name": "Arcane Tempest",
+            "description": "Magical storm (0.8x) on every foe, each hit carrying the element effect.",
+            "cost": 5,
+            "target": "all_enemies"
+          }
+        ],
+        "duos": []
+      },
+      "lore": {
+        "title": "Mistress of the Violet Sigil",
+        "story": [
+          "Nocturna left the Warden Archive, and her sister Amethia, to become Lord Zarathor's advisor and, for a time, much more. She left him too, the night his horned shadow spoke to her in his voice.",
+          "She leads a coven now, in a gothic chamber where candles burn with violet flame. Her sigils can silence a storm or open a door to places that should stay closed. She keeps every letter Amethia has sent her, unopened, in a locked drawer.",
+          "She is polite, amused and utterly confident. Rival sorcerers who visit her chamber often leave a little less powerful than they arrived, and Zarathor, it is said, still visits once a year, and leaves without a word."
+        ],
+        "region": {
+          "id": "nocthaven",
+          "name": "Nocthaven",
+          "element": "umbra",
+          "resonance": {
+            "region": "nocthaven",
+            "regionName": "Nocthaven",
+            "name": "Grave Chill",
+            "description": "The cold of the crypts seeps in: every foe starts Weakened for 2 turns."
+          }
+        },
+        "bonds": [
+          {
+            "name": "Zarathor",
+            "file_name": "zarathor.jfif",
+            "rarity": 5,
+            "relation": "She left him the night his shadow spoke in his voice.",
+            "owned": false
+          },
+          {
+            "name": "Amethia",
+            "file_name": "amethia.jfif",
+            "rarity": 4,
+            "relation": "Her younger sister. Keeps every letter, unopened.",
+            "owned": true
+          }
+        ],
+        "rivals": [],
+        "secret": {
+          "title": "Why She Never Reads Them",
+          "unlockAscension": 1,
+          "unlocked": false,
+          "text": null
+        }
+      },
+      "ascension": {
+        "level": 0,
+        "max": 3,
+        "statBonusPercent": 0,
+        "nextCost": 1,
+        "nextStatBonusPercent": 5,
+        "canAscend": false,
+        "skillUnlockLevel": 3,
+        "unlocksSkill": true
+      }
+    },
+    {
+      "file_name": "nyra.jfif",
+      "name": "Nyra",
+      "rarity": 4,
+      "quantity": 2,
+      "firstObtainedAt": "2026-11-12T01:38:39+00:00",
+      "lastObtainedAt": "2026-11-12T01:38:40+00:00",
+      "listingPriceRange": {
+        "min": 25,
+        "max": 2500
+      },
+      "maxListingQuantity": 2,
+      "battle": {
+        "element": "umbra",
+        "elementLabel": "Umbra",
+        "strongAgainst": [
+          "lumen"
+        ],
+        "archetype": "duelist",
+        "archetypeLabel": "Duelist",
+        "archetypeDescription": "Swift blade that strikes hard and often.",
+        "stats": {
+          "vitality": 125,
+          "might": 35,
+          "arcana": 10,
+          "bulwark": 17,
+          "resolve": 14,
+          "celerity": 17,
+          "fate": 17
+        },
+        "skills": [
+          {
+            "id": "strike",
+            "name": "Strike",
+            "description": "Basic attack with the card's best power. Generates +1 extra Aether.",
+            "cost": 0,
+            "target": "enemy"
+          },
+          {
+            "id": "guard",
+            "name": "Guard",
+            "description": "Halves damage taken until this card's next turn. Generates +1 extra Aether.",
+            "cost": 0,
+            "target": "self"
+          },
+          {
+            "id": "rending_flurry",
+            "name": "Rending Flurry",
+            "description": "Two quick physical slashes (0.75x each).",
+            "cost": 3,
+            "target": "enemy"
+          },
+          {
+            "id": "execution_arc",
+            "name": "Execution Arc",
+            "description": "Heavy physical strike (1.5x), 60% stronger against foes below 40% vitality.",
+            "cost": 5,
+            "target": "enemy"
+          }
+        ],
+        "duos": []
+      },
+      "lore": {
+        "title": "The Claw of the Moonlit Roofs",
+        "story": [
+          "Nyra hunts the thieves who hunt Spirehollow. From the rooftops she watches every alley, and her steel claws have ended the careers of more criminals than the city guard ever has.",
+          "She used to be one of them. She and Lucan were the best pair of thieves in the city until a job went wrong and a child got hurt. She quit that night; Lucan did not. They have been dancing around each other on the rooftops ever since.",
+          "She keeps a special eye on a young pickpocket named Jory, who reminds her of herself. Those she protects leave small offerings of bread on the rooftops. She always takes them."
+        ],
+        "region": {
+          "id": "spirehollow",
+          "name": "Spirehollow",
+          "element": "umbra",
+          "resonance": {
+            "region": "spirehollow",
+            "regionName": "Spirehollow",
+            "name": "Rooftop Ambush",
+            "description": "Strike from the shadows: every foe starts Exposed for 2 turns."
+          }
+        },
+        "bonds": [
+          {
+            "name": "Lucan",
+            "file_name": "lucan.jfif",
+            "rarity": 4,
+            "relation": "Her old partner in crime. She quit; he did not.",
+            "owned": true
+          },
+          {
+            "name": "Jory",
+            "file_name": "jory.jfif",
+            "rarity": 3,
+            "relation": "Reminds her of herself. Keeps letting him go.",
+            "owned": false
+          },
+          {
+            "name": "Corvus",
+            "file_name": "corvus.jfif",
+            "rarity": 3,
+            "relation": "The guild's enforcer. Strangely slow to come for her.",
+            "owned": false
+          }
+        ],
+        "rivals": [
+          {
+            "name": "Corvus",
+            "file_name": "corvus.jfif",
+            "rarity": 3,
+            "line": "Slow again tonight, enforcer?"
+          }
+        ],
+        "secret": {
+          "title": "The Job That Went Wrong",
+          "unlockAscension": 1,
+          "unlocked": false,
+          "text": null
+        }
+      },
+      "ascension": {
+        "level": 0,
+        "max": 3,
+        "statBonusPercent": 0,
+        "nextCost": 1,
+        "nextStatBonusPercent": 5,
+        "canAscend": true,
+        "skillUnlockLevel": 3,
+        "unlocksSkill": true
+      }
+    },
+    {
+      "file_name": "odette.jfif",
+      "name": "Odette",
+      "rarity": 4,
+      "quantity": 1,
+      "firstObtainedAt": "2026-11-12T01:38:39+00:00",
+      "lastObtainedAt": "2026-11-12T01:38:39+00:00",
+      "listingPriceRange": {
+        "min": 25,
+        "max": 2500
+      },
+      "maxListingQuantity": 1,
+      "battle": {
+        "element": "tide",
+        "elementLabel": "Tide",
+        "strongAgainst": [
+          "ember"
+        ],
+        "archetype": "mystic",
+        "archetypeLabel": "Mystic",
+        "archetypeDescription": "Channels light and life to mend and revive allies.",
+        "stats": {
+          "vitality": 131,
+          "might": 12,
+          "arcana": 32,
+          "bulwark": 18,
+          "resolve": 30,
+          "celerity": 11,
+          "fate": 8
+        },
+        "skills": [
+          {
+            "id": "strike",
+            "name": "Strike",
+            "description": "Basic attack with the card's best power. Generates +1 extra Aether.",
+            "cost": 0,
+            "target": "enemy"
+          },
+          {
+            "id": "guard",
+            "name": "Guard",
+            "description": "Halves damage taken until this card's next turn. Generates +1 extra Aether.",
+            "cost": 0,
+            "target": "self"
+          },
+          {
+            "id": "mending_light",
+            "name": "Mending Light",
+            "description": "Heals one ally based on Arcana and removes its debuffs.",
+            "cost": 3,
+            "target": "ally"
+          },
+          {
+            "id": "sanctuary",
+            "name": "Sanctuary",
+            "description": "Heals every ally and grants Regen for 3 turns.",
+            "cost": 5,
+            "target": "all_allies"
+          }
+        ],
+        "duos": []
+      },
+      "lore": {
+        "title": "The Puppeteer of Tides",
+        "story": [
+          "Odette's puppets dance with strings made of seawater, and her performances made her the most beloved artist of the harbor town of Merrow. Her favorite puppet, Colette, was carved from driftwood that washed ashore from Celestine's sunken temple.",
+          "Colette sometimes moves on its own, and on stormy nights it sings hymns no one in Merrow has heard in twenty years. Odette insists this is normal. Celestine, who heard it sing once, went very quiet and flew away.",
+          "In battle, the strings of Odette's magic mend her allies as gently as she repairs her dolls."
+        ],
+        "region": {
+          "id": "thalassar",
+          "name": "The Thalassar Coast",
+          "element": "tide",
+          "resonance": {
+            "region": "thalassar",
+            "regionName": "The Thalassar Coast",
+            "name": "Tide Hymn",
+            "description": "The drowned temples sing along: +15% arcana."
+          }
+        },
+        "bonds": [
+          {
+            "name": "Celestine",
+            "file_name": "celestine.png",
+            "rarity": 5,
+            "relation": "A winged priestess who heard Colette sing, and flew away in silence.",
+            "owned": false
+          }
+        ],
+        "rivals": [
+          {
+            "name": "Celestine",
+            "file_name": "celestine.png",
+            "rarity": 5,
+            "line": "She chose to leave. I only listened."
+          }
+        ],
+        "secret": {
+          "title": "Colette's Request",
+          "unlockAscension": 1,
+          "unlocked": false,
+          "text": null
+        }
+      },
+      "ascension": {
+        "level": 0,
+        "max": 3,
+        "statBonusPercent": 0,
+        "nextCost": 1,
+        "nextStatBonusPercent": 5,
+        "canAscend": false,
+        "skillUnlockLevel": 3,
+        "unlocksSkill": true
+      }
+    },
+    {
+      "file_name": "pyralis.jfif",
+      "name": "Pyralis",
+      "rarity": 4,
+      "quantity": 1,
+      "firstObtainedAt": "2026-11-12T01:38:39+00:00",
+      "lastObtainedAt": "2026-11-12T01:38:39+00:00",
+      "listingPriceRange": {
+        "min": 25,
+        "max": 2500
+      },
+      "maxListingQuantity": 1,
+      "battle": {
+        "element": "ember",
+        "elementLabel": "Ember",
+        "strongAgainst": [
+          "gale"
+        ],
+        "archetype": "arcanist",
+        "archetypeLabel": "Arcanist",
+        "archetypeDescription": "Wielder of raw elements, fragile but devastating.",
+        "stats": {
+          "vitality": 104,
+          "might": 9,
+          "arcana": 40,
+          "bulwark": 14,
+          "resolve": 24,
+          "celerity": 12,
+          "fate": 11
+        },
+        "skills": [
+          {
+            "id": "strike",
+            "name": "Strike",
+            "description": "Basic attack with the card's best power. Generates +1 extra Aether.",
+            "cost": 0,
+            "target": "enemy"
+          },
+          {
+            "id": "guard",
+            "name": "Guard",
+            "description": "Halves damage taken until this card's next turn. Generates +1 extra Aether.",
+            "cost": 0,
+            "target": "self"
+          },
+          {
+            "id": "elemental_bolt",
+            "name": "Elemental Bolt",
+            "description": "Magical bolt (1.45x) carrying this card's element effect.",
+            "cost": 3,
+            "target": "enemy"
+          },
+          {
+            "id": "arcane_tempest",
+            "name": "Arcane Tempest",
+            "description": "Magical storm (0.8x) on every foe, each hit carrying the element effect.",
+            "cost": 5,
+            "target": "all_enemies"
+          }
+        ],
+        "duos": []
+      },
+      "lore": {
+        "title": "The Ember Prodigy",
+        "story": [
+          "Pyralis was six when the volcano lords burned his village, and he would have burned with it if a knight made of fire had not carried him out. He never learned the knight's name, only the legend: Ignis, guardian of the Everfire.",
+          "He set his first fire at seven and his first forest at eight. The fire mages of Emberhold took him in before he could set the whole south ablaze and taught him to shape the flame instead of feeding it. His best friend, the stone-singer Torvin, keeps the lava calm whenever Pyralis forgets to.",
+          "He is cocky, loud and genuinely brilliant. He wants to become the next guardian of the Everfire, and he has no idea Ignis has been watching him for years, wondering the same thing."
+        ],
+        "region": {
+          "id": "cinderpeak",
+          "name": "Cinderpeak",
+          "element": "ember",
+          "resonance": {
+            "region": "cinderpeak",
+            "regionName": "Cinderpeak",
+            "name": "Everfire Spark",
+            "description": "The mountain's flame burns in the team: +3 starting Aether."
+          }
+        },
+        "bonds": [
+          {
+            "name": "Ignis",
+            "file_name": "ignis.jfif",
+            "rarity": 5,
+            "relation": "The legend who saved him and the guardian he wants to become.",
+            "owned": false
+          },
+          {
+            "name": "Torvin",
+            "file_name": "torvin.jfif",
+            "rarity": 3,
+            "relation": "Best friend. Keeps the lava calm when Pyralis forgets to.",
+            "owned": true
+          },
+          {
+            "name": "Liesel",
+            "file_name": "liesel.jfif",
+            "rarity": 3,
+            "relation": "The herbalist with a Cinderpeak fox. Ember likes him.",
+            "owned": true
+          }
+        ],
+        "rivals": [],
+        "secret": {
+          "title": "The Burn Scar",
+          "unlockAscension": 1,
+          "unlocked": false,
+          "text": null
+        }
+      },
+      "ascension": {
+        "level": 0,
+        "max": 3,
+        "statBonusPercent": 0,
+        "nextCost": 1,
+        "nextStatBonusPercent": 5,
+        "canAscend": false,
+        "skillUnlockLevel": 3,
+        "unlocksSkill": true
+      }
+    },
+    {
+      "file_name": "ravenna.png",
+      "name": "Ravenna",
+      "rarity": 4,
+      "quantity": 1,
+      "firstObtainedAt": "2026-11-12T01:38:38+00:00",
+      "lastObtainedAt": "2026-11-12T01:38:38+00:00",
+      "listingPriceRange": {
+        "min": 25,
+        "max": 2500
+      },
+      "maxListingQuantity": 1,
+      "battle": {
+        "element": "umbra",
+        "elementLabel": "Umbra",
+        "strongAgainst": [
+          "lumen"
+        ],
+        "archetype": "trickster",
+        "archetypeLabel": "Trickster",
+        "archetypeDescription": "Cunning schemer who curses foes and steals Aether.",
+        "stats": {
+          "vitality": 102,
+          "might": 28,
+          "arcana": 31,
+          "bulwark": 15,
+          "resolve": 17,
+          "celerity": 20,
+          "fate": 14
+        },
+        "skills": [
+          {
+            "id": "strike",
+            "name": "Strike",
+            "description": "Basic attack with the card's best power. Generates +1 extra Aether.",
+            "cost": 0,
+            "target": "enemy"
+          },
+          {
+            "id": "guard",
+            "name": "Guard",
+            "description": "Halves damage taken until this card's next turn. Generates +1 extra Aether.",
+            "cost": 0,
+            "target": "self"
+          },
+          {
+            "id": "hexing_shiv",
+            "name": "Hexing Shiv",
+            "description": "Cursed stab (1.0x hybrid) that Weakens and Exposes the target.",
+            "cost": 3,
+            "target": "enemy"
+          },
+          {
+            "id": "aether_siphon",
+            "name": "Aether Siphon",
+            "description": "Light hybrid hit (0.5x) that Slows every foe and steals up to 2 of their Aether.",
+            "cost": 5,
+            "target": "all_enemies"
+          }
+        ],
+        "duos": []
+      },
+      "lore": {
+        "title": "The Raven of the Last Rites",
+        "story": [
+          "Ravenna performs the last rites in the graveyard of Duskmere, guiding souls that cannot find their way. Her raven, burning with violet fire, carries the messages the dead cannot deliver themselves.",
+          "She believes Malachar's tome is a prison, and that the souls inside it deserve to move on, whatever waits beyond. Malachar believes she will feed them to the Hollow. They have argued about it for twenty years, and they are the only two people in Nocthaven who truly understand each other.",
+          "She is kind to spirits and cruel to the living who disturb them. She has told Morwen that Edric's soul is still trapped in Zarathor's shadow, and she has promised to guide it home."
+        ],
+        "region": {
+          "id": "nocthaven",
+          "name": "Nocthaven",
+          "element": "umbra",
+          "resonance": {
+            "region": "nocthaven",
+            "regionName": "Nocthaven",
+            "name": "Grave Chill",
+            "description": "The cold of the crypts seeps in: every foe starts Weakened for 2 turns."
+          }
+        },
+        "bonds": [
+          {
+            "name": "Malachar",
+            "file_name": "malachar.jfif",
+            "rarity": 5,
+            "relation": "He keeps the dead in a cage and calls it mercy.",
+            "owned": false
+          },
+          {
+            "name": "Morwen",
+            "file_name": "morwen.jfif",
+            "rarity": 4,
+            "relation": "A widow whose betrothed is still trapped in the dark.",
+            "owned": false
+          }
+        ],
+        "rivals": [],
+        "secret": {
+          "title": "The Raven",
+          "unlockAscension": 1,
+          "unlocked": false,
+          "text": null
+        }
+      },
+      "ascension": {
+        "level": 0,
+        "max": 3,
+        "statBonusPercent": 0,
+        "nextCost": 1,
+        "nextStatBonusPercent": 5,
+        "canAscend": false,
+        "skillUnlockLevel": 3,
+        "unlocksSkill": true
+      }
+    },
+    {
+      "file_name": "rosalind.jfif",
+      "name": "Rosalind",
+      "rarity": 4,
+      "quantity": 3,
+      "firstObtainedAt": "2026-11-12T01:38:38+00:00",
+      "lastObtainedAt": "2026-11-12T01:38:40+00:00",
+      "listingPriceRange": {
+        "min": 25,
+        "max": 2500
+      },
+      "maxListingQuantity": 3,
+      "battle": {
+        "element": "terra",
+        "elementLabel": "Terra",
+        "strongAgainst": [
+          "volt"
+        ],
+        "archetype": "trickster",
+        "archetypeLabel": "Trickster",
+        "archetypeDescription": "Cunning schemer who curses foes and steals Aether.",
+        "stats": {
+          "vitality": 105,
+          "might": 29,
+          "arcana": 28,
+          "bulwark": 13,
+          "resolve": 16,
+          "celerity": 18,
+          "fate": 13
+        },
+        "skills": [
+          {
+            "id": "strike",
+            "name": "Strike",
+            "description": "Basic attack with the card's best power. Generates +1 extra Aether.",
+            "cost": 0,
+            "target": "enemy"
+          },
+          {
+            "id": "guard",
+            "name": "Guard",
+            "description": "Halves damage taken until this card's next turn. Generates +1 extra Aether.",
+            "cost": 0,
+            "target": "self"
+          },
+          {
+            "id": "hexing_shiv",
+            "name": "Hexing Shiv",
+            "description": "Cursed stab (1.0x hybrid) that Weakens and Exposes the target.",
+            "cost": 3,
+            "target": "enemy"
+          },
+          {
+            "id": "aether_siphon",
+            "name": "Aether Siphon",
+            "description": "Light hybrid hit (0.5x) that Slows every foe and steals up to 2 of their Aether.",
+            "cost": 5,
+            "target": "all_enemies"
+          }
+        ],
+        "duos": []
+      },
+      "lore": {
+        "title": "The Butterfly Archer",
+        "story": [
+          "Rosalind guards the crystal groves of the elves, where butterflies carry the forest's memories from flower to flower. Her bow is made of living crystal, and her arrows bloom on impact.",
+          "She and Faelyn trained together under the old marksman Thalion and have competed at everything since: archery, tracking, and who can annoy Thalion the most. Rosalind currently leads on the last one.",
+          "She looks delicate, and she likes it that way. Enemies who underestimate her soon find themselves tangled in roots and stung by petals sharper than steel."
+        ],
+        "region": {
+          "id": "sylvaran",
+          "name": "The Sylvaran Wilds",
+          "element": "terra",
+          "resonance": {
+            "region": "sylvaran",
+            "regionName": "The Sylvaran Wilds",
+            "name": "Rootbound",
+            "description": "The roots lend their strength: +12% vitality."
+          }
+        },
+        "bonds": [
+          {
+            "name": "Thalion",
+            "file_name": "thalion.jfif",
+            "rarity": 4,
+            "relation": "Her teacher. She currently leads in annoying him.",
+            "owned": true
+          },
+          {
+            "name": "Faelyn",
+            "file_name": "faelyn.jfif",
+            "rarity": 4,
+            "relation": "Her rival and best friend.",
+            "owned": false
+          }
+        ],
+        "rivals": [],
+        "secret": {
+          "title": "Lyra's Secret",
+          "unlockAscension": 1,
+          "unlocked": false,
+          "text": null
+        }
+      },
+      "ascension": {
+        "level": 0,
+        "max": 3,
+        "statBonusPercent": 0,
+        "nextCost": 1,
+        "nextStatBonusPercent": 5,
+        "canAscend": true,
+        "skillUnlockLevel": 3,
+        "unlocksSkill": true
+      }
+    },
+    {
+      "file_name": "solara.jfif",
+      "name": "Solara",
+      "rarity": 4,
+      "quantity": 1,
+      "firstObtainedAt": "2026-11-12T01:38:38+00:00",
+      "lastObtainedAt": "2026-11-12T01:38:38+00:00",
+      "listingPriceRange": {
+        "min": 25,
+        "max": 2500
+      },
+      "maxListingQuantity": 1,
+      "battle": {
+        "element": "ember",
+        "elementLabel": "Ember",
+        "strongAgainst": [
+          "gale"
+        ],
+        "archetype": "arcanist",
+        "archetypeLabel": "Arcanist",
+        "archetypeDescription": "Wielder of raw elements, fragile but devastating.",
+        "stats": {
+          "vitality": 112,
+          "might": 9,
+          "arcana": 41,
+          "bulwark": 15,
+          "resolve": 21,
+          "celerity": 13,
+          "fate": 11
+        },
+        "skills": [
+          {
+            "id": "strike",
+            "name": "Strike",
+            "description": "Basic attack with the card's best power. Generates +1 extra Aether.",
+            "cost": 0,
+            "target": "enemy"
+          },
+          {
+            "id": "guard",
+            "name": "Guard",
+            "description": "Halves damage taken until this card's next turn. Generates +1 extra Aether.",
+            "cost": 0,
+            "target": "self"
+          },
+          {
+            "id": "elemental_bolt",
+            "name": "Elemental Bolt",
+            "description": "Magical bolt (1.45x) carrying this card's element effect.",
+            "cost": 3,
+            "target": "enemy"
+          },
+          {
+            "id": "arcane_tempest",
+            "name": "Arcane Tempest",
+            "description": "Magical storm (0.8x) on every foe, each hit carrying the element effect.",
+            "cost": 5,
+            "target": "all_enemies"
+          }
+        ],
+        "duos": []
+      },
+      "lore": {
+        "title": "The Sun-Crowned Priestess",
+        "story": [
+          "Solara was chosen as the sun's priestess on the longest day of the year, when the light crowned her in front of the whole city. A month later the Sundering broke the temple of Solmarr, and she spent her first years as priestess praying in the rubble.",
+          "A stonemason named Cassius rebuilt the temple for her, stone by stone, and the sun blessed him for it. She is the only person who can make Cassius laugh, and he is the only one who has seen her cry.",
+          "Her staff burns with the heat of noon, and her spells can turn a battlefield into a desert. She believes the sun does not hate the darkness; it simply refuses to let it win."
+        ],
+        "region": {
+          "id": "aurelian",
+          "name": "The Aurelian Dominion",
+          "element": "lumen",
+          "resonance": {
+            "region": "aurelian",
+            "regionName": "The Aurelian Dominion",
+            "name": "Lion's Oath",
+            "description": "Shields locked like the old Order: +12% bulwark and resolve."
+          }
+        },
+        "bonds": [
+          {
+            "name": "Cassius",
+            "file_name": "cassius.png",
+            "rarity": 4,
+            "relation": "The stonemason who answered her prayers with his hands.",
+            "owned": false
+          }
+        ],
+        "rivals": [],
+        "secret": {
+          "title": "The Price of Noon",
+          "unlockAscension": 1,
+          "unlocked": false,
+          "text": null
+        }
+      },
+      "ascension": {
+        "level": 0,
+        "max": 3,
+        "statBonusPercent": 0,
+        "nextCost": 1,
+        "nextStatBonusPercent": 5,
+        "canAscend": false,
+        "skillUnlockLevel": 3,
+        "unlocksSkill": true
+      }
+    },
+    {
+      "file_name": "sylva.jfif",
+      "name": "Sylva",
+      "rarity": 4,
+      "quantity": 2,
+      "firstObtainedAt": "2026-11-12T01:38:40+00:00",
+      "lastObtainedAt": "2026-11-12T01:38:40+00:00",
+      "listingPriceRange": {
+        "min": 25,
+        "max": 2500
+      },
+      "maxListingQuantity": 2,
+      "battle": {
+        "element": "terra",
+        "elementLabel": "Terra",
+        "strongAgainst": [
+          "volt"
+        ],
+        "archetype": "mystic",
+        "archetypeLabel": "Mystic",
+        "archetypeDescription": "Channels light and life to mend and revive allies.",
+        "stats": {
+          "vitality": 122,
+          "might": 13,
+          "arcana": 31,
+          "bulwark": 17,
+          "resolve": 26,
+          "celerity": 11,
+          "fate": 8
+        },
+        "skills": [
+          {
+            "id": "strike",
+            "name": "Strike",
+            "description": "Basic attack with the card's best power. Generates +1 extra Aether.",
+            "cost": 0,
+            "target": "enemy"
+          },
+          {
+            "id": "guard",
+            "name": "Guard",
+            "description": "Halves damage taken until this card's next turn. Generates +1 extra Aether.",
+            "cost": 0,
+            "target": "self"
+          },
+          {
+            "id": "mending_light",
+            "name": "Mending Light",
+            "description": "Heals one ally based on Arcana and removes its debuffs.",
+            "cost": 3,
+            "target": "ally"
+          },
+          {
+            "id": "sanctuary",
+            "name": "Sanctuary",
+            "description": "Heals every ally and grants Regen for 3 turns.",
+            "cost": 5,
+            "target": "all_allies"
+          }
+        ],
+        "duos": []
+      },
+      "lore": {
+        "title": "The Voice of the Old Grove",
+        "story": [
+          "Sylva grew up in a temple built inside a hollow tree, the oldest in the Sylvaran Wilds, where the priests taught her that every root in the world is connected. She can hear the earth breathing and heal the wounded by borrowing its strength.",
+          "Her elder sister Elowen tends the moon-flower forest; together they raised Verdana, a baby the forest itself left in a nest of flowers. Sylva is quiet and gentle, but when the grove is threatened, the roots answer her call faster than any army.",
+          "Since the Sundering the roots have been whispering something new to her: a pulse, far to the east, beating like a second heart. She is almost sure it comes from the Riftheart."
+        ],
+        "region": {
+          "id": "sylvaran",
+          "name": "The Sylvaran Wilds",
+          "element": "terra",
+          "resonance": {
+            "region": "sylvaran",
+            "regionName": "The Sylvaran Wilds",
+            "name": "Rootbound",
+            "description": "The roots lend their strength: +12% vitality."
+          }
+        },
+        "bonds": [
+          {
+            "name": "Elowen",
+            "file_name": "elowen.jfif",
+            "rarity": 4,
+            "relation": "Her elder sister, the healer of the moon flowers.",
+            "owned": true
+          },
+          {
+            "name": "Verdana",
+            "file_name": "verdana.jfif",
+            "rarity": 4,
+            "relation": "The child the forest gave them.",
+            "owned": false
+          }
+        ],
+        "rivals": [],
+        "secret": {
+          "title": "The Second Heart",
+          "unlockAscension": 1,
+          "unlocked": false,
+          "text": null
+        }
+      },
+      "ascension": {
+        "level": 0,
+        "max": 3,
+        "statBonusPercent": 0,
+        "nextCost": 1,
+        "nextStatBonusPercent": 5,
+        "canAscend": true,
+        "skillUnlockLevel": 3,
+        "unlocksSkill": true
+      }
+    },
+    {
+      "file_name": "thalion.jfif",
+      "name": "Thalion",
+      "rarity": 4,
+      "quantity": 1,
+      "firstObtainedAt": "2026-11-12T01:38:39+00:00",
+      "lastObtainedAt": "2026-11-12T01:38:39+00:00",
+      "listingPriceRange": {
+        "min": 25,
+        "max": 2500
+      },
+      "maxListingQuantity": 1,
+      "battle": {
+        "element": "gale",
+        "elementLabel": "Gale",
+        "strongAgainst": [
+          "terra"
+        ],
+        "archetype": "duelist",
+        "archetypeLabel": "Duelist",
+        "archetypeDescription": "Swift blade that strikes hard and often.",
+        "stats": {
+          "vitality": 118,
+          "might": 36,
+          "arcana": 9,
+          "bulwark": 18,
+          "resolve": 15,
+          "celerity": 16,
+          "fate": 16
+        },
+        "skills": [
+          {
+            "id": "strike",
+            "name": "Strike",
+            "description": "Basic attack with the card's best power. Generates +1 extra Aether.",
+            "cost": 0,
+            "target": "enemy"
+          },
+          {
+            "id": "guard",
+            "name": "Guard",
+            "description": "Halves damage taken until this card's next turn. Generates +1 extra Aether.",
+            "cost": 0,
+            "target": "self"
+          },
+          {
+            "id": "rending_flurry",
+            "name": "Rending Flurry",
+            "description": "Two quick physical slashes (0.75x each).",
+            "cost": 3,
+            "target": "enemy"
+          },
+          {
+            "id": "execution_arc",
+            "name": "Execution Arc",
+            "description": "Heavy physical strike (1.5x), 60% stronger against foes below 40% vitality.",
+            "cost": 5,
+            "target": "enemy"
+          }
+        ],
+        "duos": []
+      },
+      "lore": {
+        "title": "The Golden Leaf Marksman",
+        "story": [
+          "Thalion has guarded the edge of the Sylvaran Wilds for three centuries and has never let an arrow fly without purpose. His golden bow was shaped from the forest's oldest tree, which gave its branch willingly.",
+          "He trained two great archers, Faelyn and Rosalind, and lost one great friend: a human warden named Aldric who guarded the forest's edge with him for fifty years. Aldric's grandson Rowan now carries his bow, and Thalion watches over the boy without letting him know.",
+          "He is stoic, precise and fast as a gust of wind. Elven children say that if a leaf falls in Thalion's forest, he knows exactly where it landed."
+        ],
+        "region": {
+          "id": "sylvaran",
+          "name": "The Sylvaran Wilds",
+          "element": "terra",
+          "resonance": {
+            "region": "sylvaran",
+            "regionName": "The Sylvaran Wilds",
+            "name": "Rootbound",
+            "description": "The roots lend their strength: +12% vitality."
+          }
+        },
+        "bonds": [
+          {
+            "name": "Faelyn",
+            "file_name": "faelyn.jfif",
+            "rarity": 4,
+            "relation": "His student. Fast, clever, insolent.",
+            "owned": false
+          },
+          {
+            "name": "Rosalind",
+            "file_name": "rosalind.jfif",
+            "rarity": 4,
+            "relation": "His student. Delicate in appearance only.",
+            "owned": true
+          },
+          {
+            "name": "Rowan",
+            "file_name": "rowan.jfif",
+            "rarity": 3,
+            "relation": "The grandson of his old friend Aldric. Watches over him in secret.",
+            "owned": true
+          }
+        ],
+        "rivals": [],
+        "secret": {
+          "title": "Aldric's Last Arrow",
+          "unlockAscension": 1,
+          "unlocked": false,
+          "text": null
+        }
+      },
+      "ascension": {
+        "level": 0,
+        "max": 3,
+        "statBonusPercent": 0,
+        "nextCost": 1,
+        "nextStatBonusPercent": 5,
+        "canAscend": false,
+        "skillUnlockLevel": 3,
+        "unlocksSkill": true
+      }
+    },
+    {
+      "file_name": "albin.jfif",
+      "name": "Albin",
+      "rarity": 3,
+      "quantity": 2,
+      "firstObtainedAt": "2026-11-12T01:38:38+00:00",
+      "lastObtainedAt": "2026-11-12T01:38:40+00:00",
+      "listingPriceRange": {
+        "min": 5,
+        "max": 500
+      },
+      "maxListingQuantity": 2,
+      "battle": {
+        "element": "lumen",
+        "elementLabel": "Lumen",
+        "strongAgainst": [
+          "umbra"
+        ],
+        "archetype": "mystic",
+        "archetypeLabel": "Mystic",
+        "archetypeDescription": "Channels light and life to mend and revive allies.",
+        "stats": {
+          "vitality": 104,
+          "might": 9,
+          "arcana": 23,
+          "bulwark": 14,
+          "resolve": 23,
+          "celerity": 11,
+          "fate": 6
+        },
+        "skills": [
+          {
+            "id": "strike",
+            "name": "Strike",
+            "description": "Basic attack with the card's best power. Generates +1 extra Aether.",
+            "cost": 0,
+            "target": "enemy"
+          },
+          {
+            "id": "guard",
+            "name": "Guard",
+            "description": "Halves damage taken until this card's next turn. Generates +1 extra Aether.",
+            "cost": 0,
+            "target": "self"
+          },
+          {
+            "id": "mending_light",
+            "name": "Mending Light",
+            "description": "Heals one ally based on Arcana and removes its debuffs.",
+            "cost": 3,
+            "target": "ally"
+          }
+        ],
+        "duos": []
+      },
+      "lore": {
+        "title": "The Apprentice With a Twig",
+        "story": [
+          "Albin is the apprentice of Astra, the great astrologer of the Skyspire, who took him in five years ago and has been home exactly twice since. He teaches himself from the books in her cluttered study in Greenhollow.",
+          "His wand is a twig from the garden. It works anyway, mostly. He writes Astra a report every week, which she never reads, and leaves a candle burning in the window every night in case she comes back.",
+          "His spells are small, but his heart is enormous, and his little sparks of light have mended more scraped knees than any archmage."
+        ],
+        "region": {
+          "id": "greenhollow",
+          "name": "Greenhollow Vale",
+          "element": "terra",
+          "resonance": {
+            "region": "greenhollow",
+            "regionName": "Greenhollow Vale",
+            "name": "Hearth and Harvest",
+            "description": "A taste of home: the team starts with Regen for 3 turns."
+          }
+        },
+        "bonds": [
+          {
+            "name": "Astra",
+            "file_name": "astra.jfif",
+            "rarity": 5,
+            "relation": "His teacher, who has been home exactly twice.",
+            "owned": false
+          }
+        ],
+        "rivals": [],
+        "secret": {
+          "title": "The Reports",
+          "unlockAscension": 1,
+          "unlocked": false,
+          "text": null
+        }
+      },
+      "ascension": {
+        "level": 0,
+        "max": 3,
+        "statBonusPercent": 0,
+        "nextCost": 1,
+        "nextStatBonusPercent": 5,
+        "canAscend": true,
+        "skillUnlockLevel": 3,
+        "unlocksSkill": true
+      }
+    },
+    {
+      "file_name": "brina.jfif",
+      "name": "Brina",
+      "rarity": 3,
+      "quantity": 2,
+      "firstObtainedAt": "2026-11-12T01:38:39+00:00",
+      "lastObtainedAt": "2026-11-12T01:38:39+00:00",
+      "listingPriceRange": {
+        "min": 5,
+        "max": 500
+      },
+      "maxListingQuantity": 2,
+      "battle": {
+        "element": "tide",
+        "elementLabel": "Tide",
+        "strongAgainst": [
+          "ember"
+        ],
+        "archetype": "arcanist",
+        "archetypeLabel": "Arcanist",
+        "archetypeDescription": "Wielder of raw elements, fragile but devastating.",
+        "stats": {
+          "vitality": 85,
+          "might": 8,
+          "arcana": 35,
+          "bulwark": 12,
+          "resolve": 18,
+          "celerity": 11,
+          "fate": 9
+        },
+        "skills": [
+          {
+            "id": "strike",
+            "name": "Strike",
+            "description": "Basic attack with the card's best power. Generates +1 extra Aether.",
+            "cost": 0,
+            "target": "enemy"
+          },
+          {
+            "id": "guard",
+            "name": "Guard",
+            "description": "Halves damage taken until this card's next turn. Generates +1 extra Aether.",
+            "cost": 0,
+            "target": "self"
+          },
+          {
+            "id": "elemental_bolt",
+            "name": "Elemental Bolt",
+            "description": "Magical bolt (1.45x) carrying this card's element effect.",
+            "cost": 3,
+            "target": "enemy"
+          }
+        ],
+        "duos": [
+          {
+            "partner": "scarlett.jfif",
+            "skill": {
+              "id": "family_arsenal",
+              "name": "Family Arsenal",
+              "description": "The cousins open the secret workshop: physical blow to every foe (1.3x) that Burns them for 2 turns.",
+              "cost": 5,
+              "target": "all_enemies",
+              "duo": true
+            }
+          }
+        ]
+      },
+      "lore": {
+        "title": "The Tinker of the Brass Workshop",
+        "story": [
+          "Brina can fix anything with her glowing wrench, and she can break anything even faster. Her workshop in Cogsreach is full of half-finished inventions, and about a third of them are on fire at any given moment.",
+          "She built the twin pistols of her cousin Scarlett, and every gadget the outlaw uses to escape the barons. Officially she has never met Scarlett.",
+          "She channels the steam from her machines into scalding blasts that surprise every enemy who thought she was only a mechanic."
+        ],
+        "region": {
+          "id": "cogsreach",
+          "name": "Cogsreach",
+          "element": "volt",
+          "resonance": {
+            "region": "cogsreach",
+            "regionName": "Cogsreach",
+            "name": "Overclock",
+            "description": "Gears spin up: +2 starting Aether and +10% celerity."
+          }
+        },
+        "bonds": [
+          {
+            "name": "Scarlett",
+            "file_name": "scarlett.jfif",
+            "rarity": 4,
+            "relation": "Her cousin. Officially they have never met.",
+            "owned": false
+          }
+        ],
+        "rivals": [],
+        "secret": {
+          "title": "The Airship",
+          "unlockAscension": 1,
+          "unlocked": false,
+          "text": null
+        }
+      },
+      "ascension": {
+        "level": 0,
+        "max": 3,
+        "statBonusPercent": 0,
+        "nextCost": 1,
+        "nextStatBonusPercent": 5,
+        "canAscend": true,
+        "skillUnlockLevel": 3,
+        "unlocksSkill": true
+      }
+    },
+    {
+      "file_name": "garrick.jfif",
+      "name": "Garrick",
+      "rarity": 3,
+      "quantity": 2,
+      "firstObtainedAt": "2026-11-12T01:38:38+00:00",
+      "lastObtainedAt": "2026-11-12T01:38:41+00:00",
+      "listingPriceRange": {
+        "min": 5,
+        "max": 500
+      },
+      "maxListingQuantity": 2,
+      "battle": {
+        "element": "ember",
+        "elementLabel": "Ember",
+        "strongAgainst": [
+          "gale"
+        ],
+        "archetype": "vanguard",
+        "archetypeLabel": "Vanguard",
+        "archetypeDescription": "Stalwart guardian who draws fire and shields allies.",
+        "stats": {
+          "vitality": 126,
+          "might": 22,
+          "arcana": 9,
+          "bulwark": 24,
+          "resolve": 18,
+          "celerity": 9,
+          "fate": 5
+        },
+        "skills": [
+          {
+            "id": "strike",
+            "name": "Strike",
+            "description": "Basic attack with the card's best power. Generates +1 extra Aether.",
+            "cost": 0,
+            "target": "enemy"
+          },
+          {
+            "id": "guard",
+            "name": "Guard",
+            "description": "Halves damage taken until this card's next turn. Generates +1 extra Aether.",
+            "cost": 0,
+            "target": "self"
+          },
+          {
+            "id": "bastion_call",
+            "name": "Bastion Call",
+            "description": "Taunts all foes for 2 turns and raises a shield worth 25% of max vitality.",
+            "cost": 3,
+            "target": "self"
+          }
+        ],
+        "duos": []
+      },
+      "lore": {
+        "title": "The Shieldbearer Who Walked Away",
+        "story": [
+          "Garrick carried the shield of Gorvane, the Ironfang warlord, for fifteen years. After Gorvane's fourth death and fourth return, Garrick looked into his chieftain's eyes, did not recognize the man inside, and left.",
+          "Now he guards caravans through the mountain passes and has never lost one. He has a scar for each bandit gang that tried its luck, and he always takes the first watch around the campfire.",
+          "He still sends a coin each season to Brannoc, Gorvane's son, at the arena. Brannoc thinks it comes from his father. Garrick has never corrected him."
+        ],
+        "region": {
+          "id": "ironfang",
+          "name": "The Ironfang Highlands",
+          "element": "terra",
+          "resonance": {
+            "region": "ironfang",
+            "regionName": "The Ironfang Highlands",
+            "name": "Clan Fury",
+            "description": "The war drums of the clans: +15% might."
+          }
+        },
+        "bonds": [
+          {
+            "name": "Gorvane",
+            "file_name": "gorvane.jfif",
+            "rarity": 5,
+            "relation": "The chieftain he could no longer recognize.",
+            "owned": false
+          },
+          {
+            "name": "Brannoc",
+            "file_name": "brannoc.jfif",
+            "rarity": 3,
+            "relation": "Sends him a coin every season in his father's name.",
+            "owned": false
+          }
+        ],
+        "rivals": [],
+        "secret": {
+          "title": "The Fourth Death",
+          "unlockAscension": 1,
+          "unlocked": false,
+          "text": null
+        }
+      },
+      "ascension": {
+        "level": 0,
+        "max": 3,
+        "statBonusPercent": 0,
+        "nextCost": 1,
+        "nextStatBonusPercent": 5,
+        "canAscend": true,
+        "skillUnlockLevel": 3,
+        "unlocksSkill": true
+      }
+    },
+    {
+      "file_name": "kael.jfif",
+      "name": "Kael",
+      "rarity": 3,
+      "quantity": 1,
+      "firstObtainedAt": "2026-11-12T01:38:38+00:00",
+      "lastObtainedAt": "2026-11-12T01:38:38+00:00",
+      "listingPriceRange": {
+        "min": 5,
+        "max": 500
+      },
+      "maxListingQuantity": 1,
+      "battle": {
+        "element": "ember",
+        "elementLabel": "Ember",
+        "strongAgainst": [
+          "gale"
+        ],
+        "archetype": "duelist",
+        "archetypeLabel": "Duelist",
+        "archetypeDescription": "Swift blade that strikes hard and often.",
+        "stats": {
+          "vitality": 95,
+          "might": 32,
+          "arcana": 8,
+          "bulwark": 15,
+          "resolve": 12,
+          "celerity": 16,
+          "fate": 15
+        },
+        "skills": [
+          {
+            "id": "strike",
+            "name": "Strike",
+            "description": "Basic attack with the card's best power. Generates +1 extra Aether.",
+            "cost": 0,
+            "target": "enemy"
+          },
+          {
+            "id": "guard",
+            "name": "Guard",
+            "description": "Halves damage taken until this card's next turn. Generates +1 extra Aether.",
+            "cost": 0,
+            "target": "self"
+          },
+          {
+            "id": "rending_flurry",
+            "name": "Rending Flurry",
+            "description": "Two quick physical slashes (0.75x each).",
+            "cost": 3,
+            "target": "enemy"
+          }
+        ],
+        "duos": []
+      },
+      "lore": {
+        "title": "The Ruin Runner",
+        "story": [
+          "Kael explores the ruins the Sundering left behind, searching for treasure and trouble in equal measure. He usually finds more of the second, and sells the rest to Vexa in the night market of Spirehollow.",
+          "He is cocky, fast and good with his twin daggers. He claims he has never met a trap he could not dodge, which is why he has so many burns.",
+          "His dream is to reach the Riftheart and touch the Mystic Box. Everyone who hears this tells him he is mad. He takes it as encouragement."
+        ],
+        "region": {
+          "id": "spirehollow",
+          "name": "Spirehollow",
+          "element": "umbra",
+          "resonance": {
+            "region": "spirehollow",
+            "regionName": "Spirehollow",
+            "name": "Rooftop Ambush",
+            "description": "Strike from the shadows: every foe starts Exposed for 2 turns."
+          }
+        },
+        "bonds": [
+          {
+            "name": "Vexa",
+            "file_name": "vexa.jfif",
+            "rarity": 3,
+            "relation": "Sells her his relics. Knows she underpays him.",
+            "owned": true
+          }
+        ],
+        "rivals": [],
+        "secret": {
+          "title": "The Warden's Journal",
+          "unlockAscension": 1,
+          "unlocked": false,
+          "text": null
+        }
+      },
+      "ascension": {
+        "level": 0,
+        "max": 3,
+        "statBonusPercent": 0,
+        "nextCost": 1,
+        "nextStatBonusPercent": 5,
+        "canAscend": false,
+        "skillUnlockLevel": 3,
+        "unlocksSkill": true
+      }
+    },
+    {
+      "file_name": "liesel.jfif",
+      "name": "Liesel",
+      "rarity": 3,
+      "quantity": 2,
+      "firstObtainedAt": "2026-11-12T01:38:38+00:00",
+      "lastObtainedAt": "2026-11-12T01:38:39+00:00",
+      "listingPriceRange": {
+        "min": 5,
+        "max": 500
+      },
+      "maxListingQuantity": 2,
+      "battle": {
+        "element": "ember",
+        "elementLabel": "Ember",
+        "strongAgainst": [
+          "gale"
+        ],
+        "archetype": "summoner",
+        "archetypeLabel": "Summoner",
+        "archetypeDescription": "Fights beside a bonded monster that keeps striking foes.",
+        "stats": {
+          "vitality": 96,
+          "might": 25,
+          "arcana": 27,
+          "bulwark": 15,
+          "resolve": 18,
+          "celerity": 12,
+          "fate": 9
+        },
+        "skills": [
+          {
+            "id": "strike",
+            "name": "Strike",
+            "description": "Basic attack with the card's best power. Generates +1 extra Aether.",
+            "cost": 0,
+            "target": "enemy"
+          },
+          {
+            "id": "guard",
+            "name": "Guard",
+            "description": "Halves damage taken until this card's next turn. Generates +1 extra Aether.",
+            "cost": 0,
+            "target": "self"
+          },
+          {
+            "id": "call_companion",
+            "name": "Call Companion",
+            "description": "The bonded monster pounces on a foe (0.8x hybrid) and stays for 3 turns as a Companion.",
+            "cost": 3,
+            "target": "enemy"
+          }
+        ],
+        "duos": []
+      },
+      "lore": {
+        "title": "The Fox-Fire Herbalist",
+        "story": [
+          "Liesel gathers herbs in the misty forests of the Sylvaran Wilds as the apprentice of the healer Elowen, and bandages any creature she finds hurt.",
+          "One of them was a fox with a tail of fire, far from its home in Cinderpeak, and it never left her side after she healed it. She named it Ember.",
+          "Ember fights fiercely for the girl who saved it, while Liesel watches from behind with her staff and a nervous smile."
+        ],
+        "region": {
+          "id": "sylvaran",
+          "name": "The Sylvaran Wilds",
+          "element": "terra",
+          "resonance": {
+            "region": "sylvaran",
+            "regionName": "The Sylvaran Wilds",
+            "name": "Rootbound",
+            "description": "The roots lend their strength: +12% vitality."
+          }
+        },
+        "bonds": [
+          {
+            "name": "Elowen",
+            "file_name": "elowen.jfif",
+            "rarity": 4,
+            "relation": "Her teacher.",
+            "owned": true
+          },
+          {
+            "name": "Pyralis",
+            "file_name": "pyralis.jfif",
+            "rarity": 4,
+            "relation": "Her fox Ember came from his burning homeland. They argue about it.",
+            "owned": true
+          }
+        ],
+        "rivals": [],
+        "secret": {
+          "title": "Ember's Errand",
+          "unlockAscension": 1,
+          "unlocked": false,
+          "text": null
+        }
+      },
+      "ascension": {
+        "level": 0,
+        "max": 3,
+        "statBonusPercent": 0,
+        "nextCost": 1,
+        "nextStatBonusPercent": 5,
+        "canAscend": true,
+        "skillUnlockLevel": 3,
+        "unlocksSkill": true
+      }
+    },
+    {
+      "file_name": "rowan.jfif",
+      "name": "Rowan",
+      "rarity": 3,
+      "quantity": 3,
+      "firstObtainedAt": "2026-11-12T01:38:38+00:00",
+      "lastObtainedAt": "2026-11-12T01:38:40+00:00",
+      "listingPriceRange": {
+        "min": 5,
+        "max": 500
+      },
+      "maxListingQuantity": 3,
+      "battle": {
+        "element": "terra",
+        "elementLabel": "Terra",
+        "strongAgainst": [
+          "volt"
+        ],
+        "archetype": "vanguard",
+        "archetypeLabel": "Vanguard",
+        "archetypeDescription": "Stalwart guardian who draws fire and shields allies.",
+        "stats": {
+          "vitality": 131,
+          "might": 23,
+          "arcana": 10,
+          "bulwark": 25,
+          "resolve": 18,
+          "celerity": 9,
+          "fate": 5
+        },
+        "skills": [
+          {
+            "id": "strike",
+            "name": "Strike",
+            "description": "Basic attack with the card's best power. Generates +1 extra Aether.",
+            "cost": 0,
+            "target": "enemy"
+          },
+          {
+            "id": "guard",
+            "name": "Guard",
+            "description": "Halves damage taken until this card's next turn. Generates +1 extra Aether.",
+            "cost": 0,
+            "target": "self"
+          },
+          {
+            "id": "bastion_call",
+            "name": "Bastion Call",
+            "description": "Taunts all foes for 2 turns and raises a shield worth 25% of max vitality.",
+            "cost": 3,
+            "target": "self"
+          }
+        ],
+        "duos": []
+      },
+      "lore": {
+        "title": "The Young Forest Warden",
+        "story": [
+          "Rowan inherited his antler bow from his grandfather Aldric, the human warden who guarded the edge of the Sylvaran Wilds beside the elf Thalion for fifty years. With the bow came a promise to protect the forest.",
+          "He is young and takes the promise very seriously, maybe too seriously. He has never met Thalion, and he has no idea the elf has saved his life at least six times from a distance.",
+          "He stands between the woods and anyone who would harm them, and the forest stands behind him."
+        ],
+        "region": {
+          "id": "sylvaran",
+          "name": "The Sylvaran Wilds",
+          "element": "terra",
+          "resonance": {
+            "region": "sylvaran",
+            "regionName": "The Sylvaran Wilds",
+            "name": "Rootbound",
+            "description": "The roots lend their strength: +12% vitality."
+          }
+        },
+        "bonds": [
+          {
+            "name": "Thalion",
+            "file_name": "thalion.jfif",
+            "rarity": 4,
+            "relation": "A legendary elf he has never met.",
+            "owned": true
+          }
+        ],
+        "rivals": [],
+        "secret": {
+          "title": "What the Bow Remembers",
+          "unlockAscension": 1,
+          "unlocked": false,
+          "text": null
+        }
+      },
+      "ascension": {
+        "level": 0,
+        "max": 3,
+        "statBonusPercent": 0,
+        "nextCost": 1,
+        "nextStatBonusPercent": 5,
+        "canAscend": true,
+        "skillUnlockLevel": 3,
+        "unlocksSkill": true
+      }
+    },
+    {
+      "file_name": "ryuji.jfif",
+      "name": "Ryuji",
+      "rarity": 3,
+      "quantity": 1,
+      "firstObtainedAt": "2026-11-12T01:38:38+00:00",
+      "lastObtainedAt": "2026-11-12T01:38:38+00:00",
+      "listingPriceRange": {
+        "min": 5,
+        "max": 500
+      },
+      "maxListingQuantity": 1,
+      "battle": {
+        "element": "gale",
+        "elementLabel": "Gale",
+        "strongAgainst": [
+          "terra"
+        ],
+        "archetype": "duelist",
+        "archetypeLabel": "Duelist",
+        "archetypeDescription": "Swift blade that strikes hard and often.",
+        "stats": {
+          "vitality": 96,
+          "might": 32,
+          "arcana": 8,
+          "bulwark": 15,
+          "resolve": 12,
+          "celerity": 15,
+          "fate": 14
+        },
+        "skills": [
+          {
+            "id": "strike",
+            "name": "Strike",
+            "description": "Basic attack with the card's best power. Generates +1 extra Aether.",
+            "cost": 0,
+            "target": "enemy"
+          },
+          {
+            "id": "guard",
+            "name": "Guard",
+            "description": "Halves damage taken until this card's next turn. Generates +1 extra Aether.",
+            "cost": 0,
+            "target": "self"
+          },
+          {
+            "id": "rending_flurry",
+            "name": "Rending Flurry",
+            "description": "Two quick physical slashes (0.75x each).",
+            "cost": 3,
+            "target": "enemy"
+          }
+        ],
+        "duos": []
+      },
+      "lore": {
+        "title": "The Iron-Fist Disciple",
+        "story": [
+          "Ryuji is the younger brother of the swordsman Hayato. He could never cut a single cherry petal, so he left the Temple of a Thousand Lanterns and joined a dojo of fist fighters, to his family's horror.",
+          "He trains from dawn to dusk, punching wooden posts until his knuckles bleed. His master says he has more stubbornness than talent. Ryuji says that is the same thing.",
+          "His fists strike like a gale, and his scars prove he has never backed down from a fight. He has no idea his famous brother is proud of him."
+        ],
+        "region": {
+          "id": "hoshigane",
+          "name": "The Hoshigane Isles",
+          "element": "gale",
+          "resonance": {
+            "region": "hoshigane",
+            "regionName": "The Hoshigane Isles",
+            "name": "First Petal",
+            "description": "The first cut decides the duel: the team starts Empowered for 2 turns."
+          }
+        },
+        "bonds": [
+          {
+            "name": "Hayato",
+            "file_name": "hayato.jfif",
+            "rarity": 4,
+            "relation": "His famous elder brother. Thinks he is a disappointment to him.",
+            "owned": true
+          }
+        ],
+        "rivals": [],
+        "secret": {
+          "title": "The Petal",
+          "unlockAscension": 1,
+          "unlocked": false,
+          "text": null
+        }
+      },
+      "ascension": {
+        "level": 0,
+        "max": 3,
+        "statBonusPercent": 0,
+        "nextCost": 1,
+        "nextStatBonusPercent": 5,
+        "canAscend": false,
+        "skillUnlockLevel": 3,
+        "unlocksSkill": true
+      }
+    },
+    {
+      "file_name": "tobin.jfif",
+      "name": "Tobin",
+      "rarity": 3,
+      "quantity": 1,
+      "firstObtainedAt": "2026-11-12T01:38:40+00:00",
+      "lastObtainedAt": "2026-11-12T01:38:40+00:00",
+      "listingPriceRange": {
+        "min": 5,
+        "max": 500
+      },
+      "maxListingQuantity": 1,
+      "battle": {
+        "element": "terra",
+        "elementLabel": "Terra",
+        "strongAgainst": [
+          "volt"
+        ],
+        "archetype": "duelist",
+        "archetypeLabel": "Duelist",
+        "archetypeDescription": "Swift blade that strikes hard and often.",
+        "stats": {
+          "vitality": 94,
+          "might": 29,
+          "arcana": 8,
+          "bulwark": 15,
+          "resolve": 12,
+          "celerity": 14,
+          "fate": 14
+        },
+        "skills": [
+          {
+            "id": "strike",
+            "name": "Strike",
+            "description": "Basic attack with the card's best power. Generates +1 extra Aether.",
+            "cost": 0,
+            "target": "enemy"
+          },
+          {
+            "id": "guard",
+            "name": "Guard",
+            "description": "Halves damage taken until this card's next turn. Generates +1 extra Aether.",
+            "cost": 0,
+            "target": "self"
+          },
+          {
+            "id": "rending_flurry",
+            "name": "Rending Flurry",
+            "description": "Two quick physical slashes (0.75x each).",
+            "cost": 3,
+            "target": "enemy"
+          }
+        ],
+        "duos": []
+      },
+      "lore": {
+        "title": "The Farm Boy With a Big Sword",
+        "story": [
+          "Tobin found a rusty sword in his family's barn in Greenhollow and decided he was destined to be a hero. The sword is too big for him. The destiny might be too.",
+          "What Tobin does not know is that the sword is one of the twelve lost blades of the Lion Order, and that the last Lion knight, Leoric, has already come to the village twice to watch him train with it.",
+          "He is terrified of almost everything, but he never runs away. The chickens of his village, at least, consider him a legend."
+        ],
+        "region": {
+          "id": "greenhollow",
+          "name": "Greenhollow Vale",
+          "element": "terra",
+          "resonance": {
+            "region": "greenhollow",
+            "regionName": "Greenhollow Vale",
+            "name": "Hearth and Harvest",
+            "description": "A taste of home: the team starts with Regen for 3 turns."
+          }
+        },
+        "bonds": [
+          {
+            "name": "Leoric",
+            "file_name": "leoric.jfif",
+            "rarity": 5,
+            "relation": "A strange knight who keeps watching him train. Terrifying.",
+            "owned": false
+          }
+        ],
+        "rivals": [],
+        "secret": {
+          "title": "Grandpa's Sword",
+          "unlockAscension": 1,
+          "unlocked": false,
+          "text": null
+        }
+      },
+      "ascension": {
+        "level": 0,
+        "max": 3,
+        "statBonusPercent": 0,
+        "nextCost": 1,
+        "nextStatBonusPercent": 5,
+        "canAscend": false,
+        "skillUnlockLevel": 3,
+        "unlocksSkill": true
+      }
+    },
+    {
+      "file_name": "torvin.jfif",
+      "name": "Torvin",
+      "rarity": 3,
+      "quantity": 2,
+      "firstObtainedAt": "2026-11-12T01:38:38+00:00",
+      "lastObtainedAt": "2026-11-12T01:38:40+00:00",
+      "listingPriceRange": {
+        "min": 5,
+        "max": 500
+      },
+      "maxListingQuantity": 2,
+      "battle": {
+        "element": "terra",
+        "elementLabel": "Terra",
+        "strongAgainst": [
+          "volt"
+        ],
+        "archetype": "vanguard",
+        "archetypeLabel": "Vanguard",
+        "archetypeDescription": "Stalwart guardian who draws fire and shields allies.",
+        "stats": {
+          "vitality": 137,
+          "might": 23,
+          "arcana": 11,
+          "bulwark": 24,
+          "resolve": 20,
+          "celerity": 9,
+          "fate": 5
+        },
+        "skills": [
+          {
+            "id": "strike",
+            "name": "Strike",
+            "description": "Basic attack with the card's best power. Generates +1 extra Aether.",
+            "cost": 0,
+            "target": "enemy"
+          },
+          {
+            "id": "guard",
+            "name": "Guard",
+            "description": "Halves damage taken until this card's next turn. Generates +1 extra Aether.",
+            "cost": 0,
+            "target": "self"
+          },
+          {
+            "id": "bastion_call",
+            "name": "Bastion Call",
+            "description": "Taunts all foes for 2 turns and raises a shield worth 25% of max vitality.",
+            "cost": 3,
+            "target": "self"
+          }
+        ],
+        "duos": []
+      },
+      "lore": {
+        "title": "The Stone-Singer",
+        "story": [
+          "Torvin grew up in the deep caverns under Cinderpeak, where the stones hum when lava flows beneath them. He learned their songs and how to make the rocks float and spin to his will.",
+          "His best friend is the fire mage Pyralis, who keeps setting things on fire, and Torvin keeps singing the lava back to sleep. They argue constantly and would die for each other.",
+          "Quiet and stubborn, he plants himself in front of his allies and lets the earth itself shield them."
+        ],
+        "region": {
+          "id": "cinderpeak",
+          "name": "Cinderpeak",
+          "element": "ember",
+          "resonance": {
+            "region": "cinderpeak",
+            "regionName": "Cinderpeak",
+            "name": "Everfire Spark",
+            "description": "The mountain's flame burns in the team: +3 starting Aether."
+          }
+        },
+        "bonds": [
+          {
+            "name": "Pyralis",
+            "file_name": "pyralis.jfif",
+            "rarity": 4,
+            "relation": "Best friend. Keeps setting things on fire.",
+            "owned": true
+          }
+        ],
+        "rivals": [],
+        "secret": {
+          "title": "The Stones' Warning",
+          "unlockAscension": 1,
+          "unlocked": false,
+          "text": null
+        }
+      },
+      "ascension": {
+        "level": 0,
+        "max": 3,
+        "statBonusPercent": 0,
+        "nextCost": 1,
+        "nextStatBonusPercent": 5,
+        "canAscend": true,
+        "skillUnlockLevel": 3,
+        "unlocksSkill": true
+      }
+    },
+    {
+      "file_name": "vexa.jfif",
+      "name": "Vexa",
+      "rarity": 3,
+      "quantity": 1,
+      "firstObtainedAt": "2026-11-12T01:38:40+00:00",
+      "lastObtainedAt": "2026-11-12T01:38:40+00:00",
+      "listingPriceRange": {
+        "min": 5,
+        "max": 500
+      },
+      "maxListingQuantity": 1,
+      "battle": {
+        "element": "gale",
+        "elementLabel": "Gale",
+        "strongAgainst": [
+          "terra"
+        ],
+        "archetype": "trickster",
+        "archetypeLabel": "Trickster",
+        "archetypeDescription": "Cunning schemer who curses foes and steals Aether.",
+        "stats": {
+          "vitality": 96,
+          "might": 26,
+          "arcana": 26,
+          "bulwark": 13,
+          "resolve": 14,
+          "celerity": 18,
+          "fate": 11
+        },
+        "skills": [
+          {
+            "id": "strike",
+            "name": "Strike",
+            "description": "Basic attack with the card's best power. Generates +1 extra Aether.",
+            "cost": 0,
+            "target": "enemy"
+          },
+          {
+            "id": "guard",
+            "name": "Guard",
+            "description": "Halves damage taken until this card's next turn. Generates +1 extra Aether.",
+            "cost": 0,
+            "target": "self"
+          },
+          {
+            "id": "hexing_shiv",
+            "name": "Hexing Shiv",
+            "description": "Cursed stab (1.0x hybrid) that Weakens and Exposes the target.",
+            "cost": 3,
+            "target": "enemy"
+          }
+        ],
+        "duos": []
+      },
+      "lore": {
+        "title": "The Lantern-Street Swindler",
+        "story": [
+          "Vexa runs a different scam on every street of the Spirehollow night market. She has sold the same bridge four times, and each buyer thanked her for the deal.",
+          "She buys relics from the ruin runner Kael, uses the pickpocket Jory as a lookout and has been trying to con Lucan for years, without success, because he keeps trying to con her back.",
+          "Her curved daggers come out only when the con fails, which is rare. She would rather steal your luck than your purse."
+        ],
+        "region": {
+          "id": "spirehollow",
+          "name": "Spirehollow",
+          "element": "umbra",
+          "resonance": {
+            "region": "spirehollow",
+            "regionName": "Spirehollow",
+            "name": "Rooftop Ambush",
+            "description": "Strike from the shadows: every foe starts Exposed for 2 turns."
+          }
+        },
+        "bonds": [
+          {
+            "name": "Jory",
+            "file_name": "jory.jfif",
+            "rarity": 3,
+            "relation": "Her lookout.",
+            "owned": false
+          },
+          {
+            "name": "Kael",
+            "file_name": "kael.jfif",
+            "rarity": 3,
+            "relation": "Buys his relics. Underpays him.",
+            "owned": true
+          },
+          {
+            "name": "Lucan",
+            "file_name": "lucan.jfif",
+            "rarity": 4,
+            "relation": "Has tried to con him for years.",
+            "owned": true
+          }
+        ],
+        "rivals": [
+          {
+            "name": "Lucan",
+            "file_name": "lucan.jfif",
+            "rarity": 4,
+            "line": "Fifty gold says you lose."
+          }
+        ],
+        "secret": {
+          "title": "The Bridge",
+          "unlockAscension": 1,
+          "unlocked": false,
+          "text": null
+        }
+      },
+      "ascension": {
+        "level": 0,
+        "max": 3,
+        "statBonusPercent": 0,
+        "nextCost": 1,
+        "nextStatBonusPercent": 5,
+        "canAscend": false,
+        "skillUnlockLevel": 3,
+        "unlocksSkill": true
+      }
+    }
+  ],
+  "totalCards": 44
+}

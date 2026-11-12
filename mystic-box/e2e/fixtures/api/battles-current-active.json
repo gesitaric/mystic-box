@@ -1,0 +1,497 @@
+{
+  "battle": {
+    "battleId": "0e617405-ac9e-455c-a6fd-972a700d9ee4",
+    "mode": "pve",
+    "status": "active",
+    "endReason": null,
+    "difficulty": "novice",
+    "difficultyLabel": "Novice",
+    "campaign": null,
+    "round": 1,
+    "maxRounds": 30,
+    "surge": {
+      "level": 0,
+      "startRound": 8,
+      "damageBonusPercent": 0,
+      "healPenaltyPercent": 0
+    },
+    "aether": {
+      "player": 1,
+      "enemy": 0
+    },
+    "maxAether": 10,
+    "turn": "p1",
+    "yourTurn": true,
+    "upcoming": [
+      "e0",
+      "e2",
+      "p2"
+    ],
+    "units": [
+      {
+        "id": "p0",
+        "side": "player",
+        "fileName": "vaelora.jfif",
+        "name": "Vaelora",
+        "rarity": 5,
+        "element": "gale",
+        "elementLabel": "Gale",
+        "archetype": "summoner",
+        "archetypeLabel": "Summoner",
+        "level": 1,
+        "ascension": 0,
+        "bonds": [],
+        "rivals": [],
+        "stats": {
+          "vitality": 152,
+          "might": 32,
+          "arcana": 42,
+          "bulwark": 23,
+          "resolve": 26,
+          "celerity": 16,
+          "fate": 13
+        },
+        "maxHp": 152,
+        "hp": 152,
+        "alive": true,
+        "statuses": [
+          {
+            "id": "companion",
+            "label": "Companion",
+            "kind": "buff",
+            "description": "Its bonded monster strikes a foe (0.75x hybrid) at the start of each of this card's turns.",
+            "turns": 3
+          }
+        ],
+        "skills": [
+          {
+            "id": "strike",
+            "name": "Strike",
+            "description": "Basic attack with the card's best power. Generates +1 extra Aether.",
+            "cost": 0,
+            "target": "enemy"
+          },
+          {
+            "id": "guard",
+            "name": "Guard",
+            "description": "Halves damage taken until this card's next turn. Generates +1 extra Aether.",
+            "cost": 0,
+            "target": "self"
+          },
+          {
+            "id": "call_companion",
+            "name": "Call Companion",
+            "description": "The bonded monster pounces on a foe (0.8x hybrid) and stays for 3 turns as a Companion.",
+            "cost": 3,
+            "target": "enemy"
+          },
+          {
+            "id": "beast_rampage",
+            "name": "Beast Rampage",
+            "description": "Hybrid assault on every foe (0.75x). With a Companion out, also Exposes them.",
+            "cost": 5,
+            "target": "all_enemies"
+          },
+          {
+            "id": "primal_awakening",
+            "name": "Primal Awakening",
+            "description": "Supreme. The monster reveals its true form: massive hybrid blow (2.0x), then stays as a Companion and Empowers this card.",
+            "cost": 7,
+            "target": "enemy"
+          }
+        ]
+      },
+      {
+        "id": "p1",
+        "side": "player",
+        "fileName": "amethia.jfif",
+        "name": "Amethia",
+        "rarity": 4,
+        "element": "umbra",
+        "elementLabel": "Umbra",
+        "archetype": "arcanist",
+        "archetypeLabel": "Arcanist",
+        "level": 1,
+        "ascension": 0,
+        "bonds": [],
+        "rivals": [],
+        "stats": {
+          "vitality": 111,
+          "might": 10,
+          "arcana": 40,
+          "bulwark": 15,
+          "resolve": 21,
+          "celerity": 14,
+          "fate": 11
+        },
+        "maxHp": 111,
+        "hp": 111,
+        "alive": true,
+        "statuses": [],
+        "skills": [
+          {
+            "id": "strike",
+            "name": "Strike",
+            "description": "Basic attack with the card's best power. Generates +1 extra Aether.",
+            "cost": 0,
+            "target": "enemy"
+          },
+          {
+            "id": "guard",
+            "name": "Guard",
+            "description": "Halves damage taken until this card's next turn. Generates +1 extra Aether.",
+            "cost": 0,
+            "target": "self"
+          },
+          {
+            "id": "elemental_bolt",
+            "name": "Elemental Bolt",
+            "description": "Magical bolt (1.45x) carrying this card's element effect.",
+            "cost": 3,
+            "target": "enemy"
+          },
+          {
+            "id": "arcane_tempest",
+            "name": "Arcane Tempest",
+            "description": "Magical storm (0.8x) on every foe, each hit carrying the element effect.",
+            "cost": 5,
+            "target": "all_enemies"
+          }
+        ]
+      },
+      {
+        "id": "p2",
+        "side": "player",
+        "fileName": "dorian.jfif",
+        "name": "Dorian",
+        "rarity": 4,
+        "element": "volt",
+        "elementLabel": "Volt",
+        "archetype": "vanguard",
+        "archetypeLabel": "Vanguard",
+        "level": 1,
+        "ascension": 0,
+        "bonds": [],
+        "rivals": [],
+        "stats": {
+          "vitality": 156,
+          "might": 26,
+          "arcana": 12,
+          "bulwark": 30,
+          "resolve": 22,
+          "celerity": 10,
+          "fate": 7
+        },
+        "maxHp": 156,
+        "hp": 128,
+        "alive": true,
+        "statuses": [
+          {
+            "id": "weaken",
+            "label": "Weaken",
+            "kind": "debuff",
+            "description": "Deals 25% less damage.",
+            "turns": 2
+          },
+          {
+            "id": "expose",
+            "label": "Expose",
+            "kind": "debuff",
+            "description": "Takes 25% more damage.",
+            "turns": 2
+          }
+        ],
+        "skills": [
+          {
+            "id": "strike",
+            "name": "Strike",
+            "description": "Basic attack with the card's best power. Generates +1 extra Aether.",
+            "cost": 0,
+            "target": "enemy"
+          },
+          {
+            "id": "guard",
+            "name": "Guard",
+            "description": "Halves damage taken until this card's next turn. Generates +1 extra Aether.",
+            "cost": 0,
+            "target": "self"
+          },
+          {
+            "id": "bastion_call",
+            "name": "Bastion Call",
+            "description": "Taunts all foes for 2 turns and raises a shield worth 25% of max vitality.",
+            "cost": 3,
+            "target": "self"
+          },
+          {
+            "id": "tremor_slam",
+            "name": "Tremor Slam",
+            "description": "Physical blow to every foe (0.8x) with 35% chance to Stun each.",
+            "cost": 5,
+            "target": "all_enemies"
+          }
+        ]
+      },
+      {
+        "id": "e0",
+        "side": "enemy",
+        "fileName": "silas.jfif",
+        "name": "Silas",
+        "rarity": 3,
+        "element": "umbra",
+        "elementLabel": "Umbra",
+        "archetype": "arcanist",
+        "archetypeLabel": "Arcanist",
+        "level": 1,
+        "ascension": 0,
+        "bonds": [],
+        "rivals": [],
+        "stats": {
+          "vitality": 76,
+          "might": 7,
+          "arcana": 30,
+          "bulwark": 9,
+          "resolve": 16,
+          "celerity": 12,
+          "fate": 10
+        },
+        "maxHp": 76,
+        "hp": 76,
+        "alive": true,
+        "statuses": [],
+        "skills": [
+          {
+            "id": "strike",
+            "name": "Strike",
+            "description": "Basic attack with the card's best power. Generates +1 extra Aether.",
+            "cost": 0,
+            "target": "enemy"
+          },
+          {
+            "id": "guard",
+            "name": "Guard",
+            "description": "Halves damage taken until this card's next turn. Generates +1 extra Aether.",
+            "cost": 0,
+            "target": "self"
+          },
+          {
+            "id": "elemental_bolt",
+            "name": "Elemental Bolt",
+            "description": "Magical bolt (1.45x) carrying this card's element effect.",
+            "cost": 3,
+            "target": "enemy"
+          }
+        ]
+      },
+      {
+        "id": "e1",
+        "side": "enemy",
+        "fileName": "rosalind.jfif",
+        "name": "Rosalind",
+        "rarity": 4,
+        "element": "terra",
+        "elementLabel": "Terra",
+        "archetype": "trickster",
+        "archetypeLabel": "Trickster",
+        "level": 1,
+        "ascension": 0,
+        "bonds": [],
+        "rivals": [],
+        "stats": {
+          "vitality": 89,
+          "might": 25,
+          "arcana": 24,
+          "bulwark": 11,
+          "resolve": 14,
+          "celerity": 18,
+          "fate": 13
+        },
+        "maxHp": 89,
+        "hp": 42,
+        "alive": true,
+        "statuses": [],
+        "skills": [
+          {
+            "id": "strike",
+            "name": "Strike",
+            "description": "Basic attack with the card's best power. Generates +1 extra Aether.",
+            "cost": 0,
+            "target": "enemy"
+          },
+          {
+            "id": "guard",
+            "name": "Guard",
+            "description": "Halves damage taken until this card's next turn. Generates +1 extra Aether.",
+            "cost": 0,
+            "target": "self"
+          },
+          {
+            "id": "hexing_shiv",
+            "name": "Hexing Shiv",
+            "description": "Cursed stab (1.0x hybrid) that Weakens and Exposes the target.",
+            "cost": 3,
+            "target": "enemy"
+          },
+          {
+            "id": "aether_siphon",
+            "name": "Aether Siphon",
+            "description": "Light hybrid hit (0.5x) that Slows every foe and steals up to 2 of their Aether.",
+            "cost": 5,
+            "target": "all_enemies"
+          }
+        ]
+      },
+      {
+        "id": "e2",
+        "side": "enemy",
+        "fileName": "annelise.jfif",
+        "name": "Annelise",
+        "rarity": 3,
+        "element": "lumen",
+        "elementLabel": "Lumen",
+        "archetype": "mystic",
+        "archetypeLabel": "Mystic",
+        "level": 1,
+        "ascension": 0,
+        "bonds": [],
+        "rivals": [],
+        "stats": {
+          "vitality": 84,
+          "might": 8,
+          "arcana": 22,
+          "bulwark": 12,
+          "resolve": 19,
+          "celerity": 11,
+          "fate": 6
+        },
+        "maxHp": 84,
+        "hp": 84,
+        "alive": true,
+        "statuses": [],
+        "skills": [
+          {
+            "id": "strike",
+            "name": "Strike",
+            "description": "Basic attack with the card's best power. Generates +1 extra Aether.",
+            "cost": 0,
+            "target": "enemy"
+          },
+          {
+            "id": "guard",
+            "name": "Guard",
+            "description": "Halves damage taken until this card's next turn. Generates +1 extra Aether.",
+            "cost": 0,
+            "target": "self"
+          },
+          {
+            "id": "mending_light",
+            "name": "Mending Light",
+            "description": "Heals one ally based on Arcana and removes its debuffs.",
+            "cost": 3,
+            "target": "ally"
+          }
+        ]
+      }
+    ],
+    "actions": [
+      {
+        "id": "strike",
+        "name": "Strike",
+        "description": "Basic attack with the card's best power. Generates +1 extra Aether.",
+        "cost": 0,
+        "target": "enemy",
+        "usable": true,
+        "reason": null,
+        "targets": [
+          "e0",
+          "e1",
+          "e2"
+        ]
+      },
+      {
+        "id": "guard",
+        "name": "Guard",
+        "description": "Halves damage taken until this card's next turn. Generates +1 extra Aether.",
+        "cost": 0,
+        "target": "self",
+        "usable": true,
+        "reason": null,
+        "targets": [
+          "p1"
+        ]
+      },
+      {
+        "id": "elemental_bolt",
+        "name": "Elemental Bolt",
+        "description": "Magical bolt (1.45x) carrying this card's element effect.",
+        "cost": 3,
+        "target": "enemy",
+        "usable": false,
+        "reason": "Not enough Aether.",
+        "targets": []
+      },
+      {
+        "id": "arcane_tempest",
+        "name": "Arcane Tempest",
+        "description": "Magical storm (0.8x) on every foe, each hit carrying the element effect.",
+        "cost": 5,
+        "target": "all_enemies",
+        "usable": false,
+        "reason": "Not enough Aether.",
+        "targets": []
+      }
+    ],
+    "omen": null,
+    "resonance": {
+      "player": null,
+      "enemy": null
+    },
+    "elementRiders": {
+      "lumen": "Heals the most wounded ally for 30% of the damage.",
+      "umbra": "Drains 35% of the damage as vitality.",
+      "volt": "Lightning arcs to the weakest other foe for 35% of the damage.",
+      "gale": "Tears the target's guard open (Expose).",
+      "terra": "Crushes the target's strength (Weaken)."
+    }
+  },
+  "pvpBattleId": null,
+  "teamSize": 3,
+  "difficulties": [
+    {
+      "id": "novice",
+      "label": "Novice",
+      "description": "Weaker foes, mostly common cards.",
+      "minLevel": 1,
+      "unlocked": true,
+      "enemyLevel": 1,
+      "experience": 40
+    },
+    {
+      "id": "adept",
+      "label": "Adept",
+      "description": "Foes of your level with more rare cards.",
+      "minLevel": 3,
+      "unlocked": false,
+      "enemyLevel": 1,
+      "experience": 70
+    },
+    {
+      "id": "master",
+      "label": "Master",
+      "description": "Stronger foes led by legendary cards.",
+      "minLevel": 6,
+      "unlocked": false,
+      "enemyLevel": 3,
+      "experience": 110
+    }
+  ],
+  "progress": {
+    "level": 1,
+    "maxLevel": 50,
+    "experience": 0,
+    "levelExperience": 0,
+    "nextLevelExperience": 100,
+    "wins": 0,
+    "losses": 0
+  }
+}

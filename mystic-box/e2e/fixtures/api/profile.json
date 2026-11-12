@@ -1,0 +1,248 @@
+{
+  "level": 1,
+  "maxLevel": 50,
+  "experience": 0,
+  "levelExperience": 0,
+  "nextLevelExperience": 100,
+  "wins": 0,
+  "losses": 0,
+  "userId": "e2e-player",
+  "username": "Seraphine",
+  "usernameChange": {
+    "canChange": false,
+    "retryAfterSeconds": 2591659,
+    "nextChangeAt": 1797039517
+  },
+  "usernameRules": {
+    "minLength": 3,
+    "maxLength": 20,
+    "allowed": "Letters (A-Z), numbers and underscore (_). Must start with a letter.",
+    "changeCooldownDays": 30,
+    "searchMinLength": 2
+  },
+  "title": null,
+  "titles": [
+    {
+      "id": "summoner",
+      "name": "Summoner",
+      "description": "Answer the Box's call.",
+      "earned": true
+    },
+    {
+      "id": "arcane_adept",
+      "name": "Arcane Adept",
+      "description": "Reach level 10.",
+      "earned": false
+    },
+    {
+      "id": "archsummoner",
+      "name": "Archsummoner",
+      "description": "Reach level 25.",
+      "earned": false
+    },
+    {
+      "id": "collection_hrimvald",
+      "name": "Friend of the Wind-Wolves",
+      "description": "Summon every champion of Hrimvald and claim the reward.",
+      "earned": false
+    },
+    {
+      "id": "campaign_hrimvald",
+      "name": "Breaker of the Frostgate",
+      "description": "Defeat the champion of Hrimvald in the campaign.",
+      "earned": false
+    },
+    {
+      "id": "collection_zephyrine",
+      "name": "Sky Guard of Zephyrine",
+      "description": "Summon every champion of The Zephyrine Isles and claim the reward.",
+      "earned": false
+    },
+    {
+      "id": "campaign_zephyrine",
+      "name": "Rider of the Drifting Throne",
+      "description": "Defeat the champion of The Zephyrine Isles in the campaign.",
+      "earned": false
+    },
+    {
+      "id": "collection_nocthaven",
+      "name": "Lantern-Keeper of Nocthaven",
+      "description": "Summon every champion of Nocthaven and claim the reward.",
+      "earned": false
+    },
+    {
+      "id": "campaign_nocthaven",
+      "name": "Who Faced the Last Warden",
+      "description": "Defeat the champion of Nocthaven in the campaign.",
+      "earned": false
+    },
+    {
+      "id": "collection_skyspire",
+      "name": "Stargazer of Skyspire",
+      "description": "Summon every champion of The Skyspire and claim the reward.",
+      "earned": false
+    },
+    {
+      "id": "campaign_skyspire",
+      "name": "Catcher of Falling Stars",
+      "description": "Defeat the champion of The Skyspire in the campaign.",
+      "earned": false
+    },
+    {
+      "id": "collection_greenhollow",
+      "name": "Neighbor of Greenhollow",
+      "description": "Summon every champion of Greenhollow Vale and claim the reward.",
+      "earned": false
+    },
+    {
+      "id": "campaign_greenhollow",
+      "name": "Who Ate Grizelda's Cake",
+      "description": "Defeat the champion of Greenhollow Vale in the campaign.",
+      "earned": false
+    },
+    {
+      "id": "collection_sylvaran",
+      "name": "Child of the Grove",
+      "description": "Summon every champion of The Sylvaran Wilds and claim the reward.",
+      "earned": false
+    },
+    {
+      "id": "campaign_sylvaran",
+      "name": "Who Heard the Second Heart",
+      "description": "Defeat the champion of The Sylvaran Wilds in the campaign.",
+      "earned": false
+    },
+    {
+      "id": "collection_aurelian",
+      "name": "Knight of the Lion's Gate",
+      "description": "Summon every champion of The Aurelian Dominion and claim the reward.",
+      "earned": false
+    },
+    {
+      "id": "campaign_aurelian",
+      "name": "Who Held Both Gates",
+      "description": "Defeat the champion of The Aurelian Dominion in the campaign.",
+      "earned": false
+    },
+    {
+      "id": "collection_hoshigane",
+      "name": "Student of the Petal",
+      "description": "Summon every champion of The Hoshigane Isles and claim the reward.",
+      "earned": false
+    },
+    {
+      "id": "campaign_hoshigane",
+      "name": "Twin Petal Duelist",
+      "description": "Defeat the champion of The Hoshigane Isles in the campaign.",
+      "earned": false
+    },
+    {
+      "id": "collection_spirehollow",
+      "name": "Rooftop Runner",
+      "description": "Summon every champion of Spirehollow and claim the reward.",
+      "earned": false
+    },
+    {
+      "id": "campaign_spirehollow",
+      "name": "Breaker of the Masked Contract",
+      "description": "Defeat the champion of Spirehollow in the campaign.",
+      "earned": false
+    },
+    {
+      "id": "collection_ironfang",
+      "name": "Blood-Brother of the Clans",
+      "description": "Summon every champion of The Ironfang Highlands and claim the reward.",
+      "earned": false
+    },
+    {
+      "id": "campaign_ironfang",
+      "name": "Who Saw Gorvane Rise",
+      "description": "Defeat the champion of The Ironfang Highlands in the campaign.",
+      "earned": false
+    },
+    {
+      "id": "collection_thalassar",
+      "name": "Tidewatch Sentinel",
+      "description": "Summon every champion of The Thalassar Coast and claim the reward.",
+      "earned": false
+    },
+    {
+      "id": "campaign_thalassar",
+      "name": "Who Heard the Tide-Witch's Song",
+      "description": "Defeat the champion of The Thalassar Coast in the campaign.",
+      "earned": false
+    },
+    {
+      "id": "collection_cinderpeak",
+      "name": "Ember-Touched",
+      "description": "Summon every champion of Cinderpeak and claim the reward.",
+      "earned": false
+    },
+    {
+      "id": "campaign_cinderpeak",
+      "name": "Who Walked into the Everfire",
+      "description": "Defeat the champion of Cinderpeak in the campaign.",
+      "earned": false
+    },
+    {
+      "id": "collection_cogsreach",
+      "name": "Honorary Inventor",
+      "description": "Summon every champion of Cogsreach and claim the reward.",
+      "earned": false
+    },
+    {
+      "id": "campaign_cogsreach",
+      "name": "Accomplice of the Tenth Robbery",
+      "description": "Defeat the champion of Cogsreach in the campaign.",
+      "earned": false
+    },
+    {
+      "id": "who_freed_lira",
+      "name": "Who Freed Lira",
+      "description": "Unlock the secret chapter \"The Raven\".",
+      "earned": false
+    },
+    {
+      "id": "everfire_keeper",
+      "name": "Keeper of the Everfire",
+      "description": "Unlock the secret chapter \"The Name Beneath the Flame\".",
+      "earned": false
+    },
+    {
+      "id": "kages_secret",
+      "name": "Who Learned Kage's Secret",
+      "description": "Unlock the secret chapter \"The Lord Who Gave the Order\".",
+      "earned": false
+    },
+    {
+      "id": "last_seed",
+      "name": "Guardian of the Last Seed",
+      "description": "Unlock the secret chapter \"The Last Seed\".",
+      "earned": false
+    },
+    {
+      "id": "bearer_of_the_key",
+      "name": "Bearer of the Key",
+      "description": "Unlock the secret chapter \"The Keeper of the Key\".",
+      "earned": false
+    },
+    {
+      "id": "mapper_of_the_lid",
+      "name": "Mapper of the Lid",
+      "description": "Unlock the secret chapter \"The Star in the Cradle\".",
+      "earned": false
+    },
+    {
+      "id": "corins_name",
+      "name": "Who Knew Corin's Name",
+      "description": "Unlock the secret chapter \"His Real Name\".",
+      "earned": false
+    },
+    {
+      "id": "seventh_warden",
+      "name": "Friend of the Seventh Warden",
+      "description": "Unlock the secret chapter \"The Warden Who Walked Away\".",
+      "earned": false
+    }
+  ]
+}
