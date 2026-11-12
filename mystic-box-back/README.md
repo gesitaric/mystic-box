@@ -5,7 +5,7 @@ This project contains source code and supporting files for a serverless applicat
 > **Todas as regras do jogo ficam no backend. O frontend não define NADA** (preços, raridades, sorteio, saldo, tempo de espera...). Nunca confie em dados de jogo enviados pelo cliente. Veja o `CLAUDE.md` na raiz do repositório.
 
 - shared - Lambda Layer (`SharedLayer`) with the `mystic_shared` package: card definitions, market rules (`LISTING_PRICE_LIMITS`, `MAX_LISTING_QUANTITY`, `MAX_ACTIVE_LISTINGS`, `listing_price_range`) and draw rules (`cards.py`, the single source of truth) and the signed summon token (`summon_token.py`).
-- open_box - Code for the Lambda function that draws the cards on the server and returns them with a signed `summonToken`. This endpoint is public.
+- open_box - Code for the Lambda function that draws the cards on the server and returns them with a signed `summonToken`. Requires a signed-in user (Cognito).
 - get_user_cards - Code for the Lambda function that returns the authenticated user's collection grouped by card (`file_name`): each entry has `quantity`, `firstObtainedAt`/`lastObtainedAt`, the accepted per-copy `listingPriceRange` and `maxListingQuantity` for putting it on sale. The response also carries `totalCards`. Supports `sort=obtainedAt|rarity|name|quantity` and `order=asc|desc`.
 - save_user_card - Code for the Lambda function that stores a drawn summon for the authenticated user. It only accepts the `summonToken` (single use, expires in 30 minutes) and reads the cards from the server-side definitions.
 - get_wallet - Code for the Lambda function that returns the authenticated user's balance of Fragmentos Arcanos (the game currency), stored in `UserWalletTable`. Users without a record start at 0.
@@ -19,11 +19,11 @@ This project contains source code and supporting files for a serverless applicat
 
 ## Authentication
 
-User accounts are managed by an AWS Cognito User Pool created by this stack. The `/users/me/cards` endpoints require a Cognito ID token in the `Authorization` header, and the user is identified by the token `sub` claim.
+User accounts are managed by an AWS Cognito User Pool created by this stack. Every player endpoint (including `POST /box/open`; only `GET /rules` and `GET /world` are public) requires a Cognito ID token in the `Authorization` header, and the user is identified by the token `sub` claim.
 
 Deployment outputs used by the web client:
 
-- `OpenBoxApi` - public endpoint used to draw a card.
+- `OpenBoxApi` - authenticated endpoint used to draw a card.
 - `GetUserCardsApi` / `SaveUserCardApi` - authenticated endpoints for the user's collection.
 - `UserPoolId` / `UserPoolClientId` - Cognito configuration for the web client.
 

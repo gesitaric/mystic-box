@@ -46,7 +46,7 @@ python -m venv .venv
 
 ```powershell
 wsl -d Ubuntu -- docker ps                                   # mystic-box-dynamodb Up
-Invoke-WebRequest -Method Post http://localhost:3000/box/open  # 200
+Invoke-WebRequest http://localhost:3000/rules                # 200
 ```
 
 O banco volta sozinho quando o WSL inicia (`restart: unless-stopped`); a API e o

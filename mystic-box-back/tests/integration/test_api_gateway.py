@@ -31,14 +31,12 @@ class TestApiGateway:
         stacks = response["Stacks"]
         return {output["OutputKey"]: output["OutputValue"] for output in stacks[0]["Outputs"]}
 
-    def test_open_box(self, stack_outputs):
-        """ Call the open box endpoint and check the response """
+    def test_open_box_requires_authentication(self, stack_outputs):
+        """ Summoning must reject anonymous requests (CORS headers included) """
         response = requests.post(stack_outputs["OpenBoxApi"])
 
-        assert response.status_code == 200
-        cards = response.json()["cards"]
-        assert len(cards) == 1
-        assert set(cards[0]) == {"name", "rarity", "file_name"}
+        assert response.status_code == 401
+        assert response.headers.get("Access-Control-Allow-Origin") == "*"
 
     def test_get_user_cards_requires_authentication(self, stack_outputs):
         """ The user cards endpoint must reject anonymous requests """
