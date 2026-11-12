@@ -826,22 +826,52 @@
 
 /* Boato da semana */
 
+/* Boato da semana: faixa de pergaminho noturno com a lua nas pontas. */
 .world-omen {
+  position: relative;
   margin: 0 0 16px;
-  padding: 10px 12px;
-  border: 1px solid rgba(180, 140, 255, 0.6);
-  border-radius: 10px;
-  background: linear-gradient(160deg, rgba(60, 30, 110, 0.6), rgba(20, 10, 40, 0.7));
+  padding: 10px 40px;
+  border: 1px solid rgba(180, 140, 255, 0.55);
+  border-radius: 4px;
+  background:
+    var(--grain),
+    radial-gradient(ellipse 60% 120% at 50% 0%, rgba(167, 123, 255, 0.25), transparent 70%),
+    linear-gradient(160deg, rgba(48, 24, 92, 0.75), rgba(16, 8, 34, 0.82));
+  outline: 1px solid rgba(180, 140, 255, 0.18);
+  outline-offset: -5px;
   color: #e9dcff;
   font-size: 13px;
   line-height: 1.5;
   box-shadow: 0 0 16px rgba(160, 110, 255, 0.25);
 }
 
+.world-omen::before,
+.world-omen::after {
+  content: "☾";
+  position: absolute;
+  top: 50%;
+  color: rgba(212, 184, 255, 0.75);
+  font-size: 18px;
+  line-height: 1;
+  text-shadow: 0 0 10px rgba(180, 140, 255, 0.8);
+  translate: 0 -50%;
+}
+
+.world-omen::before {
+  left: 14px;
+}
+
+.world-omen::after {
+  right: 14px;
+  scale: -1 1;
+}
+
 .world-omen span {
   display: block;
   margin-bottom: 4px;
   color: #d4b8ff;
+  font-family: var(--font-display);
+  font-weight: 700;
   font-size: 11px;
   letter-spacing: 2px;
   text-transform: uppercase;

@@ -256,25 +256,83 @@
   padding: 0;
   overflow: hidden;
   border: 1px solid rgba(255, 220, 150, 0.45);
-  border-radius: 24px;
+  border-radius: 10px;
   background: rgba(16, 9, 32, 0.8);
   color: var(--ink);
   font-family: inherit;
   text-align: left;
   cursor: pointer;
+  outline: 1px solid rgba(255, 220, 150, 0.14);
+  outline-offset: -7px;
   box-shadow:
     0 14px 40px rgba(0, 0, 0, 0.5),
     inset 0 1px 0 rgba(255, 255, 255, 0.06);
+  transform: perspective(1000px) rotateX(var(--tilt-x, 0deg)) rotateY(var(--tilt-y, 0deg));
   transition:
     transform 0.25s ease,
     box-shadow 0.25s ease,
     border-color 0.25s ease;
 }
 
+/* Filigrana nos cantos (por cima da arte). */
+.lobby-card::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 4;
+  background:
+    var(--filigree-tl) left 4px top 4px / 44px 44px no-repeat,
+    var(--filigree-tr) right 4px top 4px / 44px 44px no-repeat,
+    var(--filigree-bl) left 4px bottom 4px / 44px 44px no-repeat,
+    var(--filigree-br) right 4px bottom 4px / 44px 44px no-repeat;
+  opacity: 0.85;
+  pointer-events: none;
+}
+
+/* Brilho holográfico que acompanha o ponteiro. */
+.lobby-card::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 5;
+  background:
+    radial-gradient(
+      circle at var(--shine-x, 50%) var(--shine-y, 30%),
+      rgba(255, 245, 220, 0.28),
+      transparent 45%
+    ),
+    linear-gradient(
+      115deg,
+      transparent 20%,
+      rgba(255, 140, 220, 0.12) 38%,
+      rgba(140, 220, 255, 0.14) 50%,
+      rgba(255, 230, 140, 0.12) 62%,
+      transparent 80%
+    ) var(--shine-x, 50%) 0 / 250% 100%;
+  mix-blend-mode: color-dodge;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  pointer-events: none;
+}
+
+.lobby-card:hover::after,
+.lobby-card:focus-visible::after {
+  opacity: 1;
+}
+
 .lobby-card:hover,
 .lobby-card:focus-visible {
-  transform: translateY(-4px);
-  outline: none;
+  transform: perspective(1000px) rotateX(var(--tilt-x, 0deg)) rotateY(var(--tilt-y, 0deg))
+    translateY(-4px);
+  transition:
+    transform 0.08s linear,
+    box-shadow 0.25s ease,
+    border-color 0.25s ease;
+}
+
+.lobby-card:focus-visible {
+  outline: 2px solid var(--gold-light);
+  outline-offset: 3px;
 }
 
 .lobby-card.is-summon:hover,
@@ -399,7 +457,7 @@
   left: 50%;
   z-index: 2;
   color: #fff;
-  font-family: Georgia, "Times New Roman", serif;
+  font-family: var(--font-display);
   font-size: clamp(28px, 4vw, 44px);
   font-style: italic;
   font-weight: 900;
@@ -422,6 +480,7 @@
 
 .lobby-card-kicker {
   color: #cbb6ee;
+  font-family: var(--font-display);
   font-size: 10px;
   font-weight: 700;
   letter-spacing: 3px;
@@ -430,7 +489,7 @@
 
 .lobby-card-title {
   color: var(--gold);
-  font-family: Georgia, "Times New Roman", serif;
+  font-family: var(--font-display);
   font-size: clamp(22px, 3vw, 30px);
   font-weight: 700;
   letter-spacing: 4px;
@@ -443,6 +502,7 @@
 
 .lobby-card-status {
   color: #d9c9f5;
+  font-family: var(--font-display);
   font-size: 11px;
   font-weight: 700;
   letter-spacing: 1px;
@@ -483,9 +543,9 @@
   border-radius: 16px;
   background: transparent;
   color: #ffe6a6;
-  font-family: inherit;
+  font-family: var(--font-display);
   font-size: 10px;
-  font-weight: 800;
+  font-weight: 700;
   letter-spacing: 2px;
   text-transform: uppercase;
   cursor: pointer;
@@ -570,8 +630,9 @@
   .dock-button {
     flex: 1;
     min-width: 0;
-    padding: 8px 4px;
-    letter-spacing: 1px;
+    padding: 8px 2px;
+    font-size: 9px;
+    letter-spacing: 0.5px;
   }
 }
 
@@ -591,6 +652,11 @@
   .lobby-fan,
   .lobby-duel {
     transition: none;
+  }
+
+  .lobby-card,
+  .lobby-card:hover {
+    transform: none;
   }
 }
 

@@ -210,7 +210,7 @@ export function OmenNote({ omen, compact = false }) {
   return (
     <p className={`world-omen${compact ? " is-compact" : ""}`}>
       <span>
-        ☾ This week in {omen.regionName}: {omen.title}
+        This week in {omen.regionName}: {omen.title}
       </span>
       {!compact && omen.text}{" "}
       <em>

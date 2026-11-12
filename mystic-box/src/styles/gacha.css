@@ -2,12 +2,6 @@
   box-sizing: border-box;
 }
 
-:root {
-  --gold: #ffd98a;
-  --gold-deep: #c98a2e;
-  --ink: #f6ecff;
-}
-
 html,
 body,
 #root {
@@ -19,7 +13,7 @@ body {
   overflow: hidden;
   background: #05030c;
   color: var(--ink);
-  font-family: "Trebuchet MS", "Segoe UI", system-ui, sans-serif;
+  font-family: var(--font-body);
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
 }
@@ -53,6 +47,29 @@ body {
     radial-gradient(circle at center, #1a1030 0%, #0a0618 55%, #04020a 100%);
 }
 
+/* Círculo arcano girando devagar atrás de tudo, levemente deslocado pelo
+   ponteiro (parallax). */
+.scene::before {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  z-index: 0;
+  width: min(135vmin, 1250px);
+  aspect-ratio: 1;
+  margin: calc(min(135vmin, 1250px) / -2) 0 0 calc(min(135vmin, 1250px) / -2);
+  background: url("../assets/sigil.svg") center / contain no-repeat;
+  opacity: 0.075;
+  pointer-events: none;
+  translate: calc(var(--px) * 18px) calc(var(--py) * 14px);
+  animation: sigilTurn 240s linear infinite;
+  transition: translate 0.6s ease-out;
+}
+
+.scene.battle-view::before {
+  opacity: 0.04;
+}
+
 .stage {
   position: relative;
   width: 100%;
@@ -74,6 +91,8 @@ body {
     radial-gradient(ellipse 34% 22% at 72% 58%, rgba(66, 180, 255, 0.18), transparent 70%),
     radial-gradient(ellipse 30% 20% at 52% 18%, rgba(255, 120, 190, 0.16), transparent 70%);
   filter: blur(46px);
+  translate: calc(var(--px) * -30px) calc(var(--py) * -22px);
+  transition: translate 0.8s ease-out;
   animation: auroraDrift 20s ease-in-out infinite alternate;
 }
 
@@ -94,6 +113,8 @@ body {
     0 0,
     48px 64px,
     22px 12px;
+  translate: calc(var(--px) * -10px) calc(var(--py) * -8px);
+  transition: translate 0.5s ease-out;
   animation:
     stars 60s linear infinite,
     twinkle 7s ease-in-out infinite alternate;
@@ -187,16 +208,19 @@ body {
 
 h1 {
   margin: 0;
-  font-family: Georgia, "Times New Roman", serif;
-  font-size: clamp(28px, 4.4vw, 52px);
-  font-weight: 700;
-  letter-spacing: clamp(6px, 1.4vw, 16px);
-  text-indent: clamp(6px, 1.4vw, 16px);
+  font-family: var(--font-logo);
+  font-size: clamp(28px, 4.6vw, 56px);
+  font-weight: 900;
+  line-height: 1.1;
+  letter-spacing: clamp(2px, 0.5vw, 6px);
+  text-indent: clamp(2px, 0.5vw, 6px);
   text-transform: uppercase;
-  background: linear-gradient(180deg, #fff6d8 0%, #ffd98a 40%, #d99a3d 72%, #ffe9b0 100%);
+  background: var(--gilded-text);
+  background-size: 200% 100%;
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
+  animation: gildedFlow 9s linear infinite;
   filter:
     drop-shadow(0 0 18px rgba(255, 190, 90, 0.45))
     drop-shadow(0 2px 2px rgba(0, 0, 0, 0.6));
@@ -205,6 +229,8 @@ h1 {
 .tagline {
   margin: 10px 0 0;
   color: #cbb6ee;
+  font-family: var(--font-display);
+  font-weight: 600;
   font-size: clamp(9px, 1.1vw, 12px);
   letter-spacing: clamp(4px, 0.9vw, 9px);
   text-indent: clamp(4px, 0.9vw, 9px);
@@ -561,7 +587,7 @@ h1 {
 .name {
   margin-top: 12px;
   color: #fff6e0;
-  font-family: Georgia, "Times New Roman", serif;
+  font-family: var(--font-display);
   font-size: 23px;
   font-weight: 700;
   letter-spacing: 2px;
@@ -603,7 +629,7 @@ h1 {
 }
 
 .legendary-banner-title {
-  font-family: Georgia, "Times New Roman", serif;
+  font-family: var(--font-display);
   font-size: clamp(26px, 5vw, 56px);
   font-weight: 700;
   letter-spacing: clamp(6px, 1.6vw, 18px);
@@ -1305,6 +1331,9 @@ h1 {
 /* ---------- Reduced motion ---------- */
 
 @media (prefers-reduced-motion: reduce) {
+  .scene::before,
+  h1,
+  .auth-header h2,
   .aurora,
   .stars,
   .motes,
@@ -1374,7 +1403,7 @@ h1 {
   border-radius: 999px;
   background: rgba(20, 12, 38, 0.55);
   color: #ffe6a6;
-  font-family: inherit;
+  font-family: var(--font-display);
   font-size: 11px;
   font-weight: 700;
   letter-spacing: 2px;
@@ -1495,14 +1524,16 @@ h1 {
 }
 
 .keep-button {
+  position: relative;
+  overflow: hidden;
   padding: 10px 24px;
   border: 0;
   border-radius: 999px;
   background: linear-gradient(180deg, #fff0c4 0%, #ffd071 42%, #eda53c 72%, #d68a24 100%);
   color: #2a1600;
-  font-family: inherit;
-  font-size: 11px;
-  font-weight: 800;
+  font-family: var(--font-display);
+  font-size: 12px;
+  font-weight: 700;
   letter-spacing: 2px;
   text-transform: uppercase;
   cursor: pointer;
@@ -1516,9 +1547,23 @@ h1 {
     filter 0.2s ease;
 }
 
+.keep-button::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  width: 40%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.75), transparent);
+  transform: translateX(-120%) skewX(-20deg);
+  pointer-events: none;
+}
+
 .keep-button:hover {
   filter: brightness(1.08);
   transform: translateY(-1px) scale(1.02);
+}
+
+.keep-button:hover::after {
+  animation: gildedSweep 0.8s ease;
 }
 
 .keep-button:active {
@@ -1551,28 +1596,40 @@ h1 {
   width: min(420px, 92vw);
   max-height: 90vh;
   overflow-y: auto;
-  padding: clamp(24px, 4vh, 36px);
-  border: 1px solid rgba(255, 220, 150, 0.45);
-  border-radius: 20px;
-  background: linear-gradient(160deg, rgba(58, 34, 88, 0.97), rgba(16, 9, 32, 0.99));
+  padding: clamp(28px, 4.5vh, 40px) clamp(22px, 3.5vw, 40px);
+  border: 1px solid rgba(255, 220, 150, 0.5);
+  border-radius: 6px;
+  /* Os cantos e o grão ficam presos à janela (attachment padrão), sem
+     rolar com o conteúdo. */
+  background:
+    var(--filigree-tl) left 6px top 6px / 56px 56px no-repeat,
+    var(--filigree-tr) right 6px top 6px / 56px 56px no-repeat,
+    var(--filigree-bl) left 6px bottom 6px / 56px 56px no-repeat,
+    var(--filigree-br) right 6px bottom 6px / 56px 56px no-repeat,
+    var(--grain),
+    radial-gradient(ellipse 80% 40% at 50% 0%, rgba(167, 123, 255, 0.22), transparent 70%),
+    linear-gradient(170deg, rgba(42, 24, 68, 0.98), rgba(14, 8, 28, 0.99) 70%);
+  outline: 1px solid rgba(255, 220, 150, 0.16);
+  outline-offset: -9px;
   box-shadow:
-    0 0 0 1px rgba(255, 255, 255, 0.06) inset,
-    0 0 50px rgba(160, 100, 255, 0.35),
-    0 30px 70px rgba(0, 0, 0, 0.65);
+    0 0 0 1px rgba(0, 0, 0, 0.6),
+    0 0 60px rgba(160, 100, 255, 0.3),
+    0 30px 80px rgba(0, 0, 0, 0.7);
   cursor: auto;
   animation: cardZoomIn 0.32s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 .auth-close {
   position: absolute;
-  top: 12px;
-  right: 14px;
+  top: 16px;
+  right: 18px;
+  z-index: 3;
   width: 32px;
   height: 32px;
-  border: 0;
+  border: 1px solid rgba(255, 220, 150, 0.35);
   border-radius: 50%;
-  background: rgba(255, 255, 255, 0.06);
-  color: #cbb6ee;
+  background: rgba(10, 5, 22, 0.7);
+  color: var(--gold);
   font-size: 20px;
   line-height: 1;
   cursor: pointer;
@@ -1607,15 +1664,29 @@ h1 {
 
 .auth-header h2 {
   margin: 0;
-  font-family: Georgia, "Times New Roman", serif;
+  font-family: var(--font-display);
   font-size: clamp(22px, 4vw, 30px);
+  font-weight: 700;
   letter-spacing: 4px;
   text-indent: 4px;
-  background: linear-gradient(180deg, #fff6d8 0%, #ffd98a 45%, #d99a3d 100%);
+  background: var(--gilded-text);
+  background-size: 200% 100%;
+  animation: gildedFlow 12s linear infinite;
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
   filter: drop-shadow(0 0 14px rgba(255, 190, 90, 0.4));
+}
+
+.auth-header h2::after {
+  content: "";
+  display: block;
+  width: min(220px, 60%);
+  height: 9px;
+  margin: 10px auto 0;
+  background:
+    linear-gradient(90deg, transparent, rgba(255, 217, 138, 0.8) 40%, transparent 40% 60%, rgba(255, 217, 138, 0.8) 60%, transparent) center / 100% 1px no-repeat,
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 18 9'%3E%3Cpath d='M9 0l4.5 4.5L9 9 4.5 4.5z' fill='%23ffd98a'/%3E%3C/svg%3E") center / 18px 9px no-repeat;
 }
 
 .auth-header p {
@@ -1912,17 +1983,23 @@ h1 {
   padding: 6px 8px;
   border: 1px solid rgba(255, 220, 142, 0.35);
   border-radius: 8px;
-  background: rgba(20, 10, 40, 0.7);
+  background: linear-gradient(180deg, rgba(48, 26, 78, 0.85), rgba(20, 10, 40, 0.85));
   color: #ffdc8e;
   font: inherit;
+  font-family: var(--font-display);
   font-size: 11px;
+  font-weight: 700;
   letter-spacing: 1px;
+  transition:
+    border-color 0.2s ease,
+    box-shadow 0.2s ease;
   white-space: nowrap;
   cursor: pointer;
 }
 
 .collection-sell-button:hover:not(:disabled) {
-  border-color: rgba(255, 220, 142, 0.7);
+  border-color: rgba(255, 220, 142, 0.8);
+  box-shadow: 0 0 12px rgba(255, 200, 110, 0.3);
 }
 
 .collection-sell-button:focus-visible {
@@ -2760,6 +2837,32 @@ h1 {
 .collection-card-actions {
   display: flex;
   gap: 6px;
+}
+
+/* Cópias repetidas: selo de cera dourado no canto da carta. */
+.collection-card-quantity {
+  position: absolute;
+  top: -7px;
+  right: -7px;
+  z-index: 3;
+  display: grid;
+  place-items: center;
+  min-width: 30px;
+  height: 30px;
+  padding: 0 6px;
+  border: 1px solid rgba(255, 245, 210, 0.9);
+  border-radius: 999px;
+  background: radial-gradient(circle at 35% 30%, #fff0c4, #eda53c 55%, #9a5c14);
+  color: #2a1600;
+  font-family: var(--font-display);
+  font-size: 12px;
+  font-weight: 900;
+  line-height: 1;
+  box-shadow:
+    0 0 0 2px rgba(20, 10, 40, 0.85),
+    0 4px 10px rgba(0, 0, 0, 0.55),
+    0 0 14px rgba(255, 190, 90, 0.55);
+  pointer-events: none;
 }
 
 .collection-card-ascension {

@@ -1,0 +1,171 @@
+/* ==========================================================================
+   Tema "Grimório Celestial": tokens e peças visuais comuns a todas as telas.
+   Só apresentação. Carregado antes dos outros CSS (main.jsx).
+   ========================================================================== */
+
+:root {
+  /* Tipografia */
+  --font-logo: "Cinzel Decorative", "Cinzel", Georgia, serif;
+  --font-display: "Cinzel", Georgia, "Times New Roman", serif;
+  --font-body: "Alegreya Sans", "Trebuchet MS", "Segoe UI", system-ui, sans-serif;
+
+  /* Cores */
+  --gold: #ffd98a;
+  --gold-light: #fff3cf;
+  --gold-deep: #c98a2e;
+  --ink: #f6ecff;
+  --ink-soft: #cbb6ee;
+  --violet: #a77bff;
+  --night: #05030c;
+  --line: rgba(255, 220, 150, 0.3);
+  --line-strong: rgba(255, 220, 150, 0.55);
+
+  /* Ouro líquido dos títulos */
+  --gilded-text: linear-gradient(
+    100deg,
+    #d99a3d 0%,
+    #ffe9b0 22%,
+    #fff8e1 30%,
+    #ffd98a 42%,
+    #c98a2e 62%,
+    #ffe9b0 80%,
+    #d99a3d 100%
+  );
+
+  /* Cantoneiras douradas finas (painéis). Use antes do fundo do painel:
+     background: var(--corner-marks), <fundo>; */
+  --corner-marks:
+    linear-gradient(var(--gold), var(--gold)) left 8px top 8px / 14px 1px no-repeat,
+    linear-gradient(var(--gold), var(--gold)) left 8px top 8px / 1px 14px no-repeat,
+    linear-gradient(var(--gold), var(--gold)) right 8px top 8px / 14px 1px no-repeat,
+    linear-gradient(var(--gold), var(--gold)) right 8px top 8px / 1px 14px no-repeat,
+    linear-gradient(var(--gold), var(--gold)) left 8px bottom 8px / 14px 1px no-repeat,
+    linear-gradient(var(--gold), var(--gold)) left 8px bottom 8px / 1px 14px no-repeat,
+    linear-gradient(var(--gold), var(--gold)) right 8px bottom 8px / 14px 1px no-repeat,
+    linear-gradient(var(--gold), var(--gold)) right 8px bottom 8px / 1px 14px no-repeat;
+
+  /* Filigrana dos cantos das janelas (modais). */
+  --filigree-tl: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64' fill='none' stroke='%23ffd98a' stroke-linecap='round'%3E%3Cpath d='M4 40V12a8 8 0 0 1 8-8h28' stroke-width='1.4'/%3E%3Cpath d='M9 30V15a6 6 0 0 1 6-6h15' stroke-width='.8' opacity='.6'/%3E%3Cpath d='M4 22c6 0 10-4 10-10M22 4c0 6-4 10-10 10' stroke-width='.9' opacity='.8'/%3E%3Cpath d='M12 12l3.5-3.5L19 12l-3.5 3.5z' fill='%23ffd98a' stroke='none'/%3E%3Ccircle cx='40' cy='4' r='1.6' fill='%23ffd98a' stroke='none'/%3E%3Ccircle cx='4' cy='40' r='1.6' fill='%23ffd98a' stroke='none'/%3E%3C/svg%3E");
+  --filigree-tr: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64' fill='none' stroke='%23ffd98a' stroke-linecap='round'%3E%3Cg transform='matrix(-1 0 0 1 64 0)'%3E%3Cpath d='M4 40V12a8 8 0 0 1 8-8h28' stroke-width='1.4'/%3E%3Cpath d='M9 30V15a6 6 0 0 1 6-6h15' stroke-width='.8' opacity='.6'/%3E%3Cpath d='M4 22c6 0 10-4 10-10M22 4c0 6-4 10-10 10' stroke-width='.9' opacity='.8'/%3E%3Cpath d='M12 12l3.5-3.5L19 12l-3.5 3.5z' fill='%23ffd98a' stroke='none'/%3E%3Ccircle cx='40' cy='4' r='1.6' fill='%23ffd98a' stroke='none'/%3E%3Ccircle cx='4' cy='40' r='1.6' fill='%23ffd98a' stroke='none'/%3E%3C/g%3E%3C/svg%3E");
+  --filigree-bl: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64' fill='none' stroke='%23ffd98a' stroke-linecap='round'%3E%3Cg transform='matrix(1 0 0 -1 0 64)'%3E%3Cpath d='M4 40V12a8 8 0 0 1 8-8h28' stroke-width='1.4'/%3E%3Cpath d='M9 30V15a6 6 0 0 1 6-6h15' stroke-width='.8' opacity='.6'/%3E%3Cpath d='M4 22c6 0 10-4 10-10M22 4c0 6-4 10-10 10' stroke-width='.9' opacity='.8'/%3E%3Cpath d='M12 12l3.5-3.5L19 12l-3.5 3.5z' fill='%23ffd98a' stroke='none'/%3E%3Ccircle cx='40' cy='4' r='1.6' fill='%23ffd98a' stroke='none'/%3E%3Ccircle cx='4' cy='40' r='1.6' fill='%23ffd98a' stroke='none'/%3E%3C/g%3E%3C/svg%3E");
+  --filigree-br: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64' fill='none' stroke='%23ffd98a' stroke-linecap='round'%3E%3Cg transform='rotate(180 32 32)'%3E%3Cpath d='M4 40V12a8 8 0 0 1 8-8h28' stroke-width='1.4'/%3E%3Cpath d='M9 30V15a6 6 0 0 1 6-6h15' stroke-width='.8' opacity='.6'/%3E%3Cpath d='M4 22c6 0 10-4 10-10M22 4c0 6-4 10-10 10' stroke-width='.9' opacity='.8'/%3E%3Cpath d='M12 12l3.5-3.5L19 12l-3.5 3.5z' fill='%23ffd98a' stroke='none'/%3E%3Ccircle cx='40' cy='4' r='1.6' fill='%23ffd98a' stroke='none'/%3E%3Ccircle cx='4' cy='40' r='1.6' fill='%23ffd98a' stroke='none'/%3E%3C/g%3E%3C/svg%3E");
+
+  /* Grão de pergaminho, bem sutil, por cima dos fundos escuros. */
+  --grain: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 1 0 0 0 0 .9 0 0 0 0 .75 0 0 0 .05 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+
+  /* Parallax do fundo (posição do ponteiro de -1 a 1, ver pointerParallax.js) */
+  --px: 0;
+  --py: 0;
+
+  color-scheme: dark;
+  font-family: var(--font-body);
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+body {
+  margin: 0;
+  background: var(--night);
+}
+
+p {
+  margin: 0;
+}
+
+::selection {
+  background: rgba(255, 217, 138, 0.35);
+  color: #fff8e6;
+}
+
+/* Barras de rolagem: fio de ouro sobre a noite. */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 217, 138, 0.45) transparent;
+}
+
+*::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+*::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+*::-webkit-scrollbar-thumb {
+  border: 2px solid transparent;
+  border-radius: 999px;
+  background: linear-gradient(180deg, #ffe9b0, #c98a2e) padding-box;
+}
+
+/* Botões e campos usam a fonte do jogo (o navegador não herda sozinho). */
+button,
+input,
+select,
+textarea {
+  font-family: inherit;
+}
+
+/* Brilho que atravessa os botões dourados ao passar o mouse. */
+@keyframes gildedSweep {
+  from {
+    transform: translateX(-120%) skewX(-20deg);
+  }
+  to {
+    transform: translateX(220%) skewX(-20deg);
+  }
+}
+
+/* Ouro dos títulos escorrendo devagar. */
+@keyframes gildedFlow {
+  from {
+    background-position: 0% 50%;
+  }
+  to {
+    background-position: 200% 50%;
+  }
+}
+
+@keyframes sigilTurn {
+  to {
+    rotate: 360deg;
+  }
+}
+
+/* Troca de tela (início, invocação, arena): a nova tela se abre como um
+   portal a partir do centro, por cima da antiga que se dissolve. */
+::view-transition-old(root) {
+  animation: screen-fade-out 0.35s ease both;
+}
+
+::view-transition-new(root) {
+  animation: screen-portal-in 0.55s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@keyframes screen-fade-out {
+  to {
+    opacity: 0;
+    filter: blur(6px);
+    transform: scale(1.04);
+  }
+}
+
+@keyframes screen-portal-in {
+  from {
+    clip-path: circle(0% at 50% 50%);
+    filter: brightness(1.8) saturate(1.4);
+  }
+  to {
+    clip-path: circle(75% at 50% 50%);
+    filter: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  ::view-transition-old(root),
+  ::view-transition-new(root) {
+    animation: none;
+  }
+}
