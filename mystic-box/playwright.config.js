@@ -1,8 +1,20 @@
+import { mkdirSync } from "node:fs";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
 import { defineConfig } from "@playwright/test";
 
 // Testes de tela: o jogo aberto no Edge já instalado (sem baixar navegadores)
 // em vários tamanhos de tela. A API é simulada (e2e/support.js), então não
 // precisa do banco nem do servidor local.
+
+// O Edge cria um perfil temporário por aba e o Playwright grava os traces na
+// pasta temporária do sistema. Ela fica no disco do projeto (o C está sem
+// espaço); os workers herdam a variável.
+const TEMP_DIR = path.join(path.dirname(fileURLToPath(import.meta.url)), "node_modules", ".cache", "playwright-tmp");
+mkdirSync(TEMP_DIR, { recursive: true });
+process.env.TEMP = TEMP_DIR;
+process.env.TMP = TEMP_DIR;
+process.env.TMPDIR = TEMP_DIR;
 
 const PORT = 4173;
 // Endereço falso da API: todo pedido para ele é respondido pelos testes.
@@ -15,10 +27,11 @@ export default defineConfig({
   fullyParallel: true,
   forbidOnly: Boolean(process.env.CI),
   retries: 0,
-  // O mapa e a coleção carregam imagens grandes; com muitas abas ao mesmo
-  // tempo o navegador fica lento.
+  // O mapa e a coleção carregam imagens grandes. Poucas abas ao mesmo tempo
+  // e resolução 1x: com mais, falta memória e o Windows aumenta o arquivo de
+  // paginação (no disco C).
   timeout: 60_000,
-  workers: 4,
+  workers: 2,
   reporter: [["list"], ["html", { open: "never" }]],
   expect: {
     toHaveScreenshot: {
@@ -34,21 +47,22 @@ export default defineConfig({
   use: {
     baseURL: `http://localhost:${PORT}`,
     reducedMotion: "reduce",
-    trace: "retain-on-failure",
+    // Para investigar uma falha: npm run test:ui -- --trace on
+    trace: "off",
     screenshot: "only-on-failure",
   },
   projects: [
     {
       name: "phone-small",
-      use: { ...edge, viewport: { width: 360, height: 640 }, isMobile: true, hasTouch: true, deviceScaleFactor: 2 },
+      use: { ...edge, viewport: { width: 360, height: 640 }, isMobile: true, hasTouch: true },
     },
     {
       name: "phone",
-      use: { ...edge, viewport: { width: 393, height: 852 }, isMobile: true, hasTouch: true, deviceScaleFactor: 2 },
+      use: { ...edge, viewport: { width: 393, height: 852 }, isMobile: true, hasTouch: true },
     },
     {
       name: "tablet",
-      use: { ...edge, viewport: { width: 820, height: 1180 }, isMobile: true, hasTouch: true, deviceScaleFactor: 2 },
+      use: { ...edge, viewport: { width: 820, height: 1180 }, isMobile: true, hasTouch: true },
     },
     {
       name: "desktop",
