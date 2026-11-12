@@ -10,6 +10,9 @@
   position: relative;
   z-index: 100;
   display: grid;
+  /* minmax(0, 1fr): a coluna não cresce até a largura mínima do conteúdo
+     (em telas de 360px a tela inicial passava da borda direita). */
+  grid-template-columns: minmax(0, 1fr);
   grid-template-rows: auto auto minmax(0, 1fr) auto;
   justify-items: center;
   gap: clamp(8px, 2vh, 22px);
