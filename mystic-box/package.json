@@ -11,7 +11,10 @@
     "preview": "vite preview",
     "test": "node --test \"src/**/*.test.js\"",
     "images": "node scripts/optimize-images.mjs",
-    "deploy": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/deploy.ps1"
+    "deploy": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/deploy.ps1",
+    "test:ui": "playwright test",
+    "test:ui:update": "playwright test --update-snapshots",
+    "test:ui:report": "playwright show-report"
   },
   "dependencies": {
     "amazon-cognito-identity-js": "^6.3.22",
