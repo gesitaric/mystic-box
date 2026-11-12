@@ -30,3 +30,8 @@ dist-ssr
 # Imagens originais em alta resolução (ficam só localmente).
 # Gere as versões otimizadas com: npm run images
 original-images
+
+# Playwright (testes de tela)
+test-results
+playwright-report
+blob-report
