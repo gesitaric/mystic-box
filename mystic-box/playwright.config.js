@@ -12,10 +12,13 @@ const edge = { channel: "msedge", browserName: "chromium" };
 
 export default defineConfig({
   testDir: "e2e",
-  // Uma tela por vez no mesmo tamanho; os tamanhos rodam em paralelo.
   fullyParallel: true,
   forbidOnly: Boolean(process.env.CI),
   retries: 0,
+  // O mapa e a coleção carregam imagens grandes; com muitas abas ao mesmo
+  // tempo o navegador fica lento.
+  timeout: 60_000,
+  workers: 4,
   reporter: [["list"], ["html", { open: "never" }]],
   expect: {
     toHaveScreenshot: {

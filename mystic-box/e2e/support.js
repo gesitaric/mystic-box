@@ -148,14 +148,15 @@ export async function layoutProblems(page) {
 }
 
 // Elementos visíveis cujo retângulo passa da largura da tela (texto cortado,
-// botão fora da tela). Ignora o que está dentro de áreas com rolagem própria.
+// botão fora da tela ou cortado por um "overflow: hidden"). Ignora o que está
+// dentro de áreas com rolagem lateral própria (carrosséis, abas).
 export async function overflowingElements(page, selector) {
   return page.evaluate((selector) => {
     const width = document.documentElement.clientWidth;
     const scrollsSideways = (element) => {
       for (let node = element.parentElement; node && node !== document.body; node = node.parentElement) {
         const style = getComputedStyle(node);
-        if (/(auto|scroll|hidden|clip)/.test(style.overflowX) && node.scrollWidth > node.clientWidth) return true;
+        if (/(auto|scroll)/.test(style.overflowX) && node.scrollWidth > node.clientWidth) return true;
       }
       return false;
     };

@@ -1,4 +1,6 @@
 // Regras de layout em cada tamanho de tela (projetos do playwright.config.js).
+// Um teste por tela; as verificações são "soft" para o relatório mostrar
+// todos os problemas da tela de uma vez.
 
 import { SCREENS } from "./screens.js";
 import { expect, layoutProblems, open, overflowingElements, signIn, test } from "./support.js";
@@ -6,35 +8,30 @@ import { expect, layoutProblems, open, overflowingElements, signIn, test } from 
 const INTERACTIVE = "button, a[href], input, select, textarea, [role='button'], [role='tab']";
 
 for (const screen of SCREENS) {
-  test.describe(screen.name, () => {
-    test.beforeEach(async ({ page, api }) => {
-      if (screen.signedIn !== false) await signIn(page);
-      await screen.setup?.(api, page);
-      await open(page, screen.path);
-      await expect(screen.ready(page)).toBeVisible();
-    });
+  test(`${screen.name} cabe na tela`, async ({ page, api }) => {
+    if (screen.signedIn !== false) await signIn(page);
+    await screen.setup?.(api, page);
+    await open(page, screen.path);
+    await expect(screen.ready(page)).toBeVisible();
 
-    test("a página não rola para o lado", async ({ page }) => {
-      expect(await layoutProblems(page)).toEqual([]);
-    });
+    expect.soft(await layoutProblems(page), "a página não rola para o lado").toEqual([]);
 
-    test("botões e campos ficam dentro da tela", async ({ page }) => {
-      expect(await overflowingElements(page, INTERACTIVE)).toEqual([]);
-    });
+    expect
+      .soft(await overflowingElements(page, INTERACTIVE), "botões e campos ficam dentro da tela")
+      .toEqual([]);
 
-    test("o painel aberto cabe na tela", async ({ page }) => {
-      const modal = page.locator(".auth-modal");
-      test.skip((await modal.count()) === 0, "tela sem painel");
+    const modal = page.locator(".auth-modal");
+    if ((await modal.count()) > 0) {
       const box = await modal.first().boundingBox();
       const viewport = page.viewportSize();
-      expect(box.x).toBeGreaterThanOrEqual(-1);
-      expect(box.y).toBeGreaterThanOrEqual(-1);
-      expect(box.x + box.width).toBeLessThanOrEqual(viewport.width + 1);
-      expect(box.y + box.height).toBeLessThanOrEqual(viewport.height + 1);
-    });
+      const outside =
+        box.x < -1 ||
+        box.y < -1 ||
+        box.x + box.width > viewport.width + 1 ||
+        box.y + box.height > viewport.height + 1;
+      expect.soft(outside, `o painel aberto cabe na tela (${JSON.stringify(box)})`).toBe(false);
+    }
 
-    test("todos os pedidos à API têm resposta gravada", async ({ api }) => {
-      expect(api.unhandled).toEqual([]);
-    });
+    expect.soft(api.unhandled, "todos os pedidos à API têm resposta gravada").toEqual([]);
   });
 }
