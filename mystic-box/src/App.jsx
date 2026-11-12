@@ -85,14 +85,19 @@ function clearPendingSummon() {
   }
 }
 
-// O sorteio é feito no servidor, que devolve as cartas e um token assinado.
-async function fetchSummon() {
+// O sorteio é feito no servidor (só com login), que devolve as cartas e um
+// token assinado.
+async function fetchSummon(activeSession) {
+  const token = activeSession.session.getIdToken().getJwtToken();
   const response = await fetch(`${API_URL}/box/open`, {
     method: "POST",
+    headers: { Authorization: token },
   });
 
   if (!response.ok) {
-    throw new Error(`Failed to open the box: ${response.status}`);
+    const error = new Error(`Failed to open the box: ${response.status}`);
+    error.status = response.status;
+    throw error;
   }
 
   const data = await response.json();
@@ -401,6 +406,13 @@ function App() {
   async function summon() {
     if (opening || revealing || charging || onCooldown) return;
 
+    // Invocar exige login (o servidor recusa sem token).
+    if (!session) {
+      setAuthOpen(true);
+      return;
+    }
+    const activeSession = session;
+
     clearTimeout(suspenseTimer.current);
     setError("");
     setSaveError("");
@@ -415,24 +427,29 @@ function App() {
     try {
       // O sorteio corre no servidor enquanto a explosão do portal acontece.
       const [summonResult] = await Promise.all([
-        fetchSummon(),
+        fetchSummon(activeSession),
         new Promise((resolve) => setTimeout(resolve, PORTAL_REVEAL_DELAY_MS)),
       ]);
 
       setCards(summonResult.cards);
       setPendingSummon(summonResult);
       storePendingSummon(summonResult);
-
-      if (session) {
-        void saveCards(summonResult, session);
-      }
+      void saveCards(summonResult, activeSession);
 
       setOpening(false);
       setRevealed(true);
     } catch (err) {
       console.error(err);
       setOpening(false);
-      setError("The summon failed. Please channel the portal again.");
+      if (err.status === 401) {
+        signOut();
+        setSession(null);
+        setError("Your session has expired. Sign in again to summon.");
+      } else if (err.status === 429) {
+        setError("The portal is crowded right now. Please try again in a moment.");
+      } else {
+        setError("The summon failed. Please channel the portal again.");
+      }
       setPortalKey((key) => key + 1);
     }
   }
@@ -729,9 +746,13 @@ function App() {
               backdrop={showingSpread}
               silenced={showingSpread && flippedCount > 0}
               onActivated={summon}
-              disabled={opening || onCooldown || showingSpread}
+              disabled={!session || opening || onCooldown || showingSpread}
               disabledLabel={
-                onCooldown ? `PORTAL RECHARGING · ${formatCountdown(cooldownRemaining)}` : ""
+                !session
+                  ? "SIGN IN TO SUMMON"
+                  : onCooldown
+                    ? `PORTAL RECHARGING · ${formatCountdown(cooldownRemaining)}`
+                    : ""
               }
               activatedLabel={opening ? "THE CARDS ARE ARRIVING..." : undefined}
           />
@@ -753,6 +774,19 @@ function App() {
                 </button>
               </>
             ) : null}
+
+            {!session && !showingSpread && !opening && (
+              <div className="keep-prompt">
+                <p>Sign in to channel the portal and summon your cards.</p>
+                <button
+                  type="button"
+                  className="keep-button"
+                  onClick={() => setAuthOpen(true)}
+                >
+                  Sign in to summon
+                </button>
+              </div>
+            )}
 
             {onCooldown && showingResults && (
               <p className="cooldown-message" role="timer" aria-live="off">
