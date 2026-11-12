@@ -87,3 +87,12 @@ O disco C está sem espaço: Docker, WSL (`D:\WSL\Ubuntu`), `.venv` e dados fica
 Backend (a partir de `mystic-box-back/`): `python -m pytest tests/unit`. O `tests/unit/conftest.py` coloca `shared/` no `sys.path` e usa uma chave de teste para o token.
 
 Frontend (a partir de `mystic-box/`): `npx eslint src` e `npx vite build`.
+
+Testes de tela (a partir de `mystic-box/`): `npm run test:ui`. Playwright no **Edge instalado** (`channel: "msedge"`, sem baixar navegadores) em 4 tamanhos: `phone-small` (360x640), `phone` (393x852), `tablet` (820x1180) e `desktop` (1440x900).
+
+- Não precisa do banco nem da API local: `e2e/support.js` responde os pedidos com as respostas gravadas em `e2e/fixtures/api`, grava uma sessão do Cognito falsa no `localStorage` e fixa o relógio no instante da captura. As respostas vêm do servidor: para mudar ou acrescentar uma, rode `e2e/fixtures/capture.mjs` contra a API local (passo a passo no topo do arquivo), não escreva dados de jogo à mão.
+- `e2e/screens.js` lista as telas conferidas. Tela ou painel novo entra ali.
+- `e2e/layout.spec.js`: a página não rola para o lado, botões e campos não passam da borda nem ficam cortados, o painel aberto cabe na tela e todo pedido à API tem resposta gravada.
+- `e2e/visual.spec.js`: compara cada tela com a imagem em `e2e/__screenshots__/<tamanho>/` (sufixo `-win32`: a fonte sai diferente em outro sistema). Depois de uma mudança visual proposital, veja as diferenças em `npm run test:ui:report` e atualize com `npm run test:ui:update`.
+- Ainda não roda no CI (as imagens de referência são do Windows).
+- Disco C: a pasta temporária dos testes fica em `node_modules/.cache/playwright-tmp`, e o padrão é 2 abas em resolução 1x. Mais abas fazem o Windows aumentar o arquivo de paginação no C.
