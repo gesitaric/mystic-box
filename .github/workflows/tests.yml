@@ -63,7 +63,7 @@ jobs:
         run: npx vite build
 
   layout:
-    name: Frontend (layout das telas)
+    name: Frontend (testes de tela)
     runs-on: ubuntu-latest
     timeout-minutes: 15
     defaults:
@@ -85,10 +85,11 @@ jobs:
       - name: Edge
         run: command -v microsoft-edge-stable || npx playwright install --with-deps msedge
 
-      # Só o layout: as imagens de referência do visual.spec.js são do Windows
-      # (a fonte sai diferente no Linux).
-      - name: Testes de layout
-        run: npx playwright test e2e/layout.spec.js
+      # Layout e comparação de imagem (referências -linux). Depois de uma
+      # mudança visual proposital, ponha o rótulo "atualizar-imagens" no PR
+      # (workflow screenshots.yml).
+      - name: Testes de tela
+        run: npx playwright test
 
       - name: Guardar relatório
         if: failure()
