@@ -2,6 +2,11 @@ import { useEffect } from "react";
 
 // Mostra com uma leve subida os elementos com a classe .reveal ao entrarem na tela.
 // Observa a página inteira (também o que aparece depois que a API responde).
+//
+// Quem já está sendo observado fica num WeakSet deste efeito, e não marcado no
+// HTML: no StrictMode o React monta, desmonta e monta o efeito de novo, e uma
+// marca no elemento faria a segunda montagem pular o que a primeira já tinha
+// visto (o elemento ficaria invisível para sempre).
 export function useReveal() {
   useEffect(() => {
     if (!("IntersectionObserver" in window)) {
@@ -9,6 +14,7 @@ export function useReveal() {
       return undefined;
     }
 
+    const watched = new WeakSet();
     const observer = new IntersectionObserver(
       (entries) => {
         for (const entry of entries) {
@@ -22,8 +28,9 @@ export function useReveal() {
     );
 
     const watch = () => {
-      document.querySelectorAll(".reveal:not(.is-visible):not([data-watched])").forEach((el) => {
-        el.dataset.watched = "";
+      document.querySelectorAll(".reveal:not(.is-visible)").forEach((el) => {
+        if (watched.has(el)) return;
+        watched.add(el);
         observer.observe(el);
       });
     };
