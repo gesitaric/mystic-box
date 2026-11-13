@@ -40,6 +40,9 @@ export default defineConfig({
     : [["list"], ["html", { open: "never" }]],
   expect: {
     toHaveScreenshot: {
+      // Sem placa de vídeo (CI) as telas com imagens grandes demoram a ficar
+      // iguais em duas capturas seguidas.
+      timeout: 15_000,
       animations: "disabled",
       caret: "hide",
       // Pequenas diferenças de suavização do texto entre execuções.

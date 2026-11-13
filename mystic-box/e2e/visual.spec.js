@@ -4,7 +4,7 @@
 // com npm run test:ui:update.
 
 import { SCREENS } from "./screens.js";
-import { expect, open, signIn, test } from "./support.js";
+import { expect, imagesSettled, open, signIn, test } from "./support.js";
 
 for (const screen of SCREENS) {
   test(`${screen.name} igual à referência`, async ({ page, api }) => {
@@ -12,6 +12,7 @@ for (const screen of SCREENS) {
     await screen.setup?.(api, page);
     await open(page, screen.path);
     await expect(screen.ready(page)).toBeVisible();
+    await imagesSettled(page);
     await expect(page).toHaveScreenshot(`${screen.name}.png`, {
       // Partes desenhadas em canvas a cada quadro (portal e brilhos) mudam
       // entre execuções mesmo com o movimento reduzido.

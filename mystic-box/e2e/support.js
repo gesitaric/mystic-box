@@ -123,13 +123,25 @@ export async function open(page, url) {
   await page.goto(url);
   await page.evaluate(() => document.fonts.ready);
   await page.waitForLoadState("networkidle");
+  await imagesSettled(page);
+}
+
+// Espera as imagens da página carregarem e serem decodificadas. O decode é
+// assíncrono (decoding="async") e, sem placa de vídeo (CI), uma imagem grande
+// como o mapa-múndi ainda aparece vazia logo depois de carregar.
+export async function imagesSettled(page) {
   await page.evaluate(async () => {
-    const pending = [...document.images].filter((image) => !image.complete);
+    const images = [...document.images].filter((image) => image.complete || image.loading !== "lazy");
     await Promise.all(
-      pending.map((image) => new Promise((resolve) => {
-        image.addEventListener("load", resolve, { once: true });
-        image.addEventListener("error", resolve, { once: true });
-      }))
+      images.map(async (image) => {
+        if (!image.complete) {
+          await new Promise((resolve) => {
+            image.addEventListener("load", resolve, { once: true });
+            image.addEventListener("error", resolve, { once: true });
+          });
+        }
+        await image.decode().catch(() => {});
+      })
     );
   });
 }
