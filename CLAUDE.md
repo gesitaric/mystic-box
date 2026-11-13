@@ -98,3 +98,12 @@ Backend (a partir de `mystic-box-back/`): `python -m pytest tests/unit`. O `test
 Frontend (a partir de `mystic-box/`): `npx eslint src` e `npx vite build`.
 
 Landing (a partir de `mystic-box-welcome/`): `npx eslint src`, `npm test` e `npx vite build`.
+
+Testes de tela (a partir de `mystic-box/`): `npm run test:ui`. Playwright no **Edge instalado** (`channel: "msedge"`, sem baixar navegadores) em 4 tamanhos: `phone-small` (360x640), `phone` (393x852), `tablet` (820x1180) e `desktop` (1440x900).
+
+- Não precisa do banco nem da API local: `e2e/support.js` responde os pedidos com as respostas gravadas em `e2e/fixtures/api`, grava uma sessão do Cognito falsa no `localStorage` e fixa o relógio no instante da captura. As respostas vêm do servidor: para mudar ou acrescentar uma, rode `e2e/fixtures/capture.mjs` contra a API local (passo a passo no topo do arquivo), não escreva dados de jogo à mão.
+- `e2e/screens.js` lista as telas conferidas. Tela ou painel novo entra ali.
+- `e2e/layout.spec.js`: a página não rola para o lado, botões e campos não passam da borda nem ficam cortados, o painel aberto cabe na tela e todo pedido à API tem resposta gravada.
+- `e2e/visual.spec.js`: compara cada tela com a imagem em `e2e/__screenshots__/<tamanho>/`. São dois conjuntos, porque a fonte sai diferente em cada sistema: `-win32` (local) e `-linux` (CI). Depois de uma mudança visual proposital, atualize os dois: as do Windows com `npm run test:ui:update` (veja antes as diferenças em `npm run test:ui:report`) e as do Linux pondo o rótulo `atualizar-imagens` no PR (workflow `.github/workflows/screenshots.yml`, que faz commit das imagens na branch e tira o rótulo; o commit do bot não dispara os testes, então faça um push depois). Antes de capturar, `imagesSettled` espera as imagens decodificarem.
+- No CI (`.github/workflows/tests.yml`, job `layout`, em todo PR para o `main`) rodam os dois arquivos, com 4 abas, no Edge do runner; se falhar, o relatório (com as diferenças de imagem) fica nos artefatos do job. A pasta temporária própria (abaixo) só vale no Windows: no Linux o caminho fica longo demais para o socket do Edge.
+- Disco C: a pasta temporária dos testes fica em `node_modules/.cache/playwright-tmp`, e o padrão é 2 abas em resolução 1x. Mais abas fazem o Windows aumentar o arquivo de paginação no C.

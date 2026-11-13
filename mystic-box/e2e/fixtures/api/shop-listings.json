@@ -1,0 +1,79 @@
+{
+  "cards": [
+    {
+      "name": "Aurelius",
+      "rarity": 4,
+      "file_name": "aurelius.jfif",
+      "available": 1,
+      "listingId": "e7aa93a3-6853-48a4-8c84-8c2e89d326c4",
+      "price": 25,
+      "canAfford": false
+    },
+    {
+      "name": "Eldric",
+      "rarity": 4,
+      "file_name": "eldric.png",
+      "available": 1,
+      "listingId": "fea8739e-1e77-41ef-808a-dd7624029369",
+      "price": 25,
+      "canAfford": false
+    },
+    {
+      "name": "Faelyn",
+      "rarity": 4,
+      "file_name": "faelyn.jfif",
+      "available": 1,
+      "listingId": "13169330-7be7-4094-b3bf-49a8a3e09130",
+      "price": 25,
+      "canAfford": false
+    },
+    {
+      "name": "Kaito",
+      "rarity": 4,
+      "file_name": "kaito.jfif",
+      "available": 1,
+      "listingId": "0b4e9bcc-372e-42d5-af91-cdc6a3a233e4",
+      "price": 25,
+      "canAfford": false
+    },
+    {
+      "name": "Maren",
+      "rarity": 4,
+      "file_name": "maren.jfif",
+      "available": 1,
+      "listingId": "d75ee12c-bd14-4c77-aacd-b5d0679d7abf",
+      "price": 25,
+      "canAfford": false
+    },
+    {
+      "name": "Odette",
+      "rarity": 4,
+      "file_name": "odette.jfif",
+      "available": 1,
+      "listingId": "56897feb-3fdf-423c-b918-c13b4bb1ad98",
+      "price": 25,
+      "canAfford": false
+    },
+    {
+      "name": "Rowan",
+      "rarity": 3,
+      "file_name": "rowan.jfif",
+      "available": 1,
+      "listingId": "0002ff1b-75bc-483f-b67f-e415971345a4",
+      "price": 5,
+      "canAfford": false
+    }
+  ],
+  "myListings": [
+    {
+      "listingId": "46270d22-ee9a-47b8-9901-72ee1ac4e9c5",
+      "name": "Seraphiel",
+      "rarity": 5,
+      "file_name": "seraphiel.jfif",
+      "price": 125,
+      "listedAt": "2026-11-12T01:38:44+00:00"
+    }
+  ],
+  "maxActiveListings": 30,
+  "balance": 0
+}

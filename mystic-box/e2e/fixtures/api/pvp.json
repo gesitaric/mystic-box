@@ -1,0 +1,70 @@
+{
+  "username": "Seraphine",
+  "hasUsername": true,
+  "incoming": [],
+  "outgoing": [],
+  "battle": null,
+  "online": [
+    {
+      "username": "Seraphine",
+      "level": 1,
+      "title": null,
+      "isYou": true,
+      "inDuel": false
+    }
+  ],
+  "liveDuels": [],
+  "rules": {
+    "teamSize": 3,
+    "challengeTtlSeconds": 600,
+    "maxOutgoingChallenges": 5,
+    "turnSeconds": 60,
+    "maxMissedTurns": 3,
+    "winExperience": 90,
+    "lossExperience": 27,
+    "lossExperiencePerDefeat": 5,
+    "maxRounds": 30,
+    "lobbyRefreshSeconds": 20,
+    "presenceSeconds": 60,
+    "maxOnlinePlayers": 50,
+    "maxLiveDuels": 20,
+    "reactions": [
+      {
+        "id": "clap",
+        "emoji": "👏"
+      },
+      {
+        "id": "fire",
+        "emoji": "🔥"
+      },
+      {
+        "id": "laugh",
+        "emoji": "😂"
+      },
+      {
+        "id": "wow",
+        "emoji": "😮"
+      },
+      {
+        "id": "sweat",
+        "emoji": "😅"
+      },
+      {
+        "id": "cry",
+        "emoji": "😢"
+      },
+      {
+        "id": "angry",
+        "emoji": "😠"
+      },
+      {
+        "id": "gg",
+        "emoji": "🤝"
+      }
+    ],
+    "reactionCooldownSeconds": 2,
+    "reactionWindowSeconds": 30,
+    "maxReactionsPerWindow": 8,
+    "reactionTtlSeconds": 60
+  }
+}

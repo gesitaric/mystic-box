@@ -1,0 +1,43 @@
+{
+  "battle": null,
+  "pvpBattleId": null,
+  "teamSize": 3,
+  "difficulties": [
+    {
+      "id": "novice",
+      "label": "Novice",
+      "description": "Weaker foes, mostly common cards.",
+      "minLevel": 1,
+      "unlocked": true,
+      "enemyLevel": 1,
+      "experience": 40
+    },
+    {
+      "id": "adept",
+      "label": "Adept",
+      "description": "Foes of your level with more rare cards.",
+      "minLevel": 3,
+      "unlocked": false,
+      "enemyLevel": 1,
+      "experience": 70
+    },
+    {
+      "id": "master",
+      "label": "Master",
+      "description": "Stronger foes led by legendary cards.",
+      "minLevel": 6,
+      "unlocked": false,
+      "enemyLevel": 3,
+      "experience": 110
+    }
+  ],
+  "progress": {
+    "level": 1,
+    "maxLevel": 50,
+    "experience": 0,
+    "levelExperience": 0,
+    "nextLevelExperience": 100,
+    "wins": 0,
+    "losses": 0
+  }
+}

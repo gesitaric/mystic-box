@@ -1,0 +1,727 @@
+{
+  "world": {
+    "name": "Aethra",
+    "epithet": "The Shattered Realms",
+    "story": [
+      "Long ago Aethra was a single land, warmed by the Aetherwell, the spring of living magic at its heart. Beneath the spring slept the Hollow, a hunger older than the stars. To keep it asleep, the Seven Wardens forged the Mystic Box and locked the Hollow inside.",
+      "A generation ago, a plague swept through the kingdom of Nocthaven. Malachar, the last of the Wardens, opened the Box in search of a cure. The Hollow breathed out, and the land cracked into the Shattered Realms in a single night that every child of Aethra now calls the Sundering.",
+      "The Box was never closed again. It drifts in the Riftheart, the crater where the Sundering began, and it calls champions from every realm, binding them into cards for the summoners it chooses. No one knows whether it is gathering an army to seal the Hollow again, or simply choosing who will be standing when the Hollow wakes."
+    ]
+  },
+  "chronicle": [
+    {
+      "era": "Before memory",
+      "title": "The Aetherwell",
+      "text": "Aethra is one land, warmed by the spring of living magic. Uriel stands at the Gate of Dawn, and the dragons drink from the Sunwell."
+    },
+    {
+      "era": "The Age of Wardens",
+      "title": "The forging of the Box",
+      "text": "Seven Wardens forge the Mystic Box to lock away the Hollow. One of them walks out before it is finished, calling it a bad idea. Uriel keeps the key."
+    },
+    {
+      "era": "A generation ago",
+      "title": "The plague of Nocthaven",
+      "text": "A plague sweeps through Nocthaven. Malachar, the last Warden, searches every forbidden book for a cure, and every book points to the Box."
+    },
+    {
+      "era": "The night of the Sundering",
+      "title": "The world breaks",
+      "text": "Malachar opens the Box. The Hollow breathes out and Aethra cracks into the Shattered Realms. Ignis swallows the Everfire, Leoric holds the cathedral doors, Valeria rides out while Aurelius holds the gate, Vaelora lifts the western hills into the sky, and a star falls into a cradle in Greenhollow."
+    },
+    {
+      "era": "The long night",
+      "title": "Betrayals and vows",
+      "text": "The volcano lords betray the dragon-queen of Cinderpeak, and Draemir does not fly south. Zarathor gives his shadow away to save his city. The Tonbo castle burns in Hoshigane."
+    },
+    {
+      "era": "The rebuilding",
+      "title": "What was saved",
+      "text": "Cassius rebuilds the temple of Solmarr, Isolde founds the Tidewatch, Seraphiel opens the shelter of Ithrel and the steam cities of Cogsreach rise from the ruins."
+    },
+    {
+      "era": "Now",
+      "title": "The calling",
+      "text": "The Box begins to call champions from every realm and bind them into cards for the summoners it chooses. You are one of them."
+    }
+  ],
+  "regions": [
+    {
+      "id": "riftheart",
+      "name": "The Riftheart",
+      "epithet": "Where the world broke",
+      "terrain": "rift",
+      "x": 50,
+      "y": 50,
+      "description": "A crater of floating stone and violet light where the Sundering began. The Mystic Box drifts at its center, humming. Nobody lives here; everyone who has seen it dreams about it afterward.",
+      "element": null,
+      "whisper": "On quiet nights the Box hums a lullaby. Grizelda says she taught it to the Wardens.",
+      "resonance": null,
+      "characters": []
+    },
+    {
+      "id": "hrimvald",
+      "name": "Hrimvald",
+      "epithet": "The frozen north",
+      "terrain": "frost",
+      "x": 46,
+      "y": 11,
+      "description": "Endless tundra, ice cliffs and a single mountain pass that connects the north to the rest of Aethra. The wind-wolves still howl here, and the knights of the pass answer them.",
+      "element": "tide",
+      "whisper": "The wind-wolves are howling south again. Boreas has started answering.",
+      "resonance": {
+        "region": "hrimvald",
+        "regionName": "Hrimvald",
+        "name": "Frostgate Howl",
+        "description": "The wind-wolves howl: every foe starts Slowed for 2 turns."
+      },
+      "characters": [
+        {
+          "name": "Boreas",
+          "rarity": 5,
+          "file_name": "boreas.jfif",
+          "title": "The Wall of the Northern Gale"
+        },
+        {
+          "name": "Fenric",
+          "rarity": 4,
+          "file_name": "fenric.jfif",
+          "title": "The Wolf Without a Pack"
+        },
+        {
+          "name": "Glacius",
+          "rarity": 4,
+          "file_name": "glacius.jfif",
+          "title": "The Frostbound Squire"
+        }
+      ]
+    },
+    {
+      "id": "zephyrine",
+      "name": "The Zephyrine Isles",
+      "epithet": "Islands that float on the wind",
+      "terrain": "isles",
+      "x": 20,
+      "y": 15,
+      "description": "Fragments of land torn into the sky by the Sundering, now ruled by an empress who steers them with the wind. Dragons nest on their undersides, and waterfalls pour into the clouds.",
+      "element": "gale",
+      "whisper": "The isles drift a little closer to the Riftheart every year. The empress says it is the wind.",
+      "resonance": {
+        "region": "zephyrine",
+        "regionName": "The Zephyrine Isles",
+        "name": "Tailwind",
+        "description": "The isles' winds carry the team: +20% celerity."
+      },
+      "characters": [
+        {
+          "name": "Draemir",
+          "rarity": 5,
+          "file_name": "draemir.jfif",
+          "title": "The Dragon-Blooded Sovereign"
+        },
+        {
+          "name": "Kyrielle",
+          "rarity": 5,
+          "file_name": "kyrielle.jfif",
+          "title": "Rider of the Storm Wyrm"
+        },
+        {
+          "name": "Vaelora",
+          "rarity": 5,
+          "file_name": "vaelora.jfif",
+          "title": "Empress of the Floating Isles"
+        }
+      ]
+    },
+    {
+      "id": "nocthaven",
+      "name": "Nocthaven",
+      "epithet": "The kingdom that would not die",
+      "terrain": "shadow",
+      "x": 78,
+      "y": 18,
+      "description": "The kingdom where the plague began and the Box was opened. Its graveyards stretch to the horizon, its libraries read their readers, and its nobles bargain with shadows to keep their thrones.",
+      "element": "umbra",
+      "whisper": "A raven of violet fire has been seen perched on Malachar's window, and he has not chased it away.",
+      "resonance": {
+        "region": "nocthaven",
+        "regionName": "Nocthaven",
+        "name": "Grave Chill",
+        "description": "The cold of the crypts seeps in: every foe starts Weakened for 2 turns."
+      },
+      "characters": [
+        {
+          "name": "Malachar",
+          "rarity": 5,
+          "file_name": "malachar.jfif",
+          "title": "The Warden Who Opened the Box"
+        },
+        {
+          "name": "Mortis",
+          "rarity": 5,
+          "file_name": "mortis.jfif",
+          "title": "The Smiling Crypt-Keeper"
+        },
+        {
+          "name": "Zarathor",
+          "rarity": 5,
+          "file_name": "zarathor.jfif",
+          "title": "The Pact-Bound Dark Lord"
+        },
+        {
+          "name": "Amethia",
+          "rarity": 4,
+          "file_name": "amethia.jfif",
+          "title": "The Starlit Librarian"
+        },
+        {
+          "name": "Morwen",
+          "rarity": 4,
+          "file_name": "morwen.jfif",
+          "title": "The Widow of the Dead Forest"
+        },
+        {
+          "name": "Nocturna",
+          "rarity": 4,
+          "file_name": "nocturna.jfif",
+          "title": "Mistress of the Violet Sigil"
+        },
+        {
+          "name": "Ravenna",
+          "rarity": 4,
+          "file_name": "ravenna.png",
+          "title": "The Raven of the Last Rites"
+        }
+      ]
+    },
+    {
+      "id": "skyspire",
+      "name": "The Skyspire",
+      "epithet": "The stair to the stars",
+      "terrain": "sky",
+      "x": 60,
+      "y": 31,
+      "description": "A tower of cloud and marble that rises from the Riftheart's edge into the heavens. Angels, astrologers and star-hunters live on its terraces, watching the cracked sky for what falls through it.",
+      "element": "lumen",
+      "whisper": "Elysia has stopped singing. The astrologers say the stars have started singing instead.",
+      "resonance": {
+        "region": "skyspire",
+        "regionName": "The Skyspire",
+        "name": "Starlit Ward",
+        "description": "Starlight wraps the team in a shield worth 15% of max vitality."
+      },
+      "characters": [
+        {
+          "name": "Astra",
+          "rarity": 5,
+          "file_name": "astra.jfif",
+          "title": "The Cartographer of Stars"
+        },
+        {
+          "name": "Elysia",
+          "rarity": 5,
+          "file_name": "elysia.jfif",
+          "title": "The Choir of the Silent Wind"
+        },
+        {
+          "name": "Lyra",
+          "rarity": 5,
+          "file_name": "lyra.png",
+          "title": "The Archer Who Shoots the Constellations"
+        },
+        {
+          "name": "Uriel",
+          "rarity": 5,
+          "file_name": "uriel.jfif",
+          "title": "The Spear of the First Dawn"
+        },
+        {
+          "name": "Stellara",
+          "rarity": 4,
+          "file_name": "stellara.jfif",
+          "title": "The Comet Huntress"
+        }
+      ]
+    },
+    {
+      "id": "greenhollow",
+      "name": "Greenhollow Vale",
+      "epithet": "The quiet heartland",
+      "terrain": "meadow",
+      "x": 35,
+      "y": 40,
+      "description": "Farms, meadows and sleepy villages that the Sundering somehow spared. At its edge lies the Mirewood swamp, and the vale's folk know better than to go there after dark.",
+      "element": "terra",
+      "whisper": "A candle burns every night in the window of an empty study, waiting for an astrologer to come home.",
+      "resonance": {
+        "region": "greenhollow",
+        "regionName": "Greenhollow Vale",
+        "name": "Hearth and Harvest",
+        "description": "A taste of home: the team starts with Regen for 3 turns."
+      },
+      "characters": [
+        {
+          "name": "Grizelda",
+          "rarity": 4,
+          "file_name": "grizelda.jfif",
+          "title": "The Witch of the Mirewood"
+        },
+        {
+          "name": "Albin",
+          "rarity": 3,
+          "file_name": "albin.jfif",
+          "title": "The Apprentice With a Twig"
+        },
+        {
+          "name": "Maelis",
+          "rarity": 3,
+          "file_name": "maelis.jfif",
+          "title": "The Runaway Novice"
+        },
+        {
+          "name": "Silas",
+          "rarity": 3,
+          "file_name": "silas.jfif",
+          "title": "The Mushroom Alchemist"
+        },
+        {
+          "name": "Tobin",
+          "rarity": 3,
+          "file_name": "tobin.jfif",
+          "title": "The Farm Boy With a Big Sword"
+        },
+        {
+          "name": "Wren",
+          "rarity": 3,
+          "file_name": "wren.jfif",
+          "title": "The Meadow Boy and His Slime"
+        }
+      ]
+    },
+    {
+      "id": "sylvaran",
+      "name": "The Sylvaran Wilds",
+      "epithet": "The forest that remembers",
+      "terrain": "forest",
+      "x": 13,
+      "y": 44,
+      "description": "The oldest forest in Aethra, home of the elves, the moon flowers and the spirit beasts. Its trees remember the world before the Sundering and do not forgive those who forgot it.",
+      "element": "terra",
+      "whisper": "The roots beat like a second heart, and the girl the forest gave birth to can feel it.",
+      "resonance": {
+        "region": "sylvaran",
+        "regionName": "The Sylvaran Wilds",
+        "name": "Rootbound",
+        "description": "The roots lend their strength: +12% vitality."
+      },
+      "characters": [
+        {
+          "name": "Elowen",
+          "rarity": 4,
+          "file_name": "elowen.jfif",
+          "title": "The Night-Blooming Healer"
+        },
+        {
+          "name": "Faelyn",
+          "rarity": 4,
+          "file_name": "faelyn.jfif",
+          "title": "The Wind-Leaf Ranger"
+        },
+        {
+          "name": "Rosalind",
+          "rarity": 4,
+          "file_name": "rosalind.jfif",
+          "title": "The Butterfly Archer"
+        },
+        {
+          "name": "Sylva",
+          "rarity": 4,
+          "file_name": "sylva.jfif",
+          "title": "The Voice of the Old Grove"
+        },
+        {
+          "name": "Tavik",
+          "rarity": 4,
+          "file_name": "tavik.jfif",
+          "title": "The Spirit-Wolf Wanderer"
+        },
+        {
+          "name": "Thalion",
+          "rarity": 4,
+          "file_name": "thalion.jfif",
+          "title": "The Golden Leaf Marksman"
+        },
+        {
+          "name": "Verdana",
+          "rarity": 4,
+          "file_name": "verdana.jfif",
+          "title": "The Moss-Clad Shepherd"
+        },
+        {
+          "name": "Liesel",
+          "rarity": 3,
+          "file_name": "liesel.jfif",
+          "title": "The Fox-Fire Herbalist"
+        },
+        {
+          "name": "Rowan",
+          "rarity": 3,
+          "file_name": "rowan.jfif",
+          "title": "The Young Forest Warden"
+        }
+      ]
+    },
+    {
+      "id": "aurelian",
+      "name": "The Aurelian Dominion",
+      "epithet": "The kingdom of the sun",
+      "terrain": "holy",
+      "x": 75,
+      "y": 47,
+      "description": "Golden cathedrals, sun temples and the knightly orders sworn to protect them. The Dominion survived the Sundering by holding its gates shut, and some of its knights still have not forgiven themselves for it.",
+      "element": "lumen",
+      "whisper": "A golden knight visits the ruins of Ithrel every month, leaves alms at the door and never gives his name.",
+      "resonance": {
+        "region": "aurelian",
+        "regionName": "The Aurelian Dominion",
+        "name": "Lion's Oath",
+        "description": "Shields locked like the old Order: +12% bulwark and resolve."
+      },
+      "characters": [
+        {
+          "name": "Leoric",
+          "rarity": 5,
+          "file_name": "leoric.jfif",
+          "title": "The Lion of the Fallen Cathedral"
+        },
+        {
+          "name": "Seraphiel",
+          "rarity": 5,
+          "file_name": "seraphiel.jfif",
+          "title": "The Storm-Blessed Guardian"
+        },
+        {
+          "name": "Aurelius",
+          "rarity": 4,
+          "file_name": "aurelius.jfif",
+          "title": "The Paladin Who Kept the Gates"
+        },
+        {
+          "name": "Cassius",
+          "rarity": 4,
+          "file_name": "cassius.png",
+          "title": "The Hammer of the Mountain Temple"
+        },
+        {
+          "name": "Solara",
+          "rarity": 4,
+          "file_name": "solara.jfif",
+          "title": "The Sun-Crowned Priestess"
+        },
+        {
+          "name": "Valeria",
+          "rarity": 4,
+          "file_name": "valeria.jfif",
+          "title": "The Radiant Commander"
+        },
+        {
+          "name": "Annelise",
+          "rarity": 3,
+          "file_name": "annelise.jfif",
+          "title": "The Candlelight Novice"
+        }
+      ]
+    },
+    {
+      "id": "hoshigane",
+      "name": "The Hoshigane Isles",
+      "epithet": "The islands of falling petals",
+      "terrain": "blossom",
+      "x": 93,
+      "y": 58,
+      "description": "Eastern islands of cherry blossoms, temple lanterns and sword clans. Their duels are poems, and their feuds last for generations.",
+      "element": "gale",
+      "whisper": "A fugitive of the shadow clan was seen saving the last dragonfly swordsman. Again.",
+      "resonance": {
+        "region": "hoshigane",
+        "regionName": "The Hoshigane Isles",
+        "name": "First Petal",
+        "description": "The first cut decides the duel: the team starts Empowered for 2 turns."
+      },
+      "characters": [
+        {
+          "name": "Hayato",
+          "rarity": 4,
+          "file_name": "hayato.jfif",
+          "title": "The Blade of Falling Petals"
+        },
+        {
+          "name": "Kage",
+          "rarity": 4,
+          "file_name": "kage.jfif",
+          "title": "The Blue Flame in the Dark"
+        },
+        {
+          "name": "Kaito",
+          "rarity": 4,
+          "file_name": "kaito.jfif",
+          "title": "The Last Dragonfly"
+        },
+        {
+          "name": "Ryuji",
+          "rarity": 3,
+          "file_name": "ryuji.jfif",
+          "title": "The Iron-Fist Disciple"
+        }
+      ]
+    },
+    {
+      "id": "spirehollow",
+      "name": "Spirehollow",
+      "epithet": "The city of a thousand rooftops",
+      "terrain": "city",
+      "x": 59,
+      "y": 66,
+      "description": "A free city of spires and night markets built on the crossroads of every trade route. Everything is for sale here, including secrets, and especially loyalty.",
+      "element": "umbra",
+      "whisper": "The guild's enforcer has been ordered to bring down the rooftop hunter. He keeps losing her trail. On purpose.",
+      "resonance": {
+        "region": "spirehollow",
+        "regionName": "Spirehollow",
+        "name": "Rooftop Ambush",
+        "description": "Strike from the shadows: every foe starts Exposed for 2 turns."
+      },
+      "characters": [
+        {
+          "name": "Lucan",
+          "rarity": 4,
+          "file_name": "lucan.jfif",
+          "title": "The Rooftop Scoundrel"
+        },
+        {
+          "name": "Nyra",
+          "rarity": 4,
+          "file_name": "nyra.jfif",
+          "title": "The Claw of the Moonlit Roofs"
+        },
+        {
+          "name": "Vesper",
+          "rarity": 4,
+          "file_name": "vesper.jfif",
+          "title": "The Masked Twilight"
+        },
+        {
+          "name": "Corvus",
+          "rarity": 3,
+          "file_name": "corvus.jfif",
+          "title": "The Crow Among Thieves"
+        },
+        {
+          "name": "Jory",
+          "rarity": 3,
+          "file_name": "jory.jfif",
+          "title": "The Pickpocket With a Conscience"
+        },
+        {
+          "name": "Kael",
+          "rarity": 3,
+          "file_name": "kael.jfif",
+          "title": "The Ruin Runner"
+        },
+        {
+          "name": "Vexa",
+          "rarity": 3,
+          "file_name": "vexa.jfif",
+          "title": "The Lantern-Street Swindler"
+        }
+      ]
+    },
+    {
+      "id": "ironfang",
+      "name": "The Ironfang Highlands",
+      "epithet": "The mountains of old grudges",
+      "terrain": "mountain",
+      "x": 29,
+      "y": 70,
+      "description": "Rocky peaks and wind-scoured passes ruled by warrior clans, arenas and caravans. The earth here is restless and full of runes nobody remembers carving.",
+      "element": "terra",
+      "whisper": "The warlord who cannot die has died a fourth time. The clans are counting, and so is his son.",
+      "resonance": {
+        "region": "ironfang",
+        "regionName": "The Ironfang Highlands",
+        "name": "Clan Fury",
+        "description": "The war drums of the clans: +15% might."
+      },
+      "characters": [
+        {
+          "name": "Gorvane",
+          "rarity": 5,
+          "file_name": "gorvane.jfif",
+          "title": "The Warlord Who Would Not Fall"
+        },
+        {
+          "name": "Eldric",
+          "rarity": 4,
+          "file_name": "eldric.png",
+          "title": "The Rune-Serpent Scholar"
+        },
+        {
+          "name": "Brannoc",
+          "rarity": 3,
+          "file_name": "brannoc.jfif",
+          "title": "The Arena Brawler"
+        },
+        {
+          "name": "Garrick",
+          "rarity": 3,
+          "file_name": "garrick.jfif",
+          "title": "The Shieldbearer Who Walked Away"
+        }
+      ]
+    },
+    {
+      "id": "thalassar",
+      "name": "The Thalassar Coast",
+      "epithet": "The drowned shore",
+      "terrain": "sea",
+      "x": 11,
+      "y": 84,
+      "description": "A coast of tide-temples, sunken cities and harbor towns. The Sundering drowned half of it, and on quiet nights the bells of the sunken temples can still be heard beneath the waves.",
+      "element": "tide",
+      "whisper": "A puppet in Merrow sings hymns no one has sung since the temples drowned.",
+      "resonance": {
+        "region": "thalassar",
+        "regionName": "The Thalassar Coast",
+        "name": "Tide Hymn",
+        "description": "The drowned temples sing along: +15% arcana."
+      },
+      "characters": [
+        {
+          "name": "Celestine",
+          "rarity": 5,
+          "file_name": "celestine.png",
+          "title": "Herald of the High Tide"
+        },
+        {
+          "name": "Lunara",
+          "rarity": 5,
+          "file_name": "lunara.jfif",
+          "title": "Keeper of the Moon Tides"
+        },
+        {
+          "name": "Isolde",
+          "rarity": 4,
+          "file_name": "isolde.jfif",
+          "title": "The Tidewatch Knight"
+        },
+        {
+          "name": "Maren",
+          "rarity": 4,
+          "file_name": "maren.jfif",
+          "title": "The Tidal Spellbreaker"
+        },
+        {
+          "name": "Odette",
+          "rarity": 4,
+          "file_name": "odette.jfif",
+          "title": "The Puppeteer of Tides"
+        }
+      ]
+    },
+    {
+      "id": "cinderpeak",
+      "name": "Cinderpeak",
+      "epithet": "The burning south",
+      "terrain": "volcano",
+      "x": 47,
+      "y": 88,
+      "description": "Volcanoes, lava falls and fortresses of black glass. The Everfire burns somewhere in its depths, and the dragons that once ruled here have not given up on returning.",
+      "element": "ember",
+      "whisper": "The stones under the volcano are singing a warning: the Everfire is about to change hands.",
+      "resonance": {
+        "region": "cinderpeak",
+        "regionName": "Cinderpeak",
+        "name": "Everfire Spark",
+        "description": "The mountain's flame burns in the team: +3 starting Aether."
+      },
+      "characters": [
+        {
+          "name": "Drakara",
+          "rarity": 5,
+          "file_name": "drakara.jfif",
+          "title": "Daughter of the Molten Crown"
+        },
+        {
+          "name": "Ignis",
+          "rarity": 5,
+          "file_name": "ignis.jfif",
+          "title": "The Knight Inside the Flame"
+        },
+        {
+          "name": "Pyralis",
+          "rarity": 4,
+          "file_name": "pyralis.jfif",
+          "title": "The Ember Prodigy"
+        },
+        {
+          "name": "Torvin",
+          "rarity": 3,
+          "file_name": "torvin.jfif",
+          "title": "The Stone-Singer"
+        }
+      ]
+    },
+    {
+      "id": "cogsreach",
+      "name": "Cogsreach",
+      "epithet": "The steam cities",
+      "terrain": "steam",
+      "x": 79,
+      "y": 79,
+      "description": "Cities of brass, steam and captured lightning, run by barons who grew rich selling machines to the realms rebuilding after the Sundering. Not everyone in Cogsreach got rich.",
+      "element": "volt",
+      "whisper": "The storm tower of Voltaris is failing, and only one archivist is holding it together.",
+      "resonance": {
+        "region": "cogsreach",
+        "regionName": "Cogsreach",
+        "name": "Overclock",
+        "description": "Gears spin up: +2 starting Aether and +10% celerity."
+      },
+      "characters": [
+        {
+          "name": "Dorian",
+          "rarity": 4,
+          "file_name": "dorian.jfif",
+          "title": "The Clockwork Dragoon"
+        },
+        {
+          "name": "Ophira",
+          "rarity": 4,
+          "file_name": "ophira.jfif",
+          "title": "The Lightning Archivist"
+        },
+        {
+          "name": "Scarlett",
+          "rarity": 4,
+          "file_name": "scarlett.jfif",
+          "title": "The Gunpowder Darling"
+        },
+        {
+          "name": "Brina",
+          "rarity": 3,
+          "file_name": "brina.jfif",
+          "title": "The Tinker of the Brass Workshop"
+        }
+      ]
+    }
+  ],
+  "omen": {
+    "region": "sylvaran",
+    "regionName": "The Sylvaran Wilds",
+    "title": "The Moonbloom",
+    "text": "The moon flowers bloom all at once for the first time since the Sundering. The old grove is singing.",
+    "summonMultiplier": 3,
+    "experienceBonusPercent": 25,
+    "endsAt": "2026-11-16T00:00:00+00:00"
+  }
+}

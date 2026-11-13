@@ -1,0 +1,20 @@
+{
+  "cards": [
+    {
+      "name": "Ryuji",
+      "rarity": 3,
+      "file_name": "ryuji.jfif"
+    },
+    {
+      "name": "Jory",
+      "rarity": 3,
+      "file_name": "jory.jfif"
+    },
+    {
+      "name": "Rowan",
+      "rarity": 3,
+      "file_name": "rowan.jfif"
+    }
+  ],
+  "summonToken": "eyJ2IjoxLCJpZCI6IjgwNjQxOGYwOGQ3NTRmODhhYWZmNDg0MjljYmRiYmQxIiwiY2FyZHMiOlsicnl1amkuamZpZiIsImpvcnkuamZpZiIsInJvd2FuLmpmaWYiXSwiaWF0IjoxNzk0NDQ3ODU4LCJleHAiOjE3OTQ0NDk2NTh9.31hPND2lhK_xoOwb239iG1XEJJ5F8B7Bxl9LVYFjh5I"
+}

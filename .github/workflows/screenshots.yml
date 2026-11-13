@@ -1,0 +1,90 @@
+name: Imagens de referência (Linux)
+
+# Gera de novo as imagens de referência do Linux (sufixo -linux) do
+# visual.spec.js e faz commit delas na branch do PR. Use depois de uma mudança
+# visual proposital (as do Windows são geradas localmente com
+# npm run test:ui:update).
+#
+# Como disparar:
+# - no PR, ponha o rótulo "atualizar-imagens" (o rótulo é tirado no fim);
+# - ou em Actions > Imagens de referência (Linux) > Run workflow, escolhendo a
+#   branch (só depois que este arquivo estiver no main).
+#
+# O commit é feito com o GITHUB_TOKEN, que não dispara outros workflows: para os
+# testes rodarem com as imagens novas, faça um push na branch ou rode-os de novo.
+
+on:
+  workflow_dispatch:
+  pull_request:
+    types: [labeled]
+
+concurrency:
+  group: screenshots-${{ github.head_ref || github.ref_name }}
+  cancel-in-progress: true
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  update:
+    name: Atualizar imagens do Linux
+    # Pelo rótulo, só em PR da própria branch do repositório (não de fork). Pelo
+    # botão, nunca direto no main.
+    if: >-
+      (github.event_name == 'pull_request' &&
+       github.event.label.name == 'atualizar-imagens' &&
+       github.event.pull_request.head.repo.full_name == github.repository) ||
+      (github.event_name == 'workflow_dispatch' && github.ref_name != 'main')
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    defaults:
+      run:
+        working-directory: mystic-box
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.head_ref || github.ref_name }}
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: mystic-box/package-lock.json
+
+      - name: Instalar dependências
+        run: npm ci
+
+      - name: Edge
+        run: command -v microsoft-edge-stable || npx playwright install --with-deps msedge
+
+      - name: Gerar imagens
+        run: npx playwright test e2e/visual.spec.js --update-snapshots
+
+      - name: Commit das imagens
+        run: |
+          git add 'e2e/__screenshots__/**/*-linux.png'
+          if git diff --cached --quiet; then
+            echo "Nenhuma imagem mudou."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit -m "Imagens de referência do Linux atualizadas"
+          git push
+
+      - name: Tirar o rótulo
+        if: always() && github.event_name == 'pull_request'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh pr edit ${{ github.event.pull_request.number }} --remove-label atualizar-imagens
+
+      - name: Guardar relatório
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: |
+            mystic-box/playwright-report
+            mystic-box/test-results
+          retention-days: 7

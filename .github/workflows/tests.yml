@@ -62,6 +62,45 @@ jobs:
       - name: Build
         run: npx vite build
 
+  layout:
+    name: Frontend (testes de tela)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: mystic-box
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: mystic-box/package-lock.json
+
+      - name: Instalar dependências
+        run: npm ci
+
+      # A imagem do runner já costuma trazer o Edge; só instala se faltar.
+      - name: Edge
+        run: command -v microsoft-edge-stable || npx playwright install --with-deps msedge
+
+      # Layout e comparação de imagem (referências -linux). Depois de uma
+      # mudança visual proposital, ponha o rótulo "atualizar-imagens" no PR
+      # (workflow screenshots.yml).
+      - name: Testes de tela
+        run: npx playwright test
+
+      - name: Guardar relatório
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: |
+            mystic-box/playwright-report
+            mystic-box/test-results
+          retention-days: 7
+
   welcome:
     name: Landing page (eslint + testes + build)
     runs-on: ubuntu-latest
