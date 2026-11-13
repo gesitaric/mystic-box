@@ -10,6 +10,29 @@ import "../styles/home.css";
 const SUMMON_ART = ["lyra.png", "astra.jfif", "seraphiel.jfif"];
 const BATTLE_ART = ["pyralis.jfif", "malachar.jfif"];
 
+// Inclinação 3D e brilho holográfico dos cards de ação, seguindo o ponteiro
+// (só apresentação; as variáveis são lidas em home.css).
+function tiltCard(event) {
+  if (event.pointerType !== "mouse") return;
+  const card = event.currentTarget;
+  const rect = card.getBoundingClientRect();
+  const x = (event.clientX - rect.left) / rect.width;
+  const y = (event.clientY - rect.top) / rect.height;
+  card.style.setProperty("--tilt-x", `${((0.5 - y) * 10).toFixed(2)}deg`);
+  card.style.setProperty("--tilt-y", `${((x - 0.5) * 12).toFixed(2)}deg`);
+  card.style.setProperty("--shine-x", `${(x * 100).toFixed(1)}%`);
+  card.style.setProperty("--shine-y", `${(y * 100).toFixed(1)}%`);
+}
+
+function resetTilt(event) {
+  const card = event.currentTarget;
+  for (const name of ["--tilt-x", "--tilt-y", "--shine-x", "--shine-y"]) {
+    card.style.removeProperty(name);
+  }
+}
+
+const tiltHandlers = { onPointerMove: tiltCard, onPointerLeave: resetTilt };
+
 // Nível e experiência do jogador, como o servidor calculou.
 export function LevelBadge({ progress, compact = false }) {
   if (!progress) return null;
@@ -194,7 +217,12 @@ function HomeScreen({
       <OmenNote omen={omen} compact />
 
       <nav className="lobby-main" aria-label="Main actions">
-        <button type="button" className="lobby-card is-summon" onClick={onSummon}>
+        <button
+          type="button"
+          className="lobby-card is-summon"
+          onClick={onSummon}
+          {...tiltHandlers}
+        >
           <span className="lobby-card-art" aria-hidden="true">
             {SUMMON_ART.map((fileName, index) => (
               <img
@@ -219,7 +247,12 @@ function HomeScreen({
           </span>
         </button>
 
-        <button type="button" className="lobby-card is-battle" onClick={onBattle}>
+        <button
+          type="button"
+          className="lobby-card is-battle"
+          onClick={onBattle}
+          {...tiltHandlers}
+        >
           <span className="lobby-card-art" aria-hidden="true">
             <img
               src={getCharacterImage(BATTLE_ART[0])}
