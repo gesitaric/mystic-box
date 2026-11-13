@@ -10,7 +10,7 @@ export const SCREENS = [
     name: "summon-signed-out",
     path: "/",
     signedIn: false,
-    ready: (page) => page.getByRole("button", { name: "Sign in" }),
+    ready: (page) => page.getByRole("button", { name: "Sign in", exact: true }),
   },
   {
     name: "home",

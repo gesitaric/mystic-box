@@ -61,3 +61,41 @@ jobs:
 
       - name: Build
         run: npx vite build
+
+  layout:
+    name: Frontend (layout das telas)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: mystic-box
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: mystic-box/package-lock.json
+
+      - name: Instalar dependências
+        run: npm ci
+
+      # A imagem do runner já costuma trazer o Edge; só instala se faltar.
+      - name: Edge
+        run: command -v microsoft-edge-stable || npx playwright install --with-deps msedge
+
+      # Só o layout: as imagens de referência do visual.spec.js são do Windows
+      # (a fonte sai diferente no Linux).
+      - name: Testes de layout
+        run: npx playwright test e2e/layout.spec.js
+
+      - name: Guardar relatório
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: |
+            mystic-box/playwright-report
+            mystic-box/test-results
+          retention-days: 7

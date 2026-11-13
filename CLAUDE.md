@@ -95,5 +95,5 @@ Testes de tela (a partir de `mystic-box/`): `npm run test:ui`. Playwright no **E
 - `e2e/screens.js` lista as telas conferidas. Tela ou painel novo entra ali.
 - `e2e/layout.spec.js`: a página não rola para o lado, botões e campos não passam da borda nem ficam cortados, o painel aberto cabe na tela e todo pedido à API tem resposta gravada.
 - `e2e/visual.spec.js`: compara cada tela com a imagem em `e2e/__screenshots__/<tamanho>/` (sufixo `-win32`: a fonte sai diferente em outro sistema). Depois de uma mudança visual proposital, veja as diferenças em `npm run test:ui:report` e atualize com `npm run test:ui:update`.
-- Ainda não roda no CI (as imagens de referência são do Windows).
+- No CI (`.github/workflows/tests.yml`, job `layout`, em todo PR para o `main`) roda só o `layout.spec.js`, com 4 abas; se falhar, o relatório fica nos artefatos do job. O `visual.spec.js` ainda não roda no CI (as imagens de referência são do Windows).
 - Disco C: a pasta temporária dos testes fica em `node_modules/.cache/playwright-tmp`, e o padrão é 2 abas em resolução 1x. Mais abas fazem o Windows aumentar o arquivo de paginação no C.

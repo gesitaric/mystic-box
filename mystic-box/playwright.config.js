@@ -29,10 +29,12 @@ export default defineConfig({
   retries: 0,
   // O mapa e a coleção carregam imagens grandes. Poucas abas ao mesmo tempo
   // e resolução 1x: com mais, falta memória e o Windows aumenta o arquivo de
-  // paginação (no disco C).
+  // paginação (no disco C). No CI (runner com 4 núcleos) são 4.
   timeout: 60_000,
-  workers: 2,
-  reporter: [["list"], ["html", { open: "never" }]],
+  workers: process.env.CI ? 4 : 2,
+  reporter: process.env.CI
+    ? [["github"], ["list"], ["html", { open: "never" }]]
+    : [["list"], ["html", { open: "never" }]],
   expect: {
     toHaveScreenshot: {
       animations: "disabled",
