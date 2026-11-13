@@ -4,6 +4,7 @@ Monorepo do jogo de invocação de cartas:
 
 - `mystic-box/`: frontend (React + Vite).
 - `mystic-box-back/`: backend serverless (AWS SAM: API Gateway + Lambda em Python + DynamoDB + Cognito).
+- `mystic-box-welcome/`: landing page pública (React + Vite) em `https://mystic-box-welcome.geskee.com.br`, com stack própria (`infra/template.yaml`).
 
 ## Regra principal: TODAS as regras do jogo ficam no backend
 
@@ -62,6 +63,13 @@ Isso significa:
 - **Assistir**: `GET /pvp` devolve `liveDuels` (os dois jogadores, rodada, `isYours`), lidos do índice esparso `LiveDuelsIndex` da `PvpBattlesTable`: `liveIn` só existe enquanto o duelo está ativo (gravado por `pvp.listing_attributes` em toda gravação do duelo), então some quando ele acaba. Duelos com a vez vencida há mais de `LIVE_DUEL_GRACE_SECONDS` saem da lista. `GET /pvp/watch?battleId=X&since=N` mostra o duelo para quem assiste (viewer `battle.SPECTATOR`: lados como estão guardados, sem ações, `players`, `winner`, `result` com quem venceu); os próprios jogadores recebem 409. Quem assiste só lê: não joga vezes vencidas nem grava nada. No frontend é `/arena/duel/watch/:battleId`, na `BattleScreen` em modo espectador (sem habilidades, Auto e Flee; o Voltar sai sem perguntar).
 - **Reações no duelo**: os dois jogadores e quem assiste mandam emojis com `POST /pvp/battle/reactions` `{"battleId", "reaction"}` (id de `pvp.REACTIONS`; o emoji e quem enviou são lidos no servidor). Só em duelo ativo; a espera e o limite por janela ficam num item `s#<userId>` da `PvpReactionsTable`, gravado na mesma transação da reação (`r#<instante>#<nonce>`, com TTL); acima do limite, `429` com `retryAfterSeconds`. `GET /pvp/battle` e `GET /pvp/watch` aceitam `reactionsSince` e devolvem `reactions` (lado visto por quem pede, `isYou`) e `reactionsCursor`, inclusive na resposta `unchanged`; o cursor fica alguns segundos atrás do relógio e o frontend ignora reações já mostradas (pelo id). As opções de emoji vêm em `battle.reactionOptions`. Reações não mexem no duelo nem entram no histórico. Na tela, depois de uma reação o duelo é consultado com mais frequência por alguns segundos (também na própria vez).
 
+## Landing page (`mystic-box-welcome/`)
+
+- Só lê `GET /world` e `GET /rules` (públicas). A regra principal vale aqui também: nenhum número de regra fica fixo na página; tudo que é chance, tempo, quantidade ou multiplicador vem da API. Texto de apresentação fica na página.
+- Usa as ilustrações e o mapa de `mystic-box/src/assets` direto (sem cópia).
+- **Notas de lançamento** em `mystic-box-welcome/src/releases.js`: todo PR que muda algo que o jogador vê adiciona uma nota (em inglês, `type` `new`/`improved`/`fixed`, `prs` com o número do PR, sem números de regra). Mesmo dia do lançamento mais recente: entra nele; senão, lançamento novo no topo com a próxima versão. `src/releases.test.js` confere.
+- Infra: stack `mystic-box-welcome` (S3 privado + CloudFront + A/AAAA no Route 53, certificado `*.geskee.com.br`). Publicar: `npm run deploy` em `mystic-box-welcome/`. Passo a passo no `README.md` de lá.
+
 ## Rotas do frontend (Voltar do navegador)
 
 A tela e os painéis abertos vêm do endereço, não de estado solto do React. É só apresentação: os parâmetros do endereço são identificadores que o servidor valida.
@@ -88,3 +96,5 @@ O disco C está sem espaço: Docker, WSL (`D:\WSL\Ubuntu`), `.venv` e dados fica
 Backend (a partir de `mystic-box-back/`): `python -m pytest tests/unit`. O `tests/unit/conftest.py` coloca `shared/` no `sys.path` e usa uma chave de teste para o token.
 
 Frontend (a partir de `mystic-box/`): `npx eslint src` e `npx vite build`.
+
+Landing (a partir de `mystic-box-welcome/`): `npx eslint src`, `npm test` e `npx vite build`.
