@@ -12,7 +12,7 @@ O cliente só manda intenções e identificadores. Cartas, atributos, dano,
 sorteios e recompensas são calculados aqui (mystic_shared.battle). Quando a
 batalha acaba, gravar o resultado, somar a experiência, pagar a recompensa
 de nível e, na campanha, marcar a fase vencida e pagar a primeira vitória
-acontecem na mesma transação.
+(no chefe, também a relíquia da região) acontecem na mesma transação.
 """
 
 import json
@@ -47,6 +47,7 @@ from mystic_shared.campaign import (
 from mystic_shared.cards import get_character
 from mystic_shared.omens import OMEN_EXPERIENCE_BONUS, public_omen
 from mystic_shared.progression import level_for_experience, level_up_reward, public_progress
+from mystic_shared.relics import grant_update, public_relic, read_equipped, relic_for_region
 
 CORS_HEADERS = {
     "Access-Control-Allow-Origin": "*",
@@ -60,6 +61,8 @@ USER_PROGRESS_TABLE = os.environ.get("USER_PROGRESS_TABLE")
 USER_WALLET_TABLE = os.environ.get("USER_WALLET_TABLE")
 CARD_ASCENSIONS_TABLE = os.environ.get("CARD_ASCENSIONS_TABLE")
 REGION_PROGRESS_TABLE = os.environ.get("REGION_PROGRESS_TABLE")
+USER_RELICS_TABLE = os.environ.get("USER_RELICS_TABLE")
+CARD_RELICS_TABLE = os.environ.get("CARD_RELICS_TABLE")
 
 # Batalhas somem sozinhas (TTL) um dia depois da última ação.
 BATTLE_TTL_SECONDS = 24 * 60 * 60
@@ -249,6 +252,10 @@ def finish_battle(user_id, state, expected_version):
             cleared = get_campaign_progress(user_id).get(campaign["region"], 0)
             first_clear = cleared < campaign["stage"]
         campaign_reward = first_clear_reward(campaign["stage"]) if first_clear else 0
+        # A primeira vitória sobre o chefe dá a relíquia da região.
+        relic_id = (
+            relic_for_region(campaign["region"]) if first_clear and campaign["boss"] else None
+        )
 
         progress_update = {
             "TableName": USER_PROGRESS_TABLE,
@@ -306,6 +313,8 @@ def finish_battle(user_id, state, expected_version):
                     }
                 }
             )
+            if relic_id:
+                items.append(grant_update(USER_RELICS_TABLE, user_id, relic_id))
 
         try:
             get_client().transact_write_items(TransactItems=items)
@@ -332,6 +341,7 @@ def finish_battle(user_id, state, expected_version):
                     "boss": campaign["boss"],
                     "firstClear": first_clear,
                     "reward": campaign_reward,
+                    "relic": public_relic(relic_id) if relic_id else None,
                     # Vencer o chefe revela o epílogo da região.
                     "epilogue": epilogue(campaign["region"]) if won and campaign["boss"] else None,
                 }
@@ -394,6 +404,7 @@ def start(user_id, event):
         owned = get_owned_file_names(user_id)
         experience, _, _, _ = get_progress(user_id)
         ascensions = read_ascensions(get_client(), CARD_ASCENSIONS_TABLE, user_id)
+        relics = read_equipped(get_client(), CARD_RELICS_TABLE, user_id)
         campaign_progress = get_campaign_progress(user_id) if campaign is not None else {}
     except ClientError:
         return response(500, {"message": "Could not start the battle."})
@@ -411,12 +422,12 @@ def start(user_id, event):
             check_stage(region, stage, campaign_progress.get(region, 0))
             state, events = create_campaign_battle(
                 str(uuid.uuid4()), characters, level, stage_setup(region, stage, level),
-                new_rng(), ascensions=ascensions,
+                new_rng(), ascensions=ascensions, relics=relics,
             )
         else:
             state, events = create_battle(
                 str(uuid.uuid4()), characters, level, difficulty, new_rng(),
-                ascensions=ascensions,
+                ascensions=ascensions, relics=relics,
             )
     except (BattleError, CampaignError) as error:
         return response(400, {"message": str(error)})

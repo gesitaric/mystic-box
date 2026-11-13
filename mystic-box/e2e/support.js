@@ -30,6 +30,7 @@ const DEFAULT_ROUTES = {
   "GET /users/me/profile": "profile",
   "GET /users/me/summon-status": "summon-status",
   "GET /users/me/cards": "cards",
+  "GET /users/me/relics": "relics",
   "GET /shop/listings": "shop-listings",
   "GET /users/me/campaign": "campaign",
   "GET /pvp": "pvp",

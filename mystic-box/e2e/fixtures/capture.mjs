@@ -103,12 +103,20 @@ async function capture() {
 
   await save("rules", await api(null, "GET", "/rules"));
   await save("world", await api(null, "GET", "/world"));
-  await save("box-open", await api(null, "POST", "/box/open"));
+  // Invocar exige login; abrir a caixa não gasta o tempo de espera (só guardar).
+  await save("box-open", await api(PLAYER, "POST", "/box/open"));
 
   await save("wallet", await api(PLAYER, "GET", "/users/me/wallet"));
   await save("profile", await api(PLAYER, "GET", "/users/me/profile"));
   await save("summon-status", await api(PLAYER, "GET", "/users/me/summon-status"));
-  await save("cards", await api(PLAYER, "GET", "/users/me/cards?sort=rarity&order=desc"));
+  const collection = await api(PLAYER, "GET", "/users/me/cards?sort=rarity&order=desc");
+  await save("cards", collection);
+  // Aba "Relic" do detalhe da primeira carta da coleção.
+  const firstCard = collection.cards[0]?.file_name;
+  await save(
+    "relics",
+    await api(PLAYER, "GET", `/users/me/relics?fileName=${encodeURIComponent(firstCard)}`),
+  );
   await save("shop-listings", await api(PLAYER, "GET", "/shop/listings"));
   await save("campaign", await api(PLAYER, "GET", "/users/me/campaign"));
   await save("pvp", await api(PLAYER, "GET", "/pvp"));

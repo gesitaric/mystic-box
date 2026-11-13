@@ -18,6 +18,20 @@ export const NOTE_TYPES = {
 
 export const releases = [
   {
+    version: "0.10",
+    date: "2026-11-12",
+    name: "Relics of Aethra",
+    tagline: "Every land guards a treasure. Claim it, and choose who carries it.",
+    notes: [
+      {
+        type: "new",
+        title: "Relics",
+        text: "Defeat a land's champion in the campaign to claim its relic, then equip it on a champion from your collection. Every relic trades one strength for another, and in the hands of a champion from its own land it grows stronger and awakens at the start of battle. Forge more copies with Arcane Shards, and read all about them in the new Relics chapter of the Grimoire.",
+        prs: [87],
+      },
+    ],
+  },
+  {
     version: "0.9",
     date: "2026-11-11",
     name: "The Celestial Grimoire",

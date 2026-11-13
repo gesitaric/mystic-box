@@ -159,6 +159,38 @@ Resources:
       - AttributeName: file_name
         KeyType: RANGE
 
+  # Relíquias de cada jogador: cópias (owned) e quantas estão equipadas.
+  UserRelicsTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+      - AttributeName: userId
+        AttributeType: S
+      - AttributeName: relicId
+        AttributeType: S
+      KeySchema:
+      - AttributeName: userId
+        KeyType: HASH
+      - AttributeName: relicId
+        KeyType: RANGE
+
+  # Relíquia equipada em cada personagem do jogador (uma por personagem).
+  CardRelicsTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+      - AttributeName: userId
+        AttributeType: S
+      - AttributeName: file_name
+        AttributeType: S
+      KeySchema:
+      - AttributeName: userId
+        KeyType: HASH
+      - AttributeName: file_name
+        KeyType: RANGE
+
   # Nome de cada jogador e quando ele foi trocado pela última vez. Quem tem
   # nome também tem searchKey, que o coloca no índice de busca por nome.
   UserProfilesTable:
@@ -470,11 +502,14 @@ Resources:
         Variables:
           USER_CARDS_TABLE: !Ref UserCardsTable
           CARD_ASCENSIONS_TABLE: !Ref CardAscensionsTable
+          CARD_RELICS_TABLE: !Ref CardRelicsTable
       Policies:
       - DynamoDBReadPolicy:
           TableName: !Ref UserCardsTable
       - DynamoDBReadPolicy:
           TableName: !Ref CardAscensionsTable
+      - DynamoDBReadPolicy:
+          TableName: !Ref CardRelicsTable
       Events:
         GetUserCards:
           Type: Api
@@ -526,6 +561,80 @@ Resources:
           Properties:
             RestApiId: !Ref MysticBoxApi
             Path: /users/me/cards/ascend
+            Method: options
+
+  RelicsFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: relics/
+      Handler: app.lambda_handler
+      Runtime: python3.14
+      LoggingConfig:
+        LogGroup: !Ref RelicsFunctionLogGroup
+      Architectures:
+      - x86_64
+      Layers:
+      - !Ref SharedLayer
+      Environment:
+        Variables:
+          USER_CARDS_TABLE: !Ref UserCardsTable
+          USER_RELICS_TABLE: !Ref UserRelicsTable
+          CARD_RELICS_TABLE: !Ref CardRelicsTable
+          REGION_PROGRESS_TABLE: !Ref RegionProgressTable
+          USER_WALLET_TABLE: !Ref UserWalletTable
+      Policies:
+      - DynamoDBReadPolicy:
+          TableName: !Ref UserCardsTable
+      - DynamoDBReadPolicy:
+          TableName: !Ref RegionProgressTable
+      - DynamoDBCrudPolicy:
+          TableName: !Ref UserRelicsTable
+      - DynamoDBCrudPolicy:
+          TableName: !Ref CardRelicsTable
+      - DynamoDBCrudPolicy:
+          TableName: !Ref UserWalletTable
+      Events:
+        ListRelics:
+          Type: Api
+          Properties:
+            RestApiId: !Ref MysticBoxApi
+            Path: /users/me/relics
+            Method: get
+            Auth:
+              Authorizer: CognitoAuthorizer
+        ListRelicsOptions:
+          Type: Api
+          Properties:
+            RestApiId: !Ref MysticBoxApi
+            Path: /users/me/relics
+            Method: options
+        ForgeRelic:
+          Type: Api
+          Properties:
+            RestApiId: !Ref MysticBoxApi
+            Path: /users/me/relics/forge
+            Method: post
+            Auth:
+              Authorizer: CognitoAuthorizer
+        ForgeRelicOptions:
+          Type: Api
+          Properties:
+            RestApiId: !Ref MysticBoxApi
+            Path: /users/me/relics/forge
+            Method: options
+        EquipRelic:
+          Type: Api
+          Properties:
+            RestApiId: !Ref MysticBoxApi
+            Path: /users/me/relics/equip
+            Method: post
+            Auth:
+              Authorizer: CognitoAuthorizer
+        EquipRelicOptions:
+          Type: Api
+          Properties:
+            RestApiId: !Ref MysticBoxApi
+            Path: /users/me/relics/equip
             Method: options
 
   SaveUserCardFunction:
@@ -916,6 +1025,8 @@ Resources:
           USER_PROGRESS_TABLE: !Ref UserProgressTable
           USER_WALLET_TABLE: !Ref UserWalletTable
           CARD_ASCENSIONS_TABLE: !Ref CardAscensionsTable
+          USER_RELICS_TABLE: !Ref UserRelicsTable
+          CARD_RELICS_TABLE: !Ref CardRelicsTable
           REGION_PROGRESS_TABLE: !Ref RegionProgressTable
       Policies:
       - DynamoDBCrudPolicy:
@@ -926,6 +1037,10 @@ Resources:
           TableName: !Ref UserCardsTable
       - DynamoDBReadPolicy:
           TableName: !Ref CardAscensionsTable
+      - DynamoDBReadPolicy:
+          TableName: !Ref CardRelicsTable
+      - DynamoDBCrudPolicy:
+          TableName: !Ref UserRelicsTable
       - DynamoDBCrudPolicy:
           TableName: !Ref UserProgressTable
       - DynamoDBCrudPolicy:
@@ -1145,6 +1260,7 @@ Resources:
           USER_CARDS_TABLE: !Ref UserCardsTable
           USER_PROGRESS_TABLE: !Ref UserProgressTable
           CARD_ASCENSIONS_TABLE: !Ref CardAscensionsTable
+          CARD_RELICS_TABLE: !Ref CardRelicsTable
           PVP_PRESENCE_TABLE: !Ref PvpPresenceTable
       Policies:
       - DynamoDBCrudPolicy:
@@ -1165,6 +1281,8 @@ Resources:
           TableName: !Ref UserProgressTable
       - DynamoDBReadPolicy:
           TableName: !Ref CardAscensionsTable
+      - DynamoDBReadPolicy:
+          TableName: !Ref CardRelicsTable
       Events:
         PvpLobby:
           Type: Api
@@ -1415,6 +1533,12 @@ Resources:
       LogGroupName: !Sub "/aws/lambda/${AWS::StackName}/AscendCardFunction"
       RetentionInDays: 14
 
+  RelicsFunctionLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub "/aws/lambda/${AWS::StackName}/RelicsFunction"
+      RetentionInDays: 14
+
   SaveUserCardFunctionLogGroup:
     Type: AWS::Logs::LogGroup
     Properties:
@@ -1570,6 +1694,15 @@ Outputs:
   CardAscensionsTable:
     Description: DynamoDB table that stores each player's card ascension levels
     Value: !Ref CardAscensionsTable
+  RelicsApi:
+    Description: API Gateway endpoint URL for the player's relics (list, forge, equip)
+    Value: !Sub "https://${MysticBoxApi}.execute-api.${AWS::Region}.${AWS::URLSuffix}/Prod/users/me/relics"
+  UserRelicsTable:
+    Description: DynamoDB table that stores how many copies of each relic a player owns
+    Value: !Ref UserRelicsTable
+  CardRelicsTable:
+    Description: DynamoDB table that stores the relic equipped on each of a player's champions
+    Value: !Ref CardRelicsTable
   GetWalletApi:
     Description: API Gateway endpoint URL for the user's wallet (Fragmentos Arcanos)
     Value: !Sub "https://${MysticBoxApi}.execute-api.${AWS::Region}.${AWS::URLSuffix}/Prod/users/me/wallet"

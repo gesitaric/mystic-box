@@ -9,6 +9,7 @@ from mystic_shared.ascension import public_ascension, read_ascensions
 from mystic_shared.cards import get_character, listing_price_range, max_listing_quantity
 from mystic_shared.battle import ascension_unlocks_skill, public_duos, public_skills
 from mystic_shared.lore import public_lore
+from mystic_shared.relics import public_equipped, read_equipped
 from mystic_shared.stats import public_battle_profile
 
 CORS_HEADERS = {
@@ -19,6 +20,7 @@ CORS_HEADERS = {
 
 USER_CARDS_TABLE = os.environ.get("USER_CARDS_TABLE")
 CARD_ASCENSIONS_TABLE = os.environ.get("CARD_ASCENSIONS_TABLE")
+CARD_RELICS_TABLE = os.environ.get("CARD_RELICS_TABLE")
 
 # Criados uma vez por container e reaproveitados entre invocações.
 _table = None
@@ -42,6 +44,11 @@ def get_client():
 def get_ascensions(user_id):
     """{file_name: ascensão} do jogador."""
     return read_ascensions(get_client(), CARD_ASCENSIONS_TABLE, user_id)
+
+
+def get_relics(user_id):
+    """{file_name: relicId} equipadas pelo jogador."""
+    return read_equipped(get_client(), CARD_RELICS_TABLE, user_id)
 
 
 def response(status_code, body):
@@ -107,13 +114,15 @@ def sort_cards(cards, sort, order):
     return ordered
 
 
-def group_cards(items, ascensions=None):
+def group_cards(items, ascensions=None, relics=None):
     """Junta as cópias da mesma carta (mesmo `file_name`) em um só item.
 
     `ascensions`: {file_name: ascensão} do jogador; os atributos e as
     habilidades de batalha já saem com a ascensão aplicada.
+    `relics`: {file_name: relicId} equipadas; os atributos já saem com elas.
     """
     ascensions = ascensions or {}
+    relics = relics or {}
     groups = {}
     owned = {item.get("file_name") for item in items if item.get("file_name")}
 
@@ -145,6 +154,7 @@ def group_cards(items, ascensions=None):
             group["rarity"] = character["rarity"]
         obtained_at = group.pop("obtainedAt")
         ascension = ascensions.get(group["file_name"], 0)
+        relic = relics.get(group["file_name"]) if character else None
         cards.append(
             {
                 **group,
@@ -155,7 +165,9 @@ def group_cards(items, ascensions=None):
                 "listingPriceRange": listing_price_range(character),
                 # Quantas cópias podem ser anunciadas de uma vez.
                 "maxListingQuantity": max_listing_quantity(character, group["quantity"]),
-                "battle": battle_profile(character, ascension) if character else None,
+                "battle": battle_profile(character, ascension, relic) if character else None,
+                # Relíquia equipada (efeito e sintonia calculados aqui), ou None.
+                "relic": public_equipped(relic, group["file_name"]) if relic else None,
                 # História, região, laços (com quem o jogador já tem) e o
                 # capítulo secreto (liberado pela ascensão), ou None.
                 "lore": public_lore(character, ascension, owned),
@@ -173,10 +185,10 @@ def group_cards(items, ascensions=None):
     return cards
 
 
-def battle_profile(character, ascension=0):
+def battle_profile(character, ascension=0, relic=None):
     """Elemento, arquétipo, atributos (nível 1) e habilidades de batalha da carta."""
     return {
-        **public_battle_profile(character, ascension=ascension),
+        **public_battle_profile(character, ascension=ascension, relic=relic),
         "skills": public_skills(character, ascension),
         # Técnicas de dupla: só aparecem na batalha com a parceira no time.
         "duos": public_duos(character),
@@ -220,9 +232,10 @@ def lambda_handler(event, context):
                 break
             query_kwargs["ExclusiveStartKey"] = last_key
         ascensions = get_ascensions(user_id)
+        relics = get_relics(user_id)
     except ClientError:
         return response(500, {"message": "Could not load your cards."})
 
-    cards = sort_cards(group_cards(items, ascensions), sort, order)
+    cards = sort_cards(group_cards(items, ascensions, relics), sort, order)
 
     return response(200, {"cards": cards, "totalCards": len(items)})

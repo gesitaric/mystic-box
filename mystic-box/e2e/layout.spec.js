@@ -12,6 +12,7 @@ for (const screen of SCREENS) {
     if (screen.signedIn !== false) await signIn(page);
     await screen.setup?.(api, page);
     await open(page, screen.path);
+    await screen.act?.(page);
     await expect(screen.ready(page)).toBeVisible();
 
     expect.soft(await layoutProblems(page), "a página não rola para o lado").toEqual([]);

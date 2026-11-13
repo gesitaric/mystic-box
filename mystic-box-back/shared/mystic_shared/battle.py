@@ -57,6 +57,8 @@ from .lore import (
     rivalry_between,
 )
 from .progression import MAX_LEVEL
+from .relics import awakening as relic_awakening
+from .relics import get_relic, is_attuned
 from .stats import ARCHETYPES, ELEMENTS, SCALED_STATS, battle_stats, element_multiplier
 
 TEAM_SIZE = 3
@@ -874,10 +876,14 @@ def public_skills(character, ascension=0):
 # ----------------------------------------------------------- montagem ---
 
 
-def build_unit(character, side, index, level, power=1.0, ascension=0):
-    """Combatente da batalha. `power` multiplica os atributos grandes (dificuldade)."""
+def build_unit(character, side, index, level, power=1.0, ascension=0, relic=None):
+    """Combatente da batalha. `power` multiplica os atributos grandes (dificuldade).
+
+    `relic`: id da relíquia equipada (lido no servidor) ou None.
+    """
     ascension = clamp_ascension(ascension)
-    stats = battle_stats(character, level, ascension)
+    relic = relic if get_relic(relic) else None
+    stats = battle_stats(character, level, ascension, relic)
     for stat in SCALED_STATS:
         stats[stat] = max(1, round(stats[stat] * power))
     return {
@@ -890,6 +896,7 @@ def build_unit(character, side, index, level, power=1.0, ascension=0):
         "archetype": character["archetype"],
         "level": level,
         "ascension": ascension,
+        "relic": relic,
         "stats": stats,
         "maxHp": stats["vitality"],
         "hp": stats["vitality"],
@@ -982,6 +989,30 @@ def _apply_resonances(state, events):
                     _apply_status(state, unit, effect[1], effect[2], events)
 
 
+def _apply_relics(state, events):
+    """Despertar das relíquias em sintonia (mesma região da carta), no começo."""
+    for unit in state["units"]:
+        effect = relic_awakening(unit.get("relic"), unit["fileName"])
+        if not effect:
+            continue
+        relic = get_relic(unit["relic"])
+        events.append({"type": "relic", "target": unit["id"], "relic": unit["relic"],
+                       "name": relic["name"], "description": relic["awakeningText"]})
+        if effect[0] == "aether":
+            _gain_aether(state, unit["side"], effect[1])
+        elif effect[0] == "status":
+            status, turns = effect[1], effect[2]
+            value = round(unit["maxHp"] * effect[3]) if len(effect) > 3 else None
+            _apply_status(state, unit, status, turns, events, value)
+
+
+def _setup(state, events):
+    """Laços, ressonâncias e relíquias antes da primeira rodada."""
+    _link_bonds(state, events)
+    _apply_resonances(state, events)
+    _apply_relics(state, events)
+
+
 def _bond_grief(state, events, start):
     """Reações a quem caiu (nos eventos desde `start`).
 
@@ -1047,11 +1078,12 @@ def public_difficulties(player_level):
 
 
 def create_battle(battle_id, player_team, player_level, difficulty, rng, enemy_team=None,
-                  ascensions=None):
+                  ascensions=None, relics=None):
     """Monta a batalha e roda os turnos até a vez do jogador.
 
     `player_team`: definições (de `cards.py`) das cartas escolhidas.
     `ascensions`: {file_name: ascensão} das cartas do jogador (lido no servidor).
+    `relics`: {file_name: relicId} equipadas pelo jogador (lido no servidor).
     Devolve (estado, eventos).
     """
     if difficulty not in DIFFICULTIES:
@@ -1083,7 +1115,8 @@ def create_battle(battle_id, player_team, player_level, difficulty, rng, enemy_t
         "units": [
             *(
                 build_unit(c, "player", i, player_level,
-                           ascension=(ascensions or {}).get(c["file_name"], 0))
+                           ascension=(ascensions or {}).get(c["file_name"], 0),
+                           relic=(relics or {}).get(c["file_name"]))
                 for i, c in enumerate(player_team)
             ),
             *(
@@ -1093,14 +1126,13 @@ def create_battle(battle_id, player_team, player_level, difficulty, rng, enemy_t
         ],
     }
     events = []
-    _link_bonds(state, events)
-    _apply_resonances(state, events)
+    _setup(state, events)
     _advance(state, rng, events)
     return state, events
 
 
 def create_campaign_battle(battle_id, player_team, player_level, setup, rng,
-                           ascensions=None):
+                           ascensions=None, relics=None):
     """Batalha de uma fase da campanha (`setup` de campaign.stage_setup).
 
     Os inimigos, o nível e a força vêm da fase. Devolve (estado, eventos).
@@ -1132,7 +1164,8 @@ def create_campaign_battle(battle_id, player_team, player_level, setup, rng,
         "units": [
             *(
                 build_unit(c, "player", i, player_level,
-                           ascension=(ascensions or {}).get(c["file_name"], 0))
+                           ascension=(ascensions or {}).get(c["file_name"], 0),
+                           relic=(relics or {}).get(c["file_name"]))
                 for i, c in enumerate(player_team)
             ),
             *(
@@ -1142,18 +1175,18 @@ def create_campaign_battle(battle_id, player_team, player_level, setup, rng,
         ],
     }
     events = []
-    _link_bonds(state, events)
-    _apply_resonances(state, events)
+    _setup(state, events)
     _advance(state, rng, events)
     return state, events
 
 
 def create_pvp_battle(battle_id, challenger_team, challenger_level, opponent_team,
                       opponent_level, rng, challenger_ascensions=None,
-                      opponent_ascensions=None):
+                      opponent_ascensions=None, challenger_relics=None,
+                      opponent_relics=None):
     """Duelo entre dois jogadores: quem desafiou é "player", quem aceitou "enemy".
 
-    Cada time luta no nível e com as ascensões do seu dono.
+    Cada time luta no nível e com as ascensões e relíquias do seu dono.
     Devolve (estado, eventos) parado na vez da primeira carta.
     """
     for team in (challenger_team, opponent_team):
@@ -1178,19 +1211,20 @@ def create_pvp_battle(battle_id, challenger_team, challenger_level, opponent_tea
         "units": [
             *(
                 build_unit(c, "player", i, challenger_level,
-                           ascension=(challenger_ascensions or {}).get(c["file_name"], 0))
+                           ascension=(challenger_ascensions or {}).get(c["file_name"], 0),
+                           relic=(challenger_relics or {}).get(c["file_name"]))
                 for i, c in enumerate(challenger_team)
             ),
             *(
                 build_unit(c, "enemy", i, opponent_level,
-                           ascension=(opponent_ascensions or {}).get(c["file_name"], 0))
+                           ascension=(opponent_ascensions or {}).get(c["file_name"], 0),
+                           relic=(opponent_relics or {}).get(c["file_name"]))
                 for i, c in enumerate(opponent_team)
             ),
         ],
     }
     events = []
-    _link_bonds(state, events)
-    _apply_resonances(state, events)
+    _setup(state, events)
     _advance(state, rng, events)
     return state, events
 
@@ -1635,6 +1669,14 @@ def view_events(events, viewer="player"):
     return viewed
 
 
+def _public_unit_relic(unit):
+    relic = get_relic(unit.get("relic"))
+    if not relic:
+        return None
+    return {"id": unit["relic"], "name": relic["name"],
+            "attuned": is_attuned(unit["relic"], unit["fileName"])}
+
+
 def _public_unit(unit, viewer="player"):
     return {
         "id": view_id(unit["id"], viewer),
@@ -1648,6 +1690,7 @@ def _public_unit(unit, viewer="player"):
         "archetypeLabel": ARCHETYPES[unit["archetype"]]["label"],
         "level": unit["level"],
         "ascension": unit.get("ascension", 0),
+        "relic": _public_unit_relic(unit),
         "bonds": [view_id(unit_id, viewer) for unit_id in unit.get("bonds", [])],
         "rivals": [view_id(unit_id, viewer) for unit_id in unit.get("rivals", [])],
         "stats": unit["stats"],
