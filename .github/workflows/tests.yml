@@ -100,3 +100,30 @@ jobs:
             mystic-box/playwright-report
             mystic-box/test-results
           retention-days: 7
+
+  welcome:
+    name: Landing page (eslint + testes + build)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: mystic-box-welcome
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: mystic-box-welcome/package-lock.json
+
+      - name: Instalar dependências
+        run: npm ci
+
+      - name: Lint
+        run: npx eslint src
+
+      - name: Testes
+        run: npm test
+
+      - name: Build
+        run: npx vite build
