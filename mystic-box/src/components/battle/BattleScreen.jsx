@@ -280,6 +280,12 @@ function UnitDetails({ unit, elementRider, onClose }) {
             {unit.ascension > 0 && ` · Ascension ${unit.ascension}`}
           </span>
         </h2>
+        {unit.relic && (
+          <p className="battle-inspect-desc">
+            ◈ Relic: <strong>{unit.relic.name}</strong>
+            {unit.relic.attuned && " (attuned)"}
+          </p>
+        )}
         {unit.statuses.length > 0 && (
           <ul className="battle-inspect-statuses">
             {unit.statuses.map((status) => (
@@ -379,6 +385,14 @@ function BattleUnit({
         {rivalNames.length > 0 && (
           <span className="battle-unit-rival" title={`Rival of ${rivalNames.join(" and ")}`}>
             ⚔
+          </span>
+        )}
+        {unit.relic && (
+          <span
+            className={`battle-unit-relic${unit.relic.attuned ? " is-attuned" : ""}`}
+            title={`${unit.relic.name}${unit.relic.attuned ? " (attuned)" : ""}`}
+          >
+            ◈
           </span>
         )}
         <span className="battle-unit-level">Lv {unit.level}</span>
@@ -537,6 +551,11 @@ function CampaignResult({ campaign }) {
         <p className="battle-result-levelup">
           {campaign.boss ? "Champion defeated!" : "Stage cleared!"}
           {campaign.reward > 0 && <> You earned ✧ {campaign.reward}.</>}
+        </p>
+      )}
+      {campaign.relic && (
+        <p className="battle-result-relic">
+          ◈ Relic found: <strong>{campaign.relic.name}</strong>. Equip it from your collection.
         </p>
       )}
       {campaign.epilogue && (
@@ -835,6 +854,7 @@ function BattleScreen({
           sfx.status(false);
           break;
         case "resonance":
+        case "relic":
           sfx.status(true);
           break;
         case "surge":
@@ -938,6 +958,9 @@ function BattleScreen({
           break;
         case "resonance":
           for (const id of event.targets ?? []) addFloat(id, "✦", "resonance");
+          break;
+        case "relic":
+          addFloat(event.target, "◈", "resonance");
           break;
         case "bondTorn":
           addFloat(event.actor, "💔", "bond");

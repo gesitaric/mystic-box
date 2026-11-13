@@ -156,6 +156,11 @@ export function describeEvent(event, names) {
         text: `✦ ${event.regionName} resonance — ${event.name}: ${event.description}`,
         kind: "resonance",
       };
+    case "relic":
+      return {
+        text: `◈ ${name(event.target)}'s ${event.name} awakens: ${event.description}`,
+        kind: "resonance",
+      };
     case "duo":
       return {
         text: `✦✦ ${name(event.actor)} and ${name(event.target)} unleash ${event.skillName}!`,
@@ -207,6 +212,8 @@ export function eventDelay(event) {
     case "resonance":
     case "omen":
       return 1800;
+    case "relic":
+      return 1200;
     case "duo":
       return 900;
     case "surge":

@@ -2949,3 +2949,30 @@ h1 {
     transform: translate(-50%, 12px);
   }
 }
+/* Relíquia equipada na carta da coleção (◈); a ascensão vai para o lado. */
+.collection-card-relic {
+  position: absolute;
+  top: 6px;
+  left: 6px;
+  z-index: 2;
+  display: grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  border: 1px solid rgba(140, 210, 255, 0.6);
+  border-radius: 50%;
+  background: rgba(10, 24, 48, 0.88);
+  color: #a9e0ff;
+  font-size: 12px;
+  box-shadow: 0 0 8px rgba(120, 200, 255, 0.4);
+  pointer-events: none;
+}
+
+.collection-card-relic.is-attuned {
+  color: #e6f7ff;
+  box-shadow: 0 0 12px rgba(150, 225, 255, 0.85);
+}
+
+.collection-card-relic + .collection-card-ascension {
+  left: 36px;
+}

@@ -20,6 +20,7 @@ Tudo aqui é regra do jogo e fica SÓ no backend.
 import hashlib
 
 from .ascension import stat_multiplier
+from .relics import apply_relic
 
 STAT_KEYS = ("vitality", "might", "arcana", "bulwark", "resolve", "celerity", "fate")
 
@@ -125,8 +126,9 @@ def level_multiplier(level):
     return 1 + LEVEL_STAT_BONUS * (max(1, int(level)) - 1)
 
 
-def battle_stats(character, level=1, ascension=0):
-    """Atributos de batalha da carta no nível `level` e na ascensão `ascension`."""
+def battle_stats(character, level=1, ascension=0, relic=None):
+    """Atributos de batalha da carta no nível `level`, na ascensão `ascension` e
+    com a relíquia `relic` equipada (id de `relics.py` ou None)."""
     archetype = ARCHETYPES[character["archetype"]]
     rarity = character["rarity"]
     scale = RARITY_SCALE[rarity] * level_multiplier(level) * stat_multiplier(ascension)
@@ -142,6 +144,7 @@ def battle_stats(character, level=1, ascension=0):
             value += RARITY_FATE_BONUS[rarity]
         stats[stat] = max(1, round(value))
 
+    apply_relic(stats, relic, character["file_name"])
     stats["fate"] = min(stats["fate"], MAX_FATE)
     return stats
 
@@ -155,7 +158,7 @@ def element_multiplier(attacker_element, defender_element):
     return 1.0
 
 
-def public_battle_profile(character, level=1, ascension=0):
+def public_battle_profile(character, level=1, ascension=0, relic=None):
     """Elemento, arquétipo e atributos da carta, para exibir ao jogador."""
     element = ELEMENTS[character["element"]]
     archetype = ARCHETYPES[character["archetype"]]
@@ -166,5 +169,5 @@ def public_battle_profile(character, level=1, ascension=0):
         "archetype": character["archetype"],
         "archetypeLabel": archetype["label"],
         "archetypeDescription": archetype["description"],
-        "stats": battle_stats(character, level, ascension),
+        "stats": battle_stats(character, level, ascension, relic),
     }

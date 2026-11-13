@@ -1076,6 +1076,76 @@ function AscensionChapter({ rules }) {
   );
 }
 
+function RelicsChapter({ rules }) {
+  const { relics } = rules;
+  if (!relics) return null;
+  const change = (entry, sign) => `${sign}${entry.percent}% ${entry.label}`;
+  return (
+    <>
+      <p className="gr-lead">
+        Every land of Aethra guards a <b>relic</b>. Defeat a land&apos;s champion in the campaign
+        to claim its relic, then equip it on a champion from your collection. Each champion
+        carries <b>{relics.perCharacter}</b> relic, and every relic trades one strength for
+        another.
+      </p>
+
+      <h3 className="gr-heading">Attunement</h3>
+      <p className="gr-lead">
+        On a champion from the relic&apos;s own land, the relic is <b>attuned</b>: its bonuses
+        grow by <b>{relics.attunedBonusPercent}%</b> (the drawbacks stay the same) and it awakens
+        at the start of every battle.
+      </p>
+
+      <table className="gr-table">
+        <thead>
+          <tr>
+            <th scope="col">Relic</th>
+            <th scope="col">Effect</th>
+            <th scope="col">Attuned</th>
+          </tr>
+        </thead>
+        <tbody>
+          {relics.relics.map((relic) => (
+            <tr key={relic.id}>
+              <td>
+                ◈ {relic.name}
+                <br />
+                <small>{relic.regionName}</small>
+              </td>
+              <td>
+                {[
+                  ...relic.bonuses.map((entry) => change(entry, "+")),
+                  ...relic.penalties.map((entry) => change(entry, "−")),
+                ].join(", ")}
+              </td>
+              <td>
+                {relic.attunedBonuses.map((entry) => change(entry, "+")).join(", ")}. {relic.awakening}
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+
+      <h3 className="gr-heading">Good to know</h3>
+      <ul className="gr-list">
+        <li>
+          Beating a land&apos;s champion for the first time gives you its relic. After that, forge
+          more copies for ✧ {relics.forgeCost} each, up to {relics.maxCopies} of each relic.
+        </li>
+        <li>
+          A copy can be worn by one champion at a time. Equip, swap or take it off in the
+          champion&apos;s Relic tab in your collection.
+        </li>
+        <li>
+          Relics belong to you, like ascension: they stay on the champion even if you sell its
+          copies.
+        </li>
+        <li>Relics count against the computer, in the campaign and in online duels.</li>
+      </ul>
+    </>
+  );
+}
+
 // ---------------------------------------------------------------- modal ---
 
 const CHAPTERS = [
@@ -1083,6 +1153,7 @@ const CHAPTERS = [
   { id: "summon", label: "Summon", icon: "🌀", component: SummonChapter },
   { id: "shop", label: "Shards & Shop", icon: "✧", component: ShopChapter },
   { id: "ascension", label: "Ascension", icon: "✴", component: AscensionChapter },
+  { id: "relics", label: "Relics", icon: "◈", component: RelicsChapter },
   { id: "battle", label: "Battle", icon: "⚔️", component: BattleChapter },
   { id: "progression", label: "Progression", icon: "⬆️", component: ProgressionChapter },
 ];

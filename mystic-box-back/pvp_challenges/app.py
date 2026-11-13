@@ -36,6 +36,7 @@ from mystic_shared.battle import (
 )
 from mystic_shared.cards import get_character
 from mystic_shared.progression import level_for_experience
+from mystic_shared.relics import read_equipped
 from mystic_shared.titles import title_name
 from mystic_shared.usernames import normalize, validate_username
 
@@ -53,6 +54,7 @@ USERNAMES_TABLE = os.environ.get("USERNAMES_TABLE")
 USER_CARDS_TABLE = os.environ.get("USER_CARDS_TABLE")
 USER_PROGRESS_TABLE = os.environ.get("USER_PROGRESS_TABLE")
 CARD_ASCENSIONS_TABLE = os.environ.get("CARD_ASCENSIONS_TABLE")
+CARD_RELICS_TABLE = os.environ.get("CARD_RELICS_TABLE")
 PVP_PRESENCE_TABLE = os.environ.get("PVP_PRESENCE_TABLE")
 CHALLENGER_INDEX = "ChallengerIndex"
 LIVE_DUELS_INDEX = "LiveDuelsIndex"
@@ -625,6 +627,8 @@ def accept(user_id, body):
             new_rng(),
             challenger_ascensions=read_ascensions(get_client(), CARD_ASCENSIONS_TABLE, challenger_id),
             opponent_ascensions=read_ascensions(get_client(), CARD_ASCENSIONS_TABLE, user_id),
+            challenger_relics=read_equipped(get_client(), CARD_RELICS_TABLE, challenger_id),
+            opponent_relics=read_equipped(get_client(), CARD_RELICS_TABLE, user_id),
         )
     except BattleError as error:
         raise RequestError(400, str(error)) from error

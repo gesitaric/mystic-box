@@ -1,10 +1,11 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { getCharacterImage } from "../characterImages";
 import AscensionCeremony from "./AscensionCeremony";
 import { ELEMENT_STYLE } from "./battle/battlePresentation";
 import { SkillList, StatGrid } from "./battle/TeamSetup";
 import { CardFace } from "./GachaCard";
 import Modal from "./Modal";
+import RelicPanel from "./RelicPanel";
 import "../styles/battle.css";
 import "../styles/lore.css";
 
@@ -294,9 +295,18 @@ function BattleTab({ card }) {
         </p>
       )}
 
+      {card.relic && (
+        <p className="story-battle-relic">
+          <span>Relic</span>◈ {card.relic.name}
+          {card.relic.attuned && <em>Attuned</em>}
+        </p>
+      )}
+
       <h3>Stats</h3>
       <StatGrid stats={profile.stats} />
-      <p className="story-battle-note">At level 1. Stats grow with your level in battle.</p>
+      <p className="story-battle-note">
+        At level 1{card.relic ? ", with the relic" : ""}. Stats grow with your level in battle.
+      </p>
 
       {profile.skills?.length > 0 && (
         <>
@@ -328,11 +338,16 @@ function BattleTab({ card }) {
   );
 }
 
-function StoryModal({ card, onClose }) {
+// `relics`: props para a aba de relíquia (só na coleção, não na loja).
+function StoryModal({ card, relics, onClose }) {
   const rarity = Number(card.rarity) || 0;
   const lore = Array.isArray(card.lore?.story) ? card.lore : null;
   const [tab, setTab] = useState(lore ? "story" : "battle");
-  const tabs = [lore && ["story", "Story"], card.battle && ["battle", "Battle"]].filter(Boolean);
+  const tabs = [
+    lore && ["story", "Story"],
+    card.battle && ["battle", "Battle"],
+    card.battle && relics && ["relic", "Relic"],
+  ].filter(Boolean);
 
   return (
     <Modal label={card.name} className="story-modal" onClose={onClose}>
@@ -369,7 +384,9 @@ function StoryModal({ card, onClose }) {
         </div>
       )}
 
-      {tab === "story" ? <StoryTab card={card} /> : <BattleTab card={card} />}
+      {tab === "story" && <StoryTab card={card} />}
+      {tab === "battle" && <BattleTab card={card} />}
+      {tab === "relic" && <RelicPanel card={card} {...relics} />}
     </Modal>
   );
 }
@@ -475,7 +492,10 @@ function OwnedCards({ apiUrl, session, onSessionExpired, onListed, allowAscend =
   const [ascendError, setAscendError] = useState("");
   // Cerimônia mostrada depois que a ascensão deu certo: carta antes + resposta.
   const [ceremony, setCeremony] = useState(null);
-  const [storyCard, setStoryCard] = useState(null);
+  // Carta aberta no detalhe (pela chave, para pegar a versão recarregada).
+  const [storyKey, setStoryKey] = useState(null);
+  const storyCard = storyKey ? (cards.find((card) => cardKey(card) === storyKey) ?? null) : null;
+  const reloadCards = useCallback(() => setReloadKey((key) => key + 1), []);
 
   function openAscend(card) {
     setListFeedback(null);
@@ -755,7 +775,7 @@ function OwnedCards({ apiUrl, session, onSessionExpired, onListed, allowAscend =
                     <button
                       type="button"
                       className="collection-card-story"
-                      onClick={() => setStoryCard(card)}
+                      onClick={() => setStoryKey(key)}
                       aria-label={`Open the story and battle details of ${card.name}`}
                     >
                       {face}
@@ -769,6 +789,15 @@ function OwnedCards({ apiUrl, session, onSessionExpired, onListed, allowAscend =
                       aria-label={`You have ${copiesLabel(quantity)}`}
                     >
                       ×{quantity}
+                    </span>
+                  )}
+                  {card.relic && (
+                    <span
+                      className={`collection-card-relic${card.relic.attuned ? " is-attuned" : ""}`}
+                      title={`${card.relic.name}${card.relic.attuned ? " (attuned)" : ""}`}
+                      aria-label={`Relic: ${card.relic.name}`}
+                    >
+                      ◈
                     </span>
                   )}
                   {ascension?.level > 0 && (
@@ -834,7 +863,17 @@ function OwnedCards({ apiUrl, session, onSessionExpired, onListed, allowAscend =
         />
       )}
 
-      {storyCard && <StoryModal card={storyCard} onClose={() => setStoryCard(null)} />}
+      {storyCard && (
+        <StoryModal
+          card={storyCard}
+          relics={
+            allowAscend
+              ? { apiUrl, session, onSessionExpired, onChanged: reloadCards }
+              : null
+          }
+          onClose={() => setStoryKey(null)}
+        />
+      )}
 
       {ceremony && (
         <AscensionCeremony

@@ -915,3 +915,178 @@
     box-shadow: 0 0 12px rgba(180, 140, 255, 0.8);
   }
 }
+
+/* Relíquias (aba "Relic" do detalhe da carta) */
+
+.story-battle-relic {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  margin: 10px 0 0;
+  padding: 8px 12px;
+  border: 1px solid rgba(140, 210, 255, 0.4);
+  border-radius: 10px;
+  background: rgba(14, 36, 64, 0.4);
+  color: #bfe8ff;
+  font-size: 14px;
+}
+
+.story-battle-relic span {
+  color: #cbb6ee;
+  font-size: 11px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+}
+
+.story-battle-relic em,
+.relic-attuned {
+  margin-left: auto;
+  padding: 1px 8px;
+  border: 1px solid rgba(150, 225, 255, 0.6);
+  border-radius: 999px;
+  color: #e6f7ff;
+  font-size: 11px;
+  font-style: normal;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  box-shadow: 0 0 8px rgba(150, 225, 255, 0.35);
+}
+
+.relic-panel {
+  display: grid;
+  gap: 12px;
+  margin-top: 14px;
+}
+
+.relic-intro,
+.relic-empty,
+.relic-balance {
+  margin: 0;
+  color: #cbb6ee;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.relic-intro b {
+  color: #bfe8ff;
+}
+
+.relic-balance {
+  color: var(--gold);
+}
+
+.relic-current {
+  display: grid;
+  gap: 8px;
+  justify-items: start;
+  padding: 12px 14px;
+  border: 1px solid rgba(140, 210, 255, 0.5);
+  border-radius: 12px;
+  background: rgba(14, 36, 64, 0.45);
+}
+
+.relic-current h3 {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  margin: 0;
+  color: #d8f3ff;
+  font-size: 16px;
+}
+
+.relic-changes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.relic-changes li {
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.relic-changes li.is-up {
+  background: rgba(60, 160, 110, 0.25);
+  color: #9ff0c4;
+}
+
+.relic-changes li.is-down {
+  background: rgba(190, 70, 70, 0.25);
+  color: #ffaaa0;
+}
+
+.relic-awakening,
+.relic-count,
+.relic-lore {
+  margin: 0;
+  color: #e4d8f8;
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.relic-lore {
+  color: #b9a7dc;
+  font-style: italic;
+}
+
+.relic-count {
+  color: #a995cf;
+}
+
+.relic-list {
+  display: grid;
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.relic-item {
+  display: grid;
+  gap: 6px;
+  padding: 10px 12px;
+  border: 1px solid rgba(160, 130, 220, 0.3);
+  border-radius: 12px;
+  background: rgba(24, 14, 44, 0.55);
+}
+
+.relic-item.is-worn {
+  border-color: rgba(140, 210, 255, 0.6);
+}
+
+.relic-item.is-missing {
+  opacity: 0.75;
+}
+
+.relic-item-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.relic-item-head strong {
+  color: #d8f3ff;
+}
+
+.relic-region {
+  color: #a995cf;
+  font-size: 12px;
+}
+
+.relic-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.relic-actions:empty {
+  display: none;
+}
