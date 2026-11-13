@@ -9,12 +9,15 @@ import { defineConfig } from "@playwright/test";
 
 // O Edge cria um perfil temporário por aba e o Playwright grava os traces na
 // pasta temporária do sistema. Ela fica no disco do projeto (o C está sem
-// espaço); os workers herdam a variável.
-const TEMP_DIR = path.join(path.dirname(fileURLToPath(import.meta.url)), "node_modules", ".cache", "playwright-tmp");
-mkdirSync(TEMP_DIR, { recursive: true });
-process.env.TEMP = TEMP_DIR;
-process.env.TMP = TEMP_DIR;
-process.env.TMPDIR = TEMP_DIR;
+// espaço); os workers herdam a variável. Só no Windows: no Linux (CI) o Edge
+// cria um socket nessa pasta e o caminho ficaria longo demais para ele.
+if (process.platform === "win32") {
+  const TEMP_DIR = path.join(path.dirname(fileURLToPath(import.meta.url)), "node_modules", ".cache", "playwright-tmp");
+  mkdirSync(TEMP_DIR, { recursive: true });
+  process.env.TEMP = TEMP_DIR;
+  process.env.TMP = TEMP_DIR;
+  process.env.TMPDIR = TEMP_DIR;
+}
 
 const PORT = 4173;
 // Endereço falso da API: todo pedido para ele é respondido pelos testes.
