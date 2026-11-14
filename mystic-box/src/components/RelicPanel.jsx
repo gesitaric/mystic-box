@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { RelicIcon } from "../relicImages";
 
 // Aba "Relic" do detalhe da carta. Tudo vem de GET /users/me/relics?fileName=
 // (efeito na personagem, sintonia, cópias livres, se pode forjar e o custo).
@@ -130,7 +131,8 @@ function RelicPanel({ card, apiUrl, session, onSessionExpired, onChanged }) {
       {current ? (
         <section className="relic-current" aria-label="Equipped relic">
           <h3>
-            ◈ {current.name}
+            <RelicIcon relicId={current.id} size={56} className="is-large" />
+            {current.name}
             {current.forCard?.attuned && <span className="relic-attuned">Attuned</span>}
           </h3>
           <Changes changes={current.forCard?.changes} />
@@ -170,7 +172,8 @@ function RelicPanel({ card, apiUrl, session, onSessionExpired, onChanged }) {
               className={`relic-item${worn ? " is-worn" : ""}${relic.owned ? "" : " is-missing"}`}
             >
               <div className="relic-item-head">
-                <strong>◈ {relic.name}</strong>
+                <RelicIcon relicId={relic.id} size={44} />
+                <strong>{relic.name}</strong>
                 <span className="relic-region">{relic.regionName}</span>
                 {relic.forCard?.attuned && <span className="relic-attuned">Attuned</span>}
               </div>

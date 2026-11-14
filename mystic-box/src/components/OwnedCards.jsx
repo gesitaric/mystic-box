@@ -6,6 +6,7 @@ import { SkillList, StatGrid } from "./battle/TeamSetup";
 import { CardFace } from "./GachaCard";
 import Modal from "./Modal";
 import RelicPanel from "./RelicPanel";
+import { RelicIcon } from "../relicImages";
 import "../styles/battle.css";
 import "../styles/lore.css";
 
@@ -297,7 +298,9 @@ function BattleTab({ card }) {
 
       {card.relic && (
         <p className="story-battle-relic">
-          <span>Relic</span>◈ {card.relic.name}
+          <span>Relic</span>
+          <RelicIcon relicId={card.relic.id} size={28} />
+          {card.relic.name}
           {card.relic.attuned && <em>Attuned</em>}
         </p>
       )}
@@ -797,7 +800,7 @@ function OwnedCards({ apiUrl, session, onSessionExpired, onListed, allowAscend =
                       title={`${card.relic.name}${card.relic.attuned ? " (attuned)" : ""}`}
                       aria-label={`Relic: ${card.relic.name}`}
                     >
-                      ◈
+                      <RelicIcon relicId={card.relic.id} size={24} />
                     </span>
                   )}
                   {ascension?.level > 0 && (

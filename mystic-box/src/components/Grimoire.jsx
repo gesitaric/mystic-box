@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import Modal from "./Modal";
+import { RelicIcon } from "../relicImages";
 import { currentRoute, navigate } from "../router";
 import { withOverlay } from "../routes";
 import { ELEMENT_STYLE, STATUS_ICON, TARGET_LABELS } from "./battle/battlePresentation";
@@ -1108,9 +1109,14 @@ function RelicsChapter({ rules }) {
           {relics.relics.map((relic) => (
             <tr key={relic.id}>
               <td>
-                ◈ {relic.name}
-                <br />
-                <small>{relic.regionName}</small>
+                <span className="gr-relic-name">
+                  <RelicIcon relicId={relic.id} size={40} />
+                  <span>
+                    {relic.name}
+                    <br />
+                    <small>{relic.regionName}</small>
+                  </span>
+                </span>
               </td>
               <td>
                 {[

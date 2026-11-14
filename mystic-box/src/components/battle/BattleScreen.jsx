@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from "react";
 import CampaignPanel from "./CampaignPanel";
 import { getCharacterImage } from "../../characterImages";
+import { RelicIcon } from "../../relicImages";
 import { LevelBadge } from "../HomeScreen";
 import Grimoire from "../Grimoire";
 import Modal from "../Modal";
@@ -282,7 +283,7 @@ function UnitDetails({ unit, elementRider, onClose }) {
         </h2>
         {unit.relic && (
           <p className="battle-inspect-desc">
-            ◈ Relic: <strong>{unit.relic.name}</strong>
+            <RelicIcon relicId={unit.relic.id} size={24} /> Relic: <strong>{unit.relic.name}</strong>
             {unit.relic.attuned && " (attuned)"}
           </p>
         )}
@@ -392,7 +393,7 @@ function BattleUnit({
             className={`battle-unit-relic${unit.relic.attuned ? " is-attuned" : ""}`}
             title={`${unit.relic.name}${unit.relic.attuned ? " (attuned)" : ""}`}
           >
-            ◈
+            <RelicIcon relicId={unit.relic.id} size={16} />
           </span>
         )}
         <span className="battle-unit-level">Lv {unit.level}</span>
@@ -555,7 +556,10 @@ function CampaignResult({ campaign }) {
       )}
       {campaign.relic && (
         <p className="battle-result-relic">
-          ◈ Relic found: <strong>{campaign.relic.name}</strong>. Equip it from your collection.
+          <RelicIcon relicId={campaign.relic.id} size={64} className="is-large" />
+          <span>
+            Relic found: <strong>{campaign.relic.name}</strong>. Equip it from your collection.
+          </span>
         </p>
       )}
       {campaign.epilogue && (
