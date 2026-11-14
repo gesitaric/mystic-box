@@ -59,7 +59,7 @@ Para parar o banco: `docker compose -f local/docker-compose.yml down`
 
 - A assinatura do token do Cognito **não** é verificada localmente (só `exp`,
   `token_use` e `sub`). O servidor escuta apenas em 127.0.0.1.
-- A chave do `summonToken` é fixa (`LOCAL_SUMMON_SECRET`), sem Secrets Manager.
+- A chave do `summonToken` é fixa (`LOCAL_SUMMON_SECRET`), sem SSM Parameter Store.
 - Credenciais falsas e todo endpoint da AWS aponta para o DynamoDB Local:
   nada do servidor local acessa a conta real.
 - Python da máquina, não o runtime `python3.14` da Lambda.

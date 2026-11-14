@@ -17,9 +17,10 @@ import uuid
 
 import boto3
 
-SUMMON_TOKEN_SECRET_ARN = os.environ.get("SUMMON_TOKEN_SECRET_ARN")
+# Nome do parâmetro SecureString no SSM Parameter Store com a chave HMAC.
+SUMMON_TOKEN_PARAMETER = os.environ.get("SUMMON_TOKEN_PARAMETER")
 
-# Tempo para o visitante entrar/criar conta e guardar as cartas sorteadas.
+# Tempo para guardar as cartas sorteadas.
 TOKEN_TTL_SECONDS = int(os.environ.get("SUMMON_TOKEN_TTL_SECONDS", "1800"))
 
 TOKEN_VERSION = 1
@@ -39,10 +40,10 @@ class ExpiredSummonToken(InvalidSummonToken):
 def _get_secret():
     global _secret
     if _secret is None:
-        result = boto3.client("secretsmanager").get_secret_value(
-            SecretId=SUMMON_TOKEN_SECRET_ARN
+        result = boto3.client("ssm").get_parameter(
+            Name=SUMMON_TOKEN_PARAMETER, WithDecryption=True
         )
-        _secret = result["SecretString"].encode()
+        _secret = result["Parameter"]["Value"].encode()
     return _secret
 
 
