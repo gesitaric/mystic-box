@@ -1,6 +1,6 @@
 import json
 
-from mystic_shared import campaign
+from mystic_shared import campaign, relics
 from mystic_shared.cards import get_character
 from mystic_shared.lore import REGIONS, STORIES
 
@@ -76,3 +76,13 @@ def test_get_campaign_endpoint(apigw_event, authenticated_event, monkeypatch):
     assert body["level"] == 1
     collection = next(r for r in body["collection"] if r["region"] == "cinderpeak")
     assert collection["owned"] == 1 and collection["complete"] is False
+
+
+def test_public_campaign_shows_the_relic_each_boss_gives():
+    regions = {r["region"]: r for r in campaign.public_campaign({"nocthaven": 3,
+                                                                  "hrimvald": 1}, 5)}
+    for region in regions.values():
+        assert region["relic"]["id"] == relics.relic_for_region(region["region"])
+        assert [s["relicReward"] for s in region["stages"]] == [False, False, True]
+    assert regions["nocthaven"]["relicClaimed"] is True
+    assert regions["hrimvald"]["relicClaimed"] is False

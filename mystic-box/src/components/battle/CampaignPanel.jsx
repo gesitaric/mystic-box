@@ -1,5 +1,7 @@
 import { useEffect, useState } from "react";
 import { getCharacterImage } from "../../characterImages";
+import { RelicIcon } from "../../relicImages";
+import CampaignRelic from "../CampaignRelic";
 import { SessionExpired } from "./arenaApi";
 
 // Campanha pelo mapa: regiões, fases, inimigos e recompensas vêm de
@@ -61,7 +63,8 @@ function CampaignPanel({
       <div className="campaign">
         <p className="campaign-lead">
           Travel the Shattered Realms. Each land has three battles and a champion waiting at the
-          end. The first victory in each battle pays a reward.
+          end. The first victory in each battle pays a reward, and defeating a land&apos;s champion
+          for the first time claims its <b>relic</b>.
         </p>
         <ul className="campaign-regions">
           {data.regions.map((r) => (
@@ -71,7 +74,17 @@ function CampaignPanel({
                 className={`campaign-region${r.complete ? " is-complete" : ""}`}
                 onClick={() => onSelectRegion(r.region)}
               >
-                <strong>{r.regionName}</strong>
+                <span className="campaign-region-head">
+                  <strong>{r.regionName}</strong>
+                  {r.relic && (
+                    <span
+                      className={`campaign-region-relic${r.relicClaimed ? " is-claimed" : ""}`}
+                      title={`${r.relicClaimed ? "Claimed" : "Champion's reward"}: ${r.relic.name}`}
+                    >
+                      <RelicIcon relicId={r.relic.id} size={28} />
+                    </span>
+                  )}
+                </span>
                 <span className="campaign-region-progress">
                   {Array.from({ length: r.total }, (_, i) => (
                     <span key={i} className={i < r.cleared ? "is-cleared" : undefined}>
@@ -98,6 +111,11 @@ function CampaignPanel({
           {region.cleared}/{region.total}
         </span>
       </h2>
+      <CampaignRelic
+        relic={region.relic}
+        claimed={region.relicClaimed}
+        regionName={region.regionName}
+      />
       <ol className="campaign-stages">
         {region.stages.map((stage) => (
           <li
@@ -131,7 +149,13 @@ function CampaignPanel({
               ))}
               <span className="campaign-stage-meta">
                 Foes Lv {stage.enemyLevel} · +{stage.experience} XP
-                {!stage.cleared && <> · first win ✧ {stage.reward}</>}
+                {!stage.cleared && (
+                  <>
+                    {" "}
+                    · first win ✧ {stage.reward}
+                    {stage.relicReward && region.relic && <> + ◈ {region.relic.name}</>}
+                  </>
+                )}
               </span>
             </div>
             <button

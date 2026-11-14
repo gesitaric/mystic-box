@@ -65,3 +65,83 @@
   align-items: center;
   gap: 10px;
 }
+
+/* Relíquia que o chefe da região dá (CampaignRelic). */
+.campaign-relic {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px;
+  border: 1px solid rgba(255, 220, 142, 0.45);
+  border-radius: 12px;
+  background: linear-gradient(135deg, rgba(60, 36, 12, 0.55), rgba(20, 10, 40, 0.7));
+  box-shadow: 0 0 14px rgba(255, 190, 90, 0.15);
+}
+
+.campaign-relic.is-claimed {
+  border-color: rgba(140, 210, 255, 0.5);
+  background: rgba(14, 36, 64, 0.45);
+  box-shadow: none;
+}
+
+.campaign-relic.is-compact {
+  margin: 8px 0;
+  padding: 8px 10px;
+}
+
+.campaign-relic:not(.is-claimed) .relic-icon {
+  border-color: rgba(255, 220, 142, 0.6);
+  box-shadow: 0 0 14px rgba(255, 200, 110, 0.45);
+}
+
+.campaign-relic-text {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+
+.campaign-relic-label {
+  color: #ffdc8e;
+  font-size: 11px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+}
+
+.campaign-relic.is-claimed .campaign-relic-label {
+  color: #9fdcff;
+}
+
+.campaign-relic-text strong {
+  color: #fff3d6;
+}
+
+.campaign-relic-text small {
+  color: #cbb6ee;
+  font-size: 12px;
+}
+
+.campaign-relic-text p {
+  margin: 4px 0 0;
+  color: #d9c9f5;
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+/* Lista de regiões da campanha: relíquia ao lado do nome. */
+.campaign-region-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  text-align: left;
+}
+
+.campaign-region-relic .relic-icon {
+  border-radius: 8px;
+  filter: grayscale(0.6) brightness(0.8);
+}
+
+.campaign-region-relic.is-claimed .relic-icon {
+  filter: none;
+  box-shadow: 0 0 10px rgba(140, 220, 255, 0.6);
+}

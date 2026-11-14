@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from "
 import CampaignPanel from "./CampaignPanel";
 import { getCharacterImage } from "../../characterImages";
 import { RelicIcon } from "../../relicImages";
+import CampaignRelic from "../CampaignRelic";
 import { LevelBadge } from "../HomeScreen";
 import Grimoire from "../Grimoire";
 import Modal from "../Modal";
@@ -1596,8 +1597,16 @@ function BattleScreen({
                     ))}
                     <span className="campaign-stage-meta">
                       Foes Lv {stage.enemyLevel} · +{stage.experience} XP
+                      {!stage.cleared && <> · first win ✧ {stage.reward}</>}
                     </span>
                   </div>
+                  {stage.relicReward && !stage.cleared && (
+                    <CampaignRelic
+                      relic={region.relic}
+                      claimed={region.relicClaimed}
+                      regionName={region.regionName}
+                    />
+                  )}
                 </section>
               </TeamSetup>
             )}

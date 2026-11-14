@@ -116,6 +116,11 @@ export const SCREENS = [
     ready: (page) => page.locator("[aria-label='Battle setup']"),
   },
   {
+    name: "arena-campaign-region",
+    path: "/arena/campaign/hrimvald",
+    ready: (page) => page.locator(".campaign-relic"),
+  },
+  {
     name: "arena-duel",
     path: "/arena/duel",
     ready: (page) => page.locator("[aria-label='Battle setup']"),

@@ -3,6 +3,7 @@ import { useCallback, useEffect, useState } from "react";
 // SVG com tantos brilhos e desfoques no navegador deixa o mapa pesado.
 import worldMapArt from "../assets/world-map.webp";
 import { getCharacterImage } from "../characterImages";
+import CampaignRelic from "./CampaignRelic";
 import Modal from "./Modal";
 import { loadWorld } from "./worldApi";
 import { currentRoute, navigate } from "../router";
@@ -188,6 +189,12 @@ function RegionCampaign({ progress, onCampaign }) {
           ? "Champion defeated"
           : `${progress.cleared}/${progress.total} battles won`}
       </p>
+      <CampaignRelic
+        relic={progress.relic}
+        claimed={progress.relicClaimed}
+        regionName={progress.regionName}
+        compact
+      />
       {progress.epilogue && (
         <blockquote className="campaign-epilogue">
           <span>Epilogue</span>
