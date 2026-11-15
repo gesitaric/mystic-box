@@ -29,6 +29,12 @@ export const releases = [
         text: "Defeat a land's champion in the campaign to claim its relic, then equip it on a champion from your collection. The campaign shows which relic each champion guards. Each relic has its own illustration, shown in your collection, in battle and in the Grimoire. Every relic trades one strength for another, and in the hands of a champion from its own land it grows stronger and awakens at the start of battle. Forge more copies with Arcane Shards, and read all about them in the new Relics chapter of the Grimoire.",
         prs: [87],
       },
+      {
+        type: "fixed",
+        title: "Relic forging",
+        text: "Forging a relic with Arcane Shards no longer fails with an error. Once you've defeated a land's champion, you can forge more copies of its relic.",
+        prs: [96],
+      },
     ],
   },
   {
