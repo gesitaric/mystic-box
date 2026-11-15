@@ -51,12 +51,15 @@ Resources:
       # Limites de requisições, somando todos os jogadores (token bucket do API
       # Gateway: média por segundo e pico). Acima disso o API Gateway responde
       # 429 sem chamar a Lambda, o que põe um teto no custo. O primeiro item é o
-      # padrão de todas as rotas; os seguintes são mais baixos.
+      # padrão, que vale para cada rota separadamente; os seguintes são mais
+      # baixos. O padrão é baixo de propósito (portfólio): cobre umas 20 telas
+      # de duelo consultando no ritmo mais rápido (a cada 1,5 s) e limita o
+      # custo de um bot com login.
       MethodSettings:
       - ResourcePath: "/*"
         HttpMethod: "*"
-        ThrottlingRateLimit: 50
-        ThrottlingBurstLimit: 100
+        ThrottlingRateLimit: 15
+        ThrottlingBurstLimit: 30
       - ResourcePath: "/~1box~1open"
         HttpMethod: POST
         ThrottlingRateLimit: 5
