@@ -18,6 +18,7 @@ O cliente só manda identificadores. Custos, limites e efeitos vêm de
 """
 
 import json
+import logging
 import os
 import time
 from datetime import datetime, timezone
@@ -57,6 +58,8 @@ MAX_ID_LENGTH = 64
 
 # Posições dos itens na transação de forja.
 FORGE_WALLET_ITEM, FORGE_RELIC_ITEM, FORGE_PROGRESS_ITEM = 0, 1, 2
+
+logger = logging.getLogger()
 
 # Criado uma vez por container e reaproveitado entre invocações.
 _client = None
@@ -245,6 +248,7 @@ def forge(user_id, event):
     except ClientError as error:
         failed = failed_items(error)
         if not failed:
+            logger.exception("Relic forge transaction failed")
             return response(500, {"message": "Could not forge the relic."})
         if FORGE_PROGRESS_ITEM in failed:
             return response(
@@ -361,6 +365,7 @@ def equip(user_id, event):
         except ClientError as error:
             failed = failed_items(error)
             if not failed:
+                logger.exception("Relic equip transaction failed")
                 return response(500, {"message": "Could not equip the relic."})
             if relic_id and 0 not in failed and 1 in failed:
                 return response(
