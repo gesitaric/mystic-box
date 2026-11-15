@@ -7,7 +7,7 @@ This README covers **how the project is built**: the architecture, what each fol
 | App | Folder | Stack | URL |
 | --- | --- | --- | --- |
 | Game client | [`mystic-box/`](mystic-box/) | React + Vite, hosted on S3 + CloudFront | `https://mystic-box.geskee.com.br` |
-| Backend API | [`mystic-box-back/`](mystic-box-back/) | AWS SAM: API Gateway + Lambda (Python) + DynamoDB + Cognito | API Gateway `Prod` stage |
+| Backend API | [`mystic-box-back/`](mystic-box-back/) | AWS SAM: CloudFront + API Gateway + Lambda (Python) + DynamoDB + Cognito | `https://mystic-box-api.geskee.com.br` |
 | Landing page | [`mystic-box-welcome/`](mystic-box-welcome/) | React + Vite, hosted on S3 + CloudFront | `https://mystic-box-welcome.geskee.com.br` |
 
 ---
@@ -38,7 +38,7 @@ Every game rule lives in the backend. The clients only **display** what the API 
 - **Multi-item changes are atomic.** Anything that touches more than one record (buying a listing, keeping a draw, ascending a card, forging a relic, finishing a battle) runs as a single DynamoDB `TransactWriteItems` with conditions, so nothing can be duplicated or applied twice.
 - **What the frontend may own:** presentation only. Layout, animations, sound, copy, ordering, and visual effects derived from the data the API returned.
 
-Since there is no way to guarantee that only our client calls the API, protection comes from three layers: rules on the server, an authenticated user on every player route, and request throttling at API Gateway.
+Since there is no way to guarantee that only our client calls the API, protection comes from four layers: rules on the server, an authenticated user on every player route, a CloudFront cache in front of the public routes, and request throttling at API Gateway.
 
 ---
 
@@ -54,6 +54,7 @@ flowchart LR
     subgraph AWS["AWS (us-east-1)"]
         CF1[CloudFront<br/>mystic-box] --> S31[(S3<br/>private bucket)]
         CF2[CloudFront<br/>mystic-box-welcome] --> S32[(S3<br/>private bucket)]
+        CF3["CloudFront<br/>mystic-box-api<br/>cache: GET /rules, GET /world"]
         COG[Cognito<br/>User Pool]
         APIGW[API Gateway<br/>REST API + throttling]
         L[23 Lambda functions<br/>Python 3.14]
@@ -66,8 +67,9 @@ flowchart LR
     G -- static files --> CF1
     W -- static files --> CF2
     G -- sign up / sign in --> COG
-    G -- "HTTPS + Cognito ID token" --> APIGW
-    W -- "GET /world, GET /rules (public)" --> APIGW
+    G -- "HTTPS + Cognito ID token" --> CF3
+    W -- "GET /world, GET /rules (public)" --> CF3
+    CF3 -- "cache miss and every other route" --> APIGW
     APIGW -- CognitoAuthorizer --> COG
     APIGW --> L
     L -. imports .-> LAYER
@@ -80,15 +82,16 @@ flowchart LR
 
 1. **Static assets.** The browser downloads the SPA from CloudFront. The S3 buckets are private and readable only by their distribution (Origin Access Control). Hashed files under `assets/` are cached for a year; `index.html` is `no-cache`, and CloudFront returns `index.html` for any unknown path so client-side routes work on reload.
 2. **Authentication.** The game client signs players in against the Cognito User Pool (`amazon-cognito-identity-js`) and sends the ID token in the `Authorization` header. The player is identified on the server by the token's `sub` claim.
-3. **API Gateway.** Every player route is protected by the `CognitoAuthorizer`; only `GET /rules` and `GET /world` are public. `MethodSettings` set a default rate limit for all routes plus lower limits on expensive ones (e.g. `POST /box/open`, `GET /users/search`). Above a limit, API Gateway answers `429` without invoking a Lambda, which caps cost. `GatewayResponses` add CORS headers to `401` and `429` so the browser can read them.
-4. **Lambda.** Each route (or small group of related routes) has its own function. Handlers stay thin: they parse the request, load state from DynamoDB, call the rules in the shared layer, and write the result back.
-5. **DynamoDB.** State lives in on-demand tables, one per concern (collection, wallet, market listings, battles, PvP, progress...). Writes that span several items use transactions with condition expressions; battle state is versioned and every save is conditional on the version read.
-6. **Logs.** Each Lambda writes JSON logs to its own CloudWatch log group with a retention period. X-Ray is off and `SystemLogLevel: WARN` drops the START/END/REPORT lines to keep log costs down.
+3. **API CloudFront.** Both clients call the API at `https://mystic-box-api.geskee.com.br` (`ApiDistribution` in the backend stack, output `ApiUrl`). `GET /rules` and `GET /world` are public and identical for everyone, so they are cached for as long as the Lambda's `Cache-Control` allows; within that window CloudFront answers on its own and the request never reaches API Gateway or its rate limits. Every other route passes through uncached, forwarding `Authorization`, body and query string, and error responses are never cached. The raw `execute-api` endpoint is still reachable directly (closing it is tracked in [issue #100](https://github.com/gesitaric/mystic-box/issues/100)).
+4. **API Gateway.** Every player route is protected by the `CognitoAuthorizer`; only `GET /rules` and `GET /world` are public. `MethodSettings` set a default rate limit for all routes plus lower limits on expensive ones (e.g. `POST /box/open`, `GET /users/search`). These limits are shared by all players (they are not per user or per IP). Above a limit, API Gateway answers `429` without invoking a Lambda, which caps cost. `GatewayResponses` add CORS headers to `401` and `429` so the browser can read them.
+5. **Lambda.** Each route (or small group of related routes) has its own function. Handlers stay thin: they parse the request, load state from DynamoDB, call the rules in the shared layer, and write the result back.
+6. **DynamoDB.** State lives in on-demand tables, one per concern (collection, wallet, market listings, battles, PvP, progress...). Writes that span several items use transactions with condition expressions; battle state is versioned and every save is conditional on the version read.
+7. **Logs.** Each Lambda writes JSON logs to its own CloudWatch log group with a retention period. X-Ray is off and `SystemLogLevel: WARN` drops the START/END/REPORT lines to keep log costs down.
 
 ### Notable design patterns
 
 - **Shared rules layer.** All game rules live in one Python package (`mystic_shared`) published as a Lambda Layer, so every function uses the same definitions and nothing is duplicated.
-- **Signed summon tokens.** A draw happens on the server, which returns the cards plus an HMAC-signed `summonToken` (key in an SSM `SecureString`, created outside the template). To keep the cards, the client sends back only that token; it is bound to the player, single-use and short-lived, and it is consumed in the same transaction that stores the cards.
+- **One draw per cooldown.** `POST /box/open` checks the summon cooldown, draws on the server and starts the cooldown right away. The draw is stored as the player's pending summon in `UserSummonStateTable`; opening the portal again while it is pending returns the same cards, so a player cannot draw many times and keep only the best result. The response carries an HMAC-signed `summonToken` (key in an SSM `SecureString`, created outside the template) bound to the player. To keep the cards, the client sends back only that token; in a single transaction the server checks it is the player's pending summon (and clears it), marks it as used and stores the cards. `GET /users/me/summon-status` also returns the pending summon, so a draw opened on another device can still be kept.
 - **Polling instead of sockets.** Online duels, the lobby presence list, spectating and emoji reactions use short HTTP polling with cursors (`since`, `reactionsSince`) and `unchanged` responses, which keeps the stack fully serverless with no connection management.
 - **TTL and sparse indexes.** Presence, challenges and reactions expire through DynamoDB TTL. Live duels are listed through a sparse GSI whose key exists only while the duel is active.
 
@@ -111,7 +114,7 @@ Each app has its own README with deeper, app-specific instructions. [`CLAUDE.md`
 
 ## Backend (`mystic-box-back/`)
 
-An AWS SAM application. [`template.yaml`](mystic-box-back/template.yaml) declares the whole backend: the REST API, the Cognito User Pool and client, every Lambda, the shared layer, the DynamoDB tables and the log groups.
+An AWS SAM application. [`template.yaml`](mystic-box-back/template.yaml) declares the whole backend: the REST API and the CloudFront distribution in front of it (with its DNS records), the Cognito User Pool and client, every Lambda, the shared layer, the DynamoDB tables and the log groups.
 
 ```text
 mystic-box-back/
@@ -179,6 +182,7 @@ All tables use on-demand billing and are keyed by player (`userId`) wherever the
 
 - A new Lambda gets `Layers: [!Ref SharedLayer]`, its own `AWS::Logs::LogGroup` with `RetentionInDays` (referenced from `LoggingConfig`), and an entry in the Grafana dashboard's log group list (a unit test checks this).
 - A new player route declares `Auth: Authorizer: CognitoAuthorizer` and, if expensive, its own throttling entry in `MethodSettings`.
+- A new public route whose response is the same for everyone can be cached: send `Cache-Control` from the Lambda and add its path to the `CacheBehaviors` of `ApiDistribution`. Routes with login are never cached (`tests/unit/test_api_cache.py` checks this).
 - A new card needs a story, a secret chapter, last words and at least one bond in `lore.py` (a unit test checks this).
 
 ---
@@ -210,7 +214,7 @@ mystic-box/
 
 **Routing.** The open screen and panels come from the URL, not from loose React state, so the browser Back button works everywhere. Panels are appended to the path of the screen beneath them (e.g. `/arena/grimoire/battle`). URL parameters are only identifiers, always validated by the server. Private URLs opened without a session show the login on top and keep the requested address.
 
-**Configuration.** The client reads `VITE_API_URL`, `VITE_COGNITO_USER_POOL_ID` and `VITE_COGNITO_CLIENT_ID` from `.env` (production, values from the backend stack outputs) or `.env.localapi` (local API).
+**Configuration.** The client reads `VITE_API_URL`, `VITE_COGNITO_USER_POOL_ID` and `VITE_COGNITO_CLIENT_ID` from `.env` (production, values from the backend stack outputs: `ApiUrl`, `UserPoolId`, `UserPoolClientId`) or `.env.localapi` (local API).
 
 ---
 
@@ -238,7 +242,7 @@ Everything is defined as code and deployed as three independent CloudFormation s
 
 | Stack | Template | What it creates | Deploy |
 | --- | --- | --- | --- |
-| `mystic-box-back` | `mystic-box-back/template.yaml` | API Gateway, Cognito, Lambdas, SharedLayer, DynamoDB, log groups | `sam build` + `sam deploy` in `mystic-box-back/` |
+| `mystic-box-back` | `mystic-box-back/template.yaml` | API CloudFront (`mystic-box-api.geskee.com.br`, A/AAAA records), API Gateway, Cognito, Lambdas, SharedLayer, DynamoDB, log groups | `sam build` + `sam deploy` in `mystic-box-back/` |
 | `mystic-box-frontend` | `mystic-box/infra/template.yaml` | Private S3 bucket, CloudFront (OAC, security headers, SPA fallback), A/AAAA records | `sam deploy` in `mystic-box/infra/`; publish the app with `npm run deploy` in `mystic-box/` |
 | `mystic-box-welcome` | `mystic-box-welcome/infra/template.yaml` | Same hosting pattern for the landing page | `npm run deploy` in `mystic-box-welcome/` (see its README) |
 
@@ -247,7 +251,7 @@ Shared resources that live **outside** the stacks:
 - The Route 53 hosted zone `geskee.com.br` and the ACM wildcard certificate `*.geskee.com.br` (in `us-east-1`, as CloudFront requires).
 - The SSM `SecureString` parameter `/mystic-box/summon-token-key`, which signs summon tokens. CloudFormation cannot create `SecureString` parameters, so it is created once with the AWS CLI (see [`mystic-box-back/README.md`](mystic-box-back/README.md)).
 
-Deploys are run manually; CI only runs tests.
+Deploys are run manually; CI only runs tests. Deploy the backend before the clients when a change depends on it (for example, the clients' `VITE_API_URL` points to the API CloudFront created by the backend stack).
 
 ---
 
@@ -290,7 +294,7 @@ Fixtures are captured from the real local API with `e2e/fixtures/capture.mjs`, n
 
 ## Monitoring
 
-An optional local Grafana (`docker compose -f local/docker-compose.yml --profile monitoring up -d grafana`, then `http://localhost:3001`) reads production CloudWatch through a read-only IAM user. Dashboards are provisioned from `mystic-box-back/local/monitoring/grafana/` and pick up new Lambdas and tables automatically by stack name. Per-route API metrics stay disabled on purpose because they are billed. Details and costs: [`mystic-box-back/local/monitoring/README.md`](mystic-box-back/local/monitoring/README.md).
+An optional local Grafana (`docker compose -f local/docker-compose.yml --profile monitoring up -d grafana`, then `http://localhost:3001`) reads production CloudWatch through a read-only IAM user. Dashboards are provisioned from `mystic-box-back/local/monitoring/grafana/` and pick up new Lambdas and tables automatically by stack name. Per-route API metrics stay disabled on purpose because they are billed. Requests for `/rules` and `/world` answered from the CloudFront cache never reach API Gateway, so they do not show up in its request counts; the API CloudFront is not on the dashboard. Details and costs: [`mystic-box-back/local/monitoring/README.md`](mystic-box-back/local/monitoring/README.md).
 
 ---
 

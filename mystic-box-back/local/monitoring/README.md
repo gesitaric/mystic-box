@@ -71,6 +71,12 @@ faça o commit. O Grafana relê a pasta a cada 30 s.
   Lambda, e capacidade consumida, throttles e erros por tabela.
 - **Logs**: avisos e erros das Lambdas (Logs Insights nos grupos de log do stack).
 
+O CloudFront da API (`ApiDistribution`) não está no painel. Os pedidos de
+`GET /rules` e `GET /world` respondidos pelo cache dele não chegam no API
+Gateway, então não aparecem nos gráficos de pedidos nem nas chamadas das
+Lambdas `GetRules` e `GetWorld`. Para ver esse tráfego, use as métricas do
+CloudFront no console (região Global).
+
 As Lambdas e tabelas são achadas pelo nome (`SEARCH` com `mystic-box-back`),
 então uma Lambda ou tabela nova aparece sozinha nos gráficos de métricas. A
 exceção é o **painel de logs**: o grupo de log da Lambda nova precisa entrar
