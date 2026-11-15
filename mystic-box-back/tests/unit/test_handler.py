@@ -284,7 +284,9 @@ def test_get_summon_status_without_previous_summon(authenticated_event, status_c
     ret = get_summon_status.lambda_handler(authenticated_event(), "")
 
     assert ret["statusCode"] == 200
-    assert json.loads(ret["body"]) == {"retryAfterSeconds": 0, "cooldownSeconds": 3600}
+    assert json.loads(ret["body"]) == {
+        "retryAfterSeconds": 0, "cooldownSeconds": 3600, "pendingSummon": None
+    }
 
 
 def test_get_summon_status_during_cooldown(authenticated_event, status_client):
