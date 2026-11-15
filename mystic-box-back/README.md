@@ -23,6 +23,7 @@ User accounts are managed by an AWS Cognito User Pool created by this stack. Eve
 
 Deployment outputs used by the web client:
 
+- `ApiUrl` - public API address (`VITE_API_URL`): a CloudFront distribution in front of API Gateway. `GET /rules` and `GET /world` are cached there (as long as the Lambda's `Cache-Control` allows); every other route goes straight to API Gateway, uncached.
 - `OpenBoxApi` - authenticated endpoint used to draw a card.
 - `GetUserCardsApi` / `SaveUserCardApi` - authenticated endpoints for the user's collection.
 - `UserPoolId` / `UserPoolClientId` - Cognito configuration for the web client.
