@@ -9,7 +9,7 @@ Diferenças em relação à AWS (só para uso local):
 - O token do Cognito NÃO tem a assinatura verificada: o `sub` é lido do payload
   do JWT (checando só `exp` e `token_use`). Por isso o servidor escuta só em
   127.0.0.1.
-- A chave do summon token é fixa (LOCAL_SUMMON_SECRET), sem Secrets Manager.
+- A chave do summon token é fixa (LOCAL_SUMMON_SECRET), sem SSM Parameter Store.
 - Credenciais da AWS são falsas e todo endpoint aponta para o DynamoDB Local,
   então nada aqui acessa a conta real.
 

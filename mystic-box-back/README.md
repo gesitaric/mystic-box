@@ -56,6 +56,15 @@ To use the SAM CLI, you need the following tools.
 * [Python 3 installed](https://www.python.org/downloads/)
 * Docker - [Install Docker community edition](https://hub.docker.com/search/?type=edition&offering=community)
 
+Before the first deploy, create the key that signs the `summonToken` (an SSM Parameter Store `SecureString`, free on the standard tier; CloudFormation cannot create `SecureString` parameters, so it lives outside the template). `open_box` and `save_user_card` read it:
+
+```bash
+aws ssm put-parameter --name /mystic-box/summon-token-key --type SecureString \
+  --value "$(python -c 'import secrets; print(secrets.token_urlsafe(48))')"
+```
+
+Changing the key invalidates summon tokens already issued (they expire after 30 minutes anyway).
+
 To build and deploy your application for the first time, run the following in your shell:
 
 ```bash

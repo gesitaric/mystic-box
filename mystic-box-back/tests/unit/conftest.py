@@ -11,7 +11,7 @@ from mystic_shared import summon_token  # noqa: E402
 
 @pytest.fixture(autouse=True)
 def summon_token_secret(monkeypatch):
-    """Chave fixa nos testes, sem chamar o Secrets Manager."""
+    """Chave fixa nos testes, sem chamar o SSM Parameter Store."""
     monkeypatch.setattr(summon_token, "_secret", b"test-secret")
 
 
