@@ -19,7 +19,7 @@ If you are developing a production application, we recommend using TypeScript wi
 
 1. Copie `.env.example` para `.env`.
 2. Preencha com os valores exibidos nos outputs do stack `mystic-box-back`:
-   - `VITE_API_URL`: `OpenBoxApi` sem o sufixo `/box/open` (ex.: `https://xxxx.execute-api.us-east-1.amazonaws.com/Prod`)
+   - `VITE_API_URL`: output `ApiUrl` do backend (`https://mystic-box-api.geskee.com.br`, o CloudFront na frente do API Gateway)
    - `VITE_COGNITO_USER_POOL_ID`: output `UserPoolId`
    - `VITE_COGNITO_CLIENT_ID`: output `UserPoolClientId`
 3. Rode `npm run dev`.

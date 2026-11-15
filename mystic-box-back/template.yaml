@@ -26,6 +26,20 @@ Globals:
       SystemLogLevel: WARN
   Api:
     TracingEnabled: false
+Parameters:
+  ApiDomainName:
+    Type: String
+    Default: mystic-box-api.geskee.com.br
+    Description: Dominio publico da API (CloudFront na frente do API Gateway).
+  HostedZoneId:
+    Type: AWS::Route53::HostedZone::Id
+    Default: Z07631273VVNV2AWGLCG1
+    Description: Hosted zone do geskee.com.br no Route 53 (fora desta stack).
+  CertificateArn:
+    Type: String
+    Default: arn:aws:acm:us-east-1:465926092387:certificate/ec238d23-530a-478b-87a3-7953140c2b21
+    Description: Certificado ACM (us-east-1, exigido pelo CloudFront) que cobre o ApiDomainName (*.geskee.com.br).
+
 Resources:
   MysticBoxApi:
     Type: AWS::Serverless::Api
@@ -1663,7 +1677,138 @@ Resources:
       RetentionInDays: 14
 
 
+  # ------------------------------------------------------------ CloudFront ---
+  # CloudFront na frente do API Gateway, em ApiDomainName. O jogo e a landing
+  # chamam a API por aqui. GET /rules e GET /world (públicas, iguais para
+  # todos) ficam em cache pelo Cache-Control que as Lambdas mandam: dentro
+  # desse tempo o CloudFront responde sozinho e o pedido não chega no API
+  # Gateway nem gasta o limite de requisições (MethodSettings), que vale para
+  # todos os jogadores juntos. As outras rotas passam sem cache.
+  PublicApiCachePolicy:
+    Type: AWS::CloudFront::CachePolicy
+    Properties:
+      CachePolicyConfig:
+        Name: !Sub "${AWS::StackName}-public-api"
+        Comment: Rotas publicas da API (GET /rules e GET /world)
+        # Respeita o Cache-Control da Lambda; sem ele, DefaultTTL.
+        MinTTL: 0
+        DefaultTTL: 300
+        MaxTTL: 3600
+        # Nada do pedido entra na chave: a resposta é a mesma para todos.
+        ParametersInCacheKeyAndForwardedToOrigin:
+          EnableAcceptEncodingGzip: true
+          EnableAcceptEncodingBrotli: true
+          HeadersConfig:
+            HeaderBehavior: none
+          CookiesConfig:
+            CookieBehavior: none
+          QueryStringsConfig:
+            QueryStringBehavior: none
+
+  ApiDistribution:
+    Type: AWS::CloudFront::Distribution
+    Properties:
+      DistributionConfig:
+        Comment: Mystic Box API
+        Enabled: true
+        HttpVersion: http2and3
+        IPV6Enabled: true
+        PriceClass: PriceClass_100
+        Aliases:
+        - !Ref ApiDomainName
+        ViewerCertificate:
+          AcmCertificateArn: !Ref CertificateArn
+          SslSupportMethod: sni-only
+          MinimumProtocolVersion: TLSv1.2_2021
+        Origins:
+        - Id: MysticBoxApi
+          DomainName: !Sub "${MysticBoxApi}.execute-api.${AWS::Region}.${AWS::URLSuffix}"
+          # O caminho do estágio fica aqui: o endereço público não tem /Prod.
+          OriginPath: !Sub "/${MysticBoxApi.Stage}"
+          CustomOriginConfig:
+            OriginProtocolPolicy: https-only
+            OriginSSLProtocols:
+            - TLSv1.2
+        CacheBehaviors:
+        - PathPattern: /rules
+          TargetOriginId: MysticBoxApi
+          ViewerProtocolPolicy: redirect-to-https
+          AllowedMethods: [GET, HEAD, OPTIONS]
+          CachedMethods: [GET, HEAD]
+          Compress: true
+          CachePolicyId: !Ref PublicApiCachePolicy
+        - PathPattern: /world
+          TargetOriginId: MysticBoxApi
+          ViewerProtocolPolicy: redirect-to-https
+          AllowedMethods: [GET, HEAD, OPTIONS]
+          CachedMethods: [GET, HEAD]
+          Compress: true
+          CachePolicyId: !Ref PublicApiCachePolicy
+        # Demais rotas: sem cache, repassando Authorization, corpo e query
+        # string (o Host fica o do API Gateway).
+        DefaultCacheBehavior:
+          TargetOriginId: MysticBoxApi
+          # http:// não é redirecionado: um POST redirecionado perde o corpo.
+          ViewerProtocolPolicy: https-only
+          AllowedMethods: [GET, HEAD, OPTIONS, PUT, PATCH, POST, DELETE]
+          CachedMethods: [GET, HEAD]
+          Compress: false
+          # Managed-CachingDisabled.
+          CachePolicyId: 4135ea2d-6df8-44a3-9df3-4b5a84be39ad
+          # Managed-AllViewerExceptHostHeader.
+          OriginRequestPolicyId: b689b0a8-53d0-40ab-baf2-68738e2966ac
+        # Por padrão o CloudFront guarda respostas de erro por 10 s, inclusive
+        # das rotas com login. Zero: cada erro vale só para quem o recebeu.
+        CustomErrorResponses:
+        - ErrorCode: 400
+          ErrorCachingMinTTL: 0
+        - ErrorCode: 403
+          ErrorCachingMinTTL: 0
+        - ErrorCode: 404
+          ErrorCachingMinTTL: 0
+        - ErrorCode: 405
+          ErrorCachingMinTTL: 0
+        - ErrorCode: 414
+          ErrorCachingMinTTL: 0
+        - ErrorCode: 416
+          ErrorCachingMinTTL: 0
+        - ErrorCode: 500
+          ErrorCachingMinTTL: 0
+        - ErrorCode: 501
+          ErrorCachingMinTTL: 0
+        - ErrorCode: 502
+          ErrorCachingMinTTL: 0
+        - ErrorCode: 503
+          ErrorCachingMinTTL: 0
+        - ErrorCode: 504
+          ErrorCachingMinTTL: 0
+
+  # ApiDomainName -> CloudFront (alias, IPv4 e IPv6).
+  # Z2FDTNDATAQYW2 é a hosted zone fixa de todas as distribuições do CloudFront.
+  ApiDnsRecordIpv4:
+    Type: AWS::Route53::RecordSet
+    Properties:
+      HostedZoneId: !Ref HostedZoneId
+      Name: !Ref ApiDomainName
+      Type: A
+      AliasTarget:
+        DNSName: !GetAtt ApiDistribution.DomainName
+        HostedZoneId: Z2FDTNDATAQYW2
+
+  ApiDnsRecordIpv6:
+    Type: AWS::Route53::RecordSet
+    Properties:
+      HostedZoneId: !Ref HostedZoneId
+      Name: !Ref ApiDomainName
+      Type: AAAA
+      AliasTarget:
+        DNSName: !GetAtt ApiDistribution.DomainName
+        HostedZoneId: Z2FDTNDATAQYW2
+
 Outputs:
+  ApiUrl:
+    Description: Endereco publico da API (CloudFront); use em VITE_API_URL
+    Value: !Sub "https://${ApiDomainName}"
   OpenBoxApi:
     Description: API Gateway endpoint URL for the open box function
     Value: !Sub "https://${MysticBoxApi}.execute-api.${AWS::Region}.${AWS::URLSuffix}/Prod/box/open"
