@@ -33,7 +33,7 @@ export const releases = [
         type: "fixed",
         title: "One summon per portal",
         text: "Opening the portal now starts its recovery right away, and opening it again before your cards are kept shows the same summon instead of a new one. A summon you opened on another device is kept when you come back.",
-        prs: [93],
+        prs: [95],
       },
     ],
   },
