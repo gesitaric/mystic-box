@@ -1,31 +1,22 @@
 import json
-from unittest.mock import MagicMock
 
 import pytest
 from botocore.exceptions import ClientError
 from mystic_shared import cards, summon_token
 
+from get_summon_status import app as get_summon_status
 from open_box import app as open_box
 from save_user_card import app as save_user_card
 
+from tests.unit.fake_dynamo import FakeDynamo
+
 NOW = 10_000
+USER = "user-123"
+COOLDOWN = 3600
 
 
-def transaction_conflict(*failed_indexes, size=5):
-    return ClientError(
-        {
-            "Error": {"Code": "TransactionCanceledException"},
-            "CancellationReasons": [
-                {"Code": "ConditionalCheckFailed" if i in failed_indexes else "None"}
-                for i in range(size)
-            ],
-        },
-        "TransactWriteItems",
-    )
-
-
-def summon_body(file_names=("rowan.jfif", "kaito.jfif", "astra.jfif"), now=NOW):
-    return json.dumps({"summonToken": summon_token.issue(file_names, now=now)})
+def summon_body(file_names=("rowan.jfif", "kaito.jfif", "astra.jfif"), now=NOW, user=USER):
+    return json.dumps({"summonToken": summon_token.issue(file_names, user, now=now)})
 
 
 # ---------- Definições das cartas ----------
@@ -98,20 +89,29 @@ def test_draw_cards_last_card_uses_boosted_weights(monkeypatch):
 
 
 def test_summon_token_round_trip():
-    token = summon_token.issue(["astra.jfif"], now=NOW)
+    token = summon_token.issue(["astra.jfif"], USER, now=NOW)
     payload = summon_token.verify(token, now=NOW + 1)
 
     assert payload["cards"] == ["astra.jfif"]
+    assert payload["uid"] == USER
+    assert payload["iat"] == NOW
     assert payload["exp"] == NOW + summon_token.TOKEN_TTL_SECONDS
     assert payload["id"]
 
 
+def forge(payload):
+    """Token com o conteúdo `payload` e uma assinatura válida para ele."""
+    encoded = summon_token._b64encode(json.dumps(payload).encode())
+    return f"{encoded}.{summon_token._b64encode(summon_token._sign(encoded))}"
+
+
 def test_summon_token_rejects_tampered_cards():
-    token = summon_token.issue(["rowan.jfif"], now=NOW)
+    token = summon_token.issue(["rowan.jfif"], USER, now=NOW)
     signature = token.split(".")[1]
     forged = summon_token._b64encode(
         json.dumps(
-            {"v": 1, "id": "x", "cards": ["astra.jfif"], "iat": NOW, "exp": NOW + 60}
+            {"v": 2, "id": "x", "uid": USER, "cards": ["astra.jfif"],
+             "iat": NOW, "exp": NOW + 60}
         ).encode()
     )
 
@@ -119,8 +119,16 @@ def test_summon_token_rejects_tampered_cards():
         summon_token.verify(f"{forged}.{signature}", now=NOW)
 
 
+def test_summon_token_rejects_tokens_without_player():
+    # Formato antigo (v1), sem o jogador: não é mais aceito.
+    old = forge({"v": 1, "id": "x", "cards": ["astra.jfif"], "iat": NOW, "exp": NOW + 60})
+
+    with pytest.raises(summon_token.InvalidSummonToken):
+        summon_token.verify(old, now=NOW)
+
+
 def test_summon_token_rejects_other_secret(monkeypatch):
-    token = summon_token.issue(["astra.jfif"], now=NOW)
+    token = summon_token.issue(["astra.jfif"], USER, now=NOW)
     monkeypatch.setattr(summon_token, "_secret", b"another-secret")
 
     with pytest.raises(summon_token.InvalidSummonToken):
@@ -134,95 +142,264 @@ def test_summon_token_rejects_garbage(token):
 
 
 def test_summon_token_expires():
-    token = summon_token.issue(["astra.jfif"], now=NOW)
+    token = summon_token.issue(["astra.jfif"], USER, now=NOW)
 
     with pytest.raises(summon_token.ExpiredSummonToken):
         summon_token.verify(token, now=NOW + summon_token.TOKEN_TTL_SECONDS)
 
 
-# ---------- open_box ----------
+def test_pending_summon_only_for_its_player_while_valid():
+    token = summon_token.issue(["astra.jfif"], USER, now=NOW)
+    item = {"pendingToken": {"S": token}}
+
+    assert summon_token.pending_summon(item, USER, NOW) == {
+        "cards": [{"name": "Astra", "rarity": 5, "file_name": "astra.jfif"}],
+        "summonToken": token,
+    }
+    assert summon_token.pending_summon(item, "someone-else", NOW) is None
+    assert summon_token.pending_summon(
+        item, USER, NOW + summon_token.TOKEN_TTL_SECONDS
+    ) is None
+    assert summon_token.pending_summon({}, USER, NOW) is None
+    assert summon_token.pending_summon(None, USER, NOW) is None
 
 
-def test_open_box_returns_cards_and_signed_token(apigw_event):
-    ret = open_box.lambda_handler(apigw_event, "")
-    data = json.loads(ret["body"])
+# ---------- Fluxo da invocação (open_box + save_user_card) ----------
 
-    assert ret["statusCode"] == 200
-    assert ret["headers"]["Access-Control-Allow-Origin"] == "*"
+
+class Clock:
+    def __init__(self):
+        self.now = NOW
+
+    def __call__(self):
+        return self.now
+
+
+@pytest.fixture()
+def summon_db(monkeypatch):
+    """Banco em memória e relógio compartilhados pelas Lambdas da invocação."""
+    db = FakeDynamo({
+        "summon-state": ("userId", None),
+        "summon-tokens": ("tokenId", None),
+        "user-cards": ("userId", "ownedCardId"),
+    })
+    clock = Clock()
+    for module in (open_box, save_user_card, get_summon_status):
+        monkeypatch.setattr(module, "_client", db)
+        monkeypatch.setattr(module, "USER_SUMMON_STATE_TABLE", "summon-state")
+        monkeypatch.setattr(module, "SUMMON_COOLDOWN_SECONDS", COOLDOWN)
+        monkeypatch.setattr(module.time, "time", clock)
+    monkeypatch.setattr(save_user_card, "USER_CARDS_TABLE", "user-cards")
+    monkeypatch.setattr(save_user_card, "SUMMON_TOKENS_TABLE", "summon-tokens")
+    monkeypatch.setattr(summon_token.time, "time", clock)
+    db.clock = clock
+    return db
+
+
+def open_portal(authenticated_event, user=USER):
+    ret = open_box.lambda_handler(authenticated_event(sub=user, httpMethod="POST"), "")
+    return ret["statusCode"], json.loads(ret["body"]), ret["headers"]
+
+
+def keep(authenticated_event, token, user=USER):
+    ret = save_user_card.lambda_handler(
+        authenticated_event(sub=user, httpMethod="POST",
+                            body=json.dumps({"summonToken": token})),
+        "",
+    )
+    return ret["statusCode"], json.loads(ret["body"])
+
+
+def owned_cards(db, user=USER):
+    return [item for (owner, _), item in db.tables["user-cards"].items() if owner == user]
+
+
+def test_open_box_requires_authentication(apigw_event):
+    ret = open_box.lambda_handler(dict(apigw_event, httpMethod="POST"), "")
+
+    assert ret["statusCode"] == 401
+
+
+def test_open_box_returns_cards_and_signed_token(authenticated_event, summon_db):
+    status, data, headers = open_portal(authenticated_event)
+
+    assert status == 200
+    assert headers["Access-Control-Allow-Origin"] == "*"
     assert len(data["cards"]) == 3
     # O preço não faz parte do resultado do sorteio.
     assert all(set(card) == {"name", "rarity", "file_name"} for card in data["cards"])
 
     payload = summon_token.verify(data["summonToken"])
     assert payload["cards"] == [card["file_name"] for card in data["cards"]]
+    assert payload["uid"] == USER
 
 
-# ---------- save_user_card ----------
+def test_open_box_consumes_cooldown_and_keeps_draw_pending(authenticated_event, summon_db):
+    _, data, _ = open_portal(authenticated_event)
+
+    state = summon_db.tables["summon-state"][(USER, None)]
+    payload = summon_token.verify(data["summonToken"])
+    assert state["lastSummonAt"] == {"N": str(NOW)}
+    assert state["pendingToken"] == {"S": data["summonToken"]}
+    assert state["pendingTokenId"] == {"S": payload["id"]}
+    assert state["pendingExpiresAt"] == {"N": str(payload["exp"])}
 
 
-@pytest.fixture()
-def save_client(monkeypatch):
-    client = MagicMock()
-    monkeypatch.setattr(save_user_card, "_client", client)
-    monkeypatch.setattr(save_user_card, "USER_CARDS_TABLE", "user-cards")
-    monkeypatch.setattr(save_user_card, "USER_SUMMON_STATE_TABLE", "summon-state")
-    monkeypatch.setattr(save_user_card, "SUMMON_TOKENS_TABLE", "summon-tokens")
-    monkeypatch.setattr(save_user_card, "SUMMON_COOLDOWN_SECONDS", 3600)
-    monkeypatch.setattr(save_user_card.time, "time", lambda: NOW)
-    monkeypatch.setattr(summon_token.time, "time", lambda: NOW)
-    return client
+def test_open_box_again_returns_the_same_draw(authenticated_event, summon_db):
+    """Abrir de novo não sorteia outra vez: não dá para escolher a melhor tirada."""
+    _, first, _ = open_portal(authenticated_event)
+    summon_db.clock.now += 60
+
+    for _ in range(5):
+        status, again, _ = open_portal(authenticated_event)
+        assert status == 200
+        assert again == first
 
 
-def save(authenticated_event, body):
-    return save_user_card.lambda_handler(
-        authenticated_event(httpMethod="POST", body=body), ""
-    )
+def test_open_box_during_cooldown_draws_nothing(authenticated_event, summon_db):
+    _, data, _ = open_portal(authenticated_event)
+    assert keep(authenticated_event, data["summonToken"])[0] == 201
+    summon_db.clock.now += 600
+
+    status, body, headers = open_portal(authenticated_event)
+
+    assert status == 429
+    assert body["retryAfterSeconds"] == COOLDOWN - 600
+    assert headers["Retry-After"] == str(COOLDOWN - 600)
+    assert "pendingToken" not in summon_db.tables["summon-state"][(USER, None)]
 
 
-def test_save_user_card_stores_cards_from_token(authenticated_event, save_client):
-    ret = save(authenticated_event, summon_body())
-    data = json.loads(ret["body"])
+def test_open_box_after_expired_draw_waits_the_cooldown(authenticated_event, summon_db):
+    """Não guardar um sorteio e esperar ele expirar não libera outro antes da hora."""
+    open_portal(authenticated_event)
+    summon_db.clock.now += summon_token.TOKEN_TTL_SECONDS
 
-    assert ret["statusCode"] == 201
-    assert [card["name"] for card in data["cards"]] == ["Rowan", "Kaito", "Astra"]
-    assert all(card["userId"] == "user-123" for card in data["cards"])
+    status, body, _ = open_portal(authenticated_event)
+
+    assert status == 429
+    assert body["retryAfterSeconds"] == COOLDOWN - summon_token.TOKEN_TTL_SECONDS
+
+
+def test_open_box_after_cooldown_draws_again(authenticated_event, summon_db):
+    _, first, _ = open_portal(authenticated_event)
+    keep(authenticated_event, first["summonToken"])
+    summon_db.clock.now += COOLDOWN
+
+    status, second, _ = open_portal(authenticated_event)
+
+    assert status == 200
+    assert second["summonToken"] != first["summonToken"]
+    state = summon_db.tables["summon-state"][(USER, None)]
+    assert state["lastSummonAt"] == {"N": str(NOW + COOLDOWN)}
+
+
+def test_open_box_concurrent_requests_share_one_draw(authenticated_event, summon_db, monkeypatch):
+    """Outro pedido grava o sorteio entre a leitura e a gravação deste."""
+    _, rival, _ = open_portal(authenticated_event)
+    state = summon_db.tables["summon-state"].pop((USER, None))
+    real_store = open_box.store_pending
+
+    def racing_store(*args):
+        summon_db.tables["summon-state"][(USER, None)] = state
+        return real_store(*args)
+
+    monkeypatch.setattr(open_box, "store_pending", racing_store)
+
+    status, data, _ = open_portal(authenticated_event)
+
+    assert status == 200
+    assert data == rival
+    assert summon_db.tables["summon-state"][(USER, None)] == state
+
+
+def test_open_box_handles_dynamodb_error(authenticated_event, summon_db, monkeypatch):
+    def broken(**_):
+        raise ClientError({"Error": {"Code": "500"}}, "GetItem")
+
+    monkeypatch.setattr(summon_db, "get_item", broken)
+
+    status, _, _ = open_portal(authenticated_event)
+
+    assert status == 500
+
+
+def test_save_user_card_stores_cards_from_pending_draw(authenticated_event, summon_db):
+    _, drawn, _ = open_portal(authenticated_event)
+    summon_db.clock.now += 20
+
+    status, data = keep(authenticated_event, drawn["summonToken"])
+
+    assert status == 201
+    assert [card["name"] for card in data["cards"]] == [c["name"] for c in drawn["cards"]]
+    assert all(card["userId"] == USER for card in data["cards"])
     assert len({card["ownedCardId"] for card in data["cards"]}) == 3
-    assert data["retryAfterSeconds"] == 3600
+    # O tempo de espera começou ao abrir o portal.
+    assert data["retryAfterSeconds"] == COOLDOWN - 20
 
-    update, token_put, *puts = save_client.transact_write_items.call_args.kwargs[
-        "TransactItems"
-    ]
-    assert update["Update"]["TableName"] == "summon-state"
-    assert update["Update"]["ExpressionAttributeValues"] == {
-        ":now": {"N": "10000"},
-        ":threshold": {"N": "6400"},
-    }
-    assert token_put["Put"]["TableName"] == "summon-tokens"
-    assert token_put["Put"]["ConditionExpression"] == "attribute_not_exists(tokenId)"
-    assert token_put["Put"]["Item"]["expiresAt"] == {
-        "N": str(NOW + summon_token.TOKEN_TTL_SECONDS)
-    }
-    assert len(puts) == 3
-    assert puts[2]["Put"]["TableName"] == "user-cards"
-    assert puts[2]["Put"]["Item"]["name"] == {"S": "Astra"}
-    assert puts[2]["Put"]["Item"]["rarity"] == {"N": "5"}
-    assert puts[2]["Put"]["Item"]["file_name"] == {"S": "astra.jfif"}
+    stored = owned_cards(summon_db)
+    assert sorted(item["file_name"]["S"] for item in stored) == sorted(
+        card["file_name"] for card in drawn["cards"]
+    )
     # O preço não é gravado na carta: é sempre lido das definições.
-    assert "price" not in puts[2]["Put"]["Item"]
+    assert all("price" not in item for item in stored)
+    state = summon_db.tables["summon-state"][(USER, None)]
+    assert "pendingToken" not in state and "pendingTokenId" not in state
+    assert state["lastSummonAt"] == {"N": str(NOW)}
+    payload = summon_token.verify(drawn["summonToken"])
+    assert summon_db.tables["summon-tokens"][(payload["id"], None)]["expiresAt"] == {
+        "N": str(payload["exp"])
+    }
 
 
-def test_save_user_card_ignores_cards_sent_by_client(authenticated_event, save_client):
+def test_save_user_card_ignores_cards_sent_by_client(authenticated_event, summon_db):
+    _, drawn, _ = open_portal(authenticated_event)
     body = json.dumps(
         {
             "cards": [{"name": "Malachar", "rarity": 5, "file_name": "malachar.jfif"}],
-            "summonToken": summon_token.issue(["rowan.jfif"], now=NOW),
+            "summonToken": drawn["summonToken"],
         }
     )
 
-    ret = save(authenticated_event, body)
+    ret = save_user_card.lambda_handler(
+        authenticated_event(httpMethod="POST", body=body), ""
+    )
 
     assert ret["statusCode"] == 201
-    assert [card["name"] for card in json.loads(ret["body"])["cards"]] == ["Rowan"]
+    assert [card["name"] for card in json.loads(ret["body"])["cards"]] == [
+        card["name"] for card in drawn["cards"]
+    ]
+
+
+def test_save_user_card_rejects_reused_token(authenticated_event, summon_db):
+    _, drawn, _ = open_portal(authenticated_event)
+    keep(authenticated_event, drawn["summonToken"])
+
+    status, _ = keep(authenticated_event, drawn["summonToken"])
+
+    assert status == 409
+    assert len(owned_cards(summon_db)) == 3
+
+
+def test_save_user_card_rejects_token_of_another_player(authenticated_event, summon_db):
+    _, drawn, _ = open_portal(authenticated_event, user="friend")
+
+    status, _ = keep(authenticated_event, drawn["summonToken"])
+
+    assert status == 400
+    assert owned_cards(summon_db) == []
+    # O sorteio continua pendente para o dono.
+    assert keep(authenticated_event, drawn["summonToken"], user="friend")[0] == 201
+
+
+def test_save_user_card_rejects_signed_draw_that_is_not_pending(authenticated_event, summon_db):
+    """Um token válido que não é o sorteio pendente do jogador não vale."""
+    open_portal(authenticated_event)
+
+    status, data = keep(authenticated_event, json.loads(summon_body())["summonToken"])
+
+    assert status == 409
+    assert data["message"] == "This summon is no longer valid."
+    assert owned_cards(summon_db) == []
 
 
 @pytest.mark.parametrize(
@@ -236,11 +413,13 @@ def test_save_user_card_ignores_cards_sent_by_client(authenticated_event, save_c
         json.dumps({"summonToken": "forjado.assinatura"}),
     ],
 )
-def test_save_user_card_rejects_invalid_body(authenticated_event, save_client, body):
-    ret = save(authenticated_event, body)
+def test_save_user_card_rejects_invalid_body(authenticated_event, summon_db, body):
+    ret = save_user_card.lambda_handler(
+        authenticated_event(httpMethod="POST", body=body), ""
+    )
 
     assert ret["statusCode"] == 400
-    save_client.transact_write_items.assert_not_called()
+    assert owned_cards(summon_db) == []
 
 
 @pytest.mark.parametrize(
@@ -252,46 +431,47 @@ def test_save_user_card_rejects_invalid_body(authenticated_event, save_client, b
         (),
     ],
 )
-def test_save_user_card_rejects_invalid_draws(authenticated_event, save_client, file_names):
-    ret = save(authenticated_event, summon_body(file_names))
+def test_save_user_card_rejects_invalid_draws(authenticated_event, summon_db, file_names):
+    status, _ = keep(authenticated_event, json.loads(summon_body(file_names))["summonToken"])
 
-    assert ret["statusCode"] == 400
-    save_client.transact_write_items.assert_not_called()
-
-
-def test_save_user_card_rejects_expired_token(authenticated_event, save_client):
-    old = NOW - summon_token.TOKEN_TTL_SECONDS
-    ret = save(authenticated_event, summon_body(now=old))
-
-    assert ret["statusCode"] == 410
-    save_client.transact_write_items.assert_not_called()
+    assert status == 400
+    assert owned_cards(summon_db) == []
 
 
-def test_save_user_card_rejects_reused_token(authenticated_event, save_client):
-    save_client.transact_write_items.side_effect = transaction_conflict(1)
+def test_save_user_card_rejects_expired_token(authenticated_event, summon_db):
+    _, drawn, _ = open_portal(authenticated_event)
+    summon_db.clock.now += summon_token.TOKEN_TTL_SECONDS
 
-    ret = save(authenticated_event, summon_body())
+    status, _ = keep(authenticated_event, drawn["summonToken"])
 
-    assert ret["statusCode"] == 409
+    assert status == 410
+    assert owned_cards(summon_db) == []
 
 
-def test_save_user_card_rejects_during_cooldown(authenticated_event, save_client):
-    save_client.transact_write_items.side_effect = transaction_conflict(0)
-    save_client.get_item.return_value = {"Item": {"lastSummonAt": {"N": "9000"}}}
+def test_save_user_card_handles_dynamodb_error(authenticated_event, summon_db, monkeypatch):
+    _, drawn, _ = open_portal(authenticated_event)
 
-    ret = save(authenticated_event, summon_body())
+    def broken(**_):
+        raise ClientError({"Error": {"Code": "500"}}, "TransactWriteItems")
+
+    monkeypatch.setattr(summon_db, "transact_write_items", broken)
+
+    status, _ = keep(authenticated_event, drawn["summonToken"])
+
+    assert status == 500
+
+
+def test_summon_status_returns_pending_draw(authenticated_event, summon_db):
+    _, drawn, _ = open_portal(authenticated_event)
+    summon_db.clock.now += 100
+
+    ret = get_summon_status.lambda_handler(authenticated_event(), "")
     data = json.loads(ret["body"])
 
-    assert ret["statusCode"] == 429
-    assert ret["headers"]["Retry-After"] == "2600"
-    assert data["retryAfterSeconds"] == 2600
+    assert ret["statusCode"] == 200
+    assert data["retryAfterSeconds"] == COOLDOWN - 100
+    assert data["pendingSummon"] == drawn
 
-
-def test_save_user_card_handles_dynamodb_error(authenticated_event, save_client):
-    save_client.transact_write_items.side_effect = ClientError(
-        {"Error": {"Code": "500"}}, "TransactWriteItems"
-    )
-
-    ret = save(authenticated_event, summon_body())
-
-    assert ret["statusCode"] == 500
+    keep(authenticated_event, drawn["summonToken"])
+    ret = get_summon_status.lambda_handler(authenticated_event(), "")
+    assert json.loads(ret["body"])["pendingSummon"] is None

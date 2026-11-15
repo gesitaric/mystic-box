@@ -29,6 +29,12 @@ export const releases = [
         text: "Defeat a land's champion in the campaign to claim its relic, then equip it on a champion from your collection. The campaign shows which relic each champion guards. Each relic has its own illustration, shown in your collection, in battle and in the Grimoire. Every relic trades one strength for another, and in the hands of a champion from its own land it grows stronger and awakens at the start of battle. Forge more copies with Arcane Shards, and read all about them in the new Relics chapter of the Grimoire.",
         prs: [87],
       },
+      {
+        type: "fixed",
+        title: "One summon per portal",
+        text: "Opening the portal now starts its recovery right away, and opening it again before your cards are kept shows the same summon instead of a new one. A summon you opened on another device is kept when you come back.",
+        prs: [93],
+      },
     ],
   },
   {

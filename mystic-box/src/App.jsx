@@ -95,8 +95,11 @@ async function fetchSummon(activeSession) {
   });
 
   if (!response.ok) {
+    const data = await response.json().catch(() => ({}));
     const error = new Error(`Failed to open the box: ${response.status}`);
     error.status = response.status;
+    // 429 do servidor no tempo de espera; o 429 do limite de requisições não traz.
+    error.retryAfterSeconds = data.retryAfterSeconds;
     throw error;
   }
 
@@ -180,27 +183,6 @@ function App() {
 
     return () => clearInterval(timer);
   }, [cooldownUntil]);
-
-  const fetchSummonStatus = useCallback(
-    async (activeSession) => {
-      try {
-        const token = activeSession.session.getIdToken().getJwtToken();
-        const response = await fetch(`${API_URL}/users/me/summon-status`, {
-          headers: { Authorization: token },
-        });
-
-        if (!response.ok) {
-          throw new Error(`Failed to fetch the cooldown (${response.status}).`);
-        }
-
-        const data = await response.json();
-        startCooldown(data.retryAfterSeconds ?? 0);
-      } catch (statusError) {
-        console.error(statusError);
-      }
-    },
-    [startCooldown]
-  );
 
   const fetchWallet = useCallback(async (activeSession) => {
     try {
@@ -307,6 +289,45 @@ function App() {
       }
     },
     [startCooldown]
+  );
+
+  // Tempo de espera e sorteio aberto mas ainda não guardado (ex.: aberto em
+  // outro aparelho): o servidor devolve o sorteio pendente e ele é guardado.
+  const fetchSummonStatus = useCallback(
+    async (activeSession) => {
+      try {
+        const token = activeSession.session.getIdToken().getJwtToken();
+        const response = await fetch(`${API_URL}/users/me/summon-status`, {
+          headers: { Authorization: token },
+        });
+
+        if (!response.ok) {
+          throw new Error(`Failed to fetch the cooldown (${response.status}).`);
+        }
+
+        const data = await response.json();
+        startCooldown(data.retryAfterSeconds ?? 0);
+
+        if (isValidSummon(data.pendingSummon)) {
+          const summon = {
+            cards: data.pendingSummon.cards,
+            summonToken: data.pendingSummon.summonToken,
+          };
+          setCards(summon.cards);
+          setPendingSummon(summon);
+          storePendingSummon(summon);
+          setFlippedCount(summon.cards.length);
+          setRevealed(true);
+          if (currentRoute().screen === "home") {
+            navigate("/summon", { replace: true });
+          }
+          void saveCards(summon, activeSession);
+        }
+      } catch (statusError) {
+        console.error(statusError);
+      }
+    },
+    [startCooldown, saveCards]
   );
 
   useEffect(() => {
@@ -445,6 +466,10 @@ function App() {
         signOut();
         setSession(null);
         setError("Your session has expired. Sign in again to summon.");
+      } else if (err.status === 429 && err.retryAfterSeconds > 0) {
+        // Ainda no tempo de espera (ex.: invocou em outro aparelho).
+        startCooldown(err.retryAfterSeconds);
+        setError("The portal is still recovering. Wait for the countdown to summon again.");
       } else if (err.status === 429) {
         setError("The portal is crowded right now. Please try again in a moment.");
       } else {

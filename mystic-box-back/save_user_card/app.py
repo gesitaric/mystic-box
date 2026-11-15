@@ -51,11 +51,11 @@ def get_user_id(event):
     return claims.get("sub")
 
 
-def parse_summon(body):
+def parse_summon(body, user_id):
     """Lê o token do sorteio e devolve (conteúdo do token, cartas sorteadas).
 
     O corpo só traz `summonToken`. Nome, raridade e imagem das cartas vêm das
-    definições do servidor, nunca do cliente.
+    definições do servidor, nunca do cliente. O token precisa ser de `user_id`.
     """
     if isinstance(body, str):
         try:
@@ -67,6 +67,8 @@ def parse_summon(body):
         raise summon_token.InvalidSummonToken("Invalid request body.")
 
     payload = summon_token.verify(body.get("summonToken"))
+    if payload["uid"] != user_id:
+        raise summon_token.InvalidSummonToken("Invalid summon.")
     file_names = payload["cards"]
 
     if not 1 <= len(file_names) <= SUMMON_SIZE or len(set(file_names)) != len(file_names):
@@ -77,16 +79,6 @@ def parse_summon(body):
         raise summon_token.InvalidSummonToken("Invalid summon.")
 
     return payload, characters
-
-
-def get_retry_after_seconds(user_id, now):
-    result = get_client().get_item(
-        TableName=USER_SUMMON_STATE_TABLE,
-        Key={"userId": {"S": user_id}},
-        ConsistentRead=True,
-    )
-    last_summon_at = int(result.get("Item", {}).get("lastSummonAt", {}).get("N", "0"))
-    return max(0, last_summon_at + SUMMON_COOLDOWN_SECONDS - now)
 
 
 def get_failed_conditions(error):
@@ -103,7 +95,7 @@ def get_failed_conditions(error):
 
 
 # Posições na transação.
-COOLDOWN_ITEM = 0
+PENDING_ITEM = 0
 TOKEN_ITEM = 1
 
 
@@ -116,7 +108,7 @@ def lambda_handler(event, context):
         return response(401, {"message": "User is not authenticated."})
 
     try:
-        token, characters = parse_summon(event.get("body"))
+        token, characters = parse_summon(event.get("body"), user_id)
     except summon_token.ExpiredSummonToken as error:
         return response(410, {"message": str(error)})
     except summon_token.InvalidSummonToken as error:
@@ -139,23 +131,22 @@ def lambda_handler(event, context):
     ]
 
     try:
-        # Registrar a invocação, gastar o token e guardar as cartas é atômico:
-        # se o usuário estiver no tempo de espera ou o token já tiver sido
-        # usado, nenhuma escrita acontece.
+        # Tirar o sorteio pendente, gastar o token e guardar as cartas é
+        # atômico: se o token não for o sorteio pendente do jogador (já
+        # guardado ou substituído) ou já tiver sido usado, nada é gravado. O
+        # tempo de espera já foi consumido ao abrir o portal (open_box).
         get_client().transact_write_items(
             TransactItems=[
                 {
                     "Update": {
                         "TableName": USER_SUMMON_STATE_TABLE,
                         "Key": {"userId": {"S": user_id}},
-                        "UpdateExpression": "SET lastSummonAt = :now",
-                        "ConditionExpression": (
-                            "attribute_not_exists(lastSummonAt) "
-                            "OR lastSummonAt <= :threshold"
+                        "UpdateExpression": (
+                            "REMOVE pendingToken, pendingTokenId, pendingExpiresAt"
                         ),
+                        "ConditionExpression": "pendingTokenId = :tokenId",
                         "ExpressionAttributeValues": {
-                            ":now": {"N": str(now)},
-                            ":threshold": {"N": str(now - SUMMON_COOLDOWN_SECONDS)},
+                            ":tokenId": {"S": token["id"]},
                         },
                     }
                 },
@@ -192,24 +183,11 @@ def lambda_handler(event, context):
         if TOKEN_ITEM in failed:
             return response(409, {"message": "These cards have already been kept."})
 
-        if COOLDOWN_ITEM not in failed:
-            return response(500, {"message": "Could not keep the cards."})
+        if PENDING_ITEM in failed:
+            return response(409, {"message": "This summon is no longer valid."})
 
-        try:
-            retry_after = max(1, get_retry_after_seconds(user_id, now))
-        except ClientError:
-            retry_after = SUMMON_COOLDOWN_SECONDS
+        return response(500, {"message": "Could not keep the cards."})
 
-        return response(
-            429,
-            {
-                "message": "You are still on cooldown for summoning.",
-                "retryAfterSeconds": retry_after,
-            },
-            headers={"Retry-After": str(retry_after)},
-        )
-
-    return response(
-        201,
-        {"cards": items, "retryAfterSeconds": SUMMON_COOLDOWN_SECONDS},
-    )
+    # O tempo de espera começou quando o portal foi aberto (`iat` do token).
+    retry_after = max(0, token["iat"] + SUMMON_COOLDOWN_SECONDS - now)
+    return response(201, {"cards": items, "retryAfterSeconds": retry_after})
