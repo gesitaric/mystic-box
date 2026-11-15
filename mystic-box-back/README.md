@@ -4,18 +4,19 @@ This project contains source code and supporting files for a serverless applicat
 
 > **Todas as regras do jogo ficam no backend. O frontend não define NADA** (preços, raridades, sorteio, saldo, tempo de espera...). Nunca confie em dados de jogo enviados pelo cliente. Veja o `CLAUDE.md` na raiz do repositório.
 
-- shared - Lambda Layer (`SharedLayer`) with the `mystic_shared` package: card definitions, market rules (`LISTING_PRICE_LIMITS`, `MAX_LISTING_QUANTITY`, `MAX_ACTIVE_LISTINGS`, `listing_price_range`) and draw rules (`cards.py`, the single source of truth) and the signed summon token (`summon_token.py`).
-- open_box - Code for the Lambda function that draws the cards on the server and returns them with a signed `summonToken`. Requires a signed-in user (Cognito).
-- get_user_cards - Code for the Lambda function that returns the authenticated user's collection grouped by card (`file_name`): each entry has `quantity`, `firstObtainedAt`/`lastObtainedAt`, the accepted per-copy `listingPriceRange` and `maxListingQuantity` for putting it on sale. The response also carries `totalCards`. Supports `sort=obtainedAt|rarity|name|quantity` and `order=asc|desc`.
-- save_user_card - Code for the Lambda function that stores a drawn summon for the authenticated user. It only accepts the `summonToken` (single use, expires in 30 minutes) and reads the cards from the server-side definitions.
-- get_wallet - Code for the Lambda function that returns the authenticated user's balance of Fragmentos Arcanos (the game currency), stored in `UserWalletTable`. Users without a record start at 0.
-- shop_listings - Code for the Lambda function that returns the player market (`GET /shop/listings`): cards other players put on sale grouped by card (cheapest `listingId`, `price`, `available` copies and whether the user `canAfford` it), the user's own `myListings`, `maxActiveListings` and the current `balance`.
-- create_listing - Code for the Lambda function that puts copies of a card on sale (`POST /shop/listings` with `{"fileName", "quantity", "price"}`). The price must be inside the rarity range; the newest copies leave the collection and enter `ShopListingsTable` in a single transaction, which also enforces the active listing limit.
-- buy_listing - Code for the Lambda function that buys a listing (`POST /shop/listings/{listingId}/buy`): removes the listing, debits the buyer (only if the balance covers it), credits the seller and adds the card to the buyer's collection in a single transaction.
-- cancel_listing - Code for the Lambda function that cancels one of the user's listings (`POST /shop/listings/{listingId}/cancel`) and returns the card to the collection.
+- template.yaml - The whole backend stack: the REST API (API Gateway) and the CloudFront distribution in front of it (`ApiDistribution`, with its DNS records), Cognito, every Lambda, the shared layer, the DynamoDB tables and the log groups.
+- shared - Lambda Layer (`SharedLayer`) with the `mystic_shared` package: **every game rule** (cards and draw rules, market, battle, online duels, progression, ascension, relics, lore, campaign, omens, titles, usernames, the signed summon token and the public rules payload). The module list is in the root `README.md` and in `CLAUDE.md`.
+- One folder per Lambda, each with `app.py` (handler) and `requirements.txt`:
+  - Summon: `open_box` (`POST /box/open`: checks the cooldown, draws on the server, starts the cooldown and keeps the draw pending until it is kept; opening again returns the same draw), `save_user_card` (`POST /users/me/cards`: accepts only the `summonToken`, which must be the player's pending summon; single use, expires in 30 minutes) and `get_summon_status` (`GET /users/me/summon-status`: cooldown and the pending summon).
+  - Collection: `get_user_cards` (`GET /users/me/cards`, grouped by card with `quantity`, `listingPriceRange`, `maxListingQuantity`, battle profile, ascension, relic and lore; supports `sort=obtainedAt|rarity|name|quantity` and `order=asc|desc`), `ascend_card` (`POST /users/me/cards/ascend`) and `relics` (`GET /users/me/relics`, `POST /users/me/relics/forge`, `POST /users/me/relics/equip`).
+  - Economy and market: `get_wallet` (`GET /users/me/wallet`), `shop_listings` (`GET /shop/listings`), `create_listing` (`POST /shop/listings`), `buy_listing` (`POST /shop/listings/{listingId}/buy`) and `cancel_listing` (`POST /shop/listings/{listingId}/cancel`). The market only sells cards other players listed; listing, buying and cancelling are single transactions.
+  - Profile: `get_profile` (`GET /users/me/profile`), `set_username` (`POST /users/me/username`), `set_title` (`POST /users/me/title`) and `search_users` (`GET /users/search`).
+  - Battles against the computer and campaign: `get_battle` (`GET /battles/current`), `play_battle` (`POST /battles`, `POST /battles/current/actions`), `get_campaign` (`GET /users/me/campaign`) and `claim_region` (`POST /users/me/regions/claim`).
+  - Online duels: `pvp_challenges` (`GET /pvp`, challenges, presence) and `pvp_battle` (`GET /pvp/battle`, actions, `GET /pvp/watch`, reactions).
+  - Public (no login, cached by the API CloudFront): `get_rules` (`GET /rules`) and `get_world` (`GET /world`).
+- local - Local environment (`dev_server.py` + DynamoDB Local, see `local/README.md`) and the production monitoring (`local/monitoring/`).
 - events - Invocation events that you can use to invoke the function.
-- tests - Unit tests for the application code. 
-- template.yaml - A template that defines the application's AWS resources.
+- tests - Unit tests (`tests/unit`, in-memory fake DynamoDB, no AWS calls) and integration tests (`tests/integration`).
 
 ## Authentication
 
@@ -30,7 +31,7 @@ Deployment outputs used by the web client:
 
 The `get_user_cards` function queries the `UserCardsTable` (partition key `userId`, sort key `ownedCardId`), while `save_user_card` inserts one item per drawn card.
 
-The application uses several AWS resources, including Lambda functions and an API Gateway API. These resources are defined in the `template.yaml` file in this project. You can update the template to add AWS resources through the same deployment process that updates your application code.
+The application uses several AWS resources, including Lambda functions, an API Gateway API and a CloudFront distribution in front of it. These resources are defined in the `template.yaml` file in this project. You can update the template to add AWS resources through the same deployment process that updates your application code.
 
 If you prefer to use an integrated development environment (IDE) to build and test your application, you can use the AWS Toolkit.  
 The AWS Toolkit is an open source plug-in for popular IDEs that uses the SAM CLI to build and deploy serverless applications on AWS. The AWS Toolkit also adds a simplified step-through debugging experience for Lambda function code. See the following links to get started.
@@ -57,7 +58,7 @@ To use the SAM CLI, you need the following tools.
 * [Python 3 installed](https://www.python.org/downloads/)
 * Docker - [Install Docker community edition](https://hub.docker.com/search/?type=edition&offering=community)
 
-Before the first deploy, create the key that signs the `summonToken` (an SSM Parameter Store `SecureString`, free on the standard tier; CloudFormation cannot create `SecureString` parameters, so it lives outside the template). `open_box` and `save_user_card` read it:
+Before the first deploy, create the key that signs the `summonToken` (an SSM Parameter Store `SecureString`, free on the standard tier; CloudFormation cannot create `SecureString` parameters, so it lives outside the template). `open_box`, `save_user_card` and `get_summon_status` read it:
 
 ```bash
 aws ssm put-parameter --name /mystic-box/summon-token-key --type SecureString \
@@ -81,7 +82,7 @@ The first command will build the source of your application. The second command 
 * **Allow SAM CLI IAM role creation**: Many AWS SAM templates, including this example, create AWS IAM roles required for the AWS Lambda function(s) included to access AWS services. By default, these are scoped down to minimum required permissions. To deploy an AWS CloudFormation stack which creates or modifies IAM roles, the `CAPABILITY_IAM` value for `capabilities` must be provided. If permission isn't provided through this prompt, to deploy this example you must explicitly pass `--capabilities CAPABILITY_IAM` to the `sam deploy` command.
 * **Save arguments to samconfig.toml**: If set to yes, your choices will be saved to a configuration file inside the project, so that in the future you can just re-run `sam deploy` without parameters to deploy changes to your application.
 
-You can find your API Gateway Endpoint URL in the output values displayed after deployment.
+The public API address is the `ApiUrl` output displayed after deployment (`https://mystic-box-api.geskee.com.br`, the CloudFront distribution in front of API Gateway); use it as `VITE_API_URL` in the game and the landing page. The first deploy of the distribution takes a few minutes. The stack also needs the Route 53 hosted zone `geskee.com.br` and the ACM certificate `*.geskee.com.br` in `us-east-1` (parameters `HostedZoneId` and `CertificateArn`, with defaults in `template.yaml`).
 
 ## Rodar o jogo localmente (recomendado para testes)
 

@@ -1,9 +1,8 @@
 AWSTemplateFormatVersion: '2010-09-09'
 Transform: AWS::Serverless-2016-10-31
 Description: >
-  mystic-box-back
-
-  Sample SAM Template for mystic-box-back
+  mystic-box-back: backend do Mystic Box (CloudFront na frente do API Gateway,
+  Lambdas em Python com as regras do jogo na SharedLayer, DynamoDB e Cognito).
 
 Globals:
   Function:

@@ -34,7 +34,7 @@ algo que o jogador vê ganha uma nota lá**, em inglês e sem números de regra:
 ## Rodar localmente
 
 ```powershell
-cp .env.example .env     # preencha VITE_API_URL (a API de produção serve, as rotas são públicas)
+cp .env.example .env     # VITE_API_URL: https://mystic-box-api.geskee.com.br (a API de produção serve, as rotas são públicas)
 npm install
 npm run dev              # http://localhost:5174
 ```
