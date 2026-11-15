@@ -1,0 +1,12 @@
+# Carrega os painéis de local/monitoring/grafana/dashboards. Mudanças feitas na
+# tela não são salvas no arquivo: para manter, exporte o JSON e substitua o arquivo.
+apiVersion: 1
+
+providers:
+  - name: mystic-box
+    folder: ""
+    type: file
+    allowUiUpdates: true
+    updateIntervalSeconds: 30
+    options:
+      path: /etc/grafana/dashboards

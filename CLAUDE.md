@@ -37,7 +37,7 @@ Isso significa:
   - `usernames.py`: regras do nome de usuário (tamanho, caracteres, 30 dias de espera entre trocas) e da busca de jogadores.
   - `rules.py`: monta a explicação das regras para o jogador (`GET /rules`) a partir das constantes dos módulos acima. Não duplica valores: mudar uma regra lá muda o que a ajuda mostra.
 - Uma Lambda nova que precise dessas regras deve declarar `Layers: [!Ref SharedLayer]` no `template.yaml` e importar de `mystic_shared`. Não copie as definições para outra Lambda nem para o frontend.
-- Toda Lambda nova precisa do seu grupo de log: `LoggingConfig: LogGroup: !Ref <Nome>LogGroup` na função e o recurso `AWS::Logs::LogGroup` (com `RetentionInDays`) junto dos outros no fim dos `Resources`. Sem isso a Lambda cria um grupo que nunca expira. O nível de log é global (`SystemLogLevel: WARN` tira as linhas START/END/REPORT); X-Ray fica desligado.
+- Toda Lambda nova precisa do seu grupo de log: `LoggingConfig: LogGroup: !Ref <Nome>LogGroup` na função e o recurso `AWS::Logs::LogGroup` (com `RetentionInDays`) junto dos outros no fim dos `Resources`. Sem isso a Lambda cria um grupo que nunca expira. O grupo novo também entra na lista `logGroups` do painel de logs do Grafana (`mystic-box-back/local/monitoring/grafana/dashboards/mystic-box-producao.json`; o teste `test_monitoring_dashboard.py` confere). O nível de log é global (`SystemLogLevel: WARN` tira as linhas START/END/REPORT); X-Ray fica desligado.
 
 ## Fluxos atuais
 
@@ -90,6 +90,7 @@ Passo a passo em `mystic-box-back/local/README.md`. Resumo:
 1. Banco (Ubuntu/WSL, a partir de `mystic-box-back/`): `docker compose -f local/docker-compose.yml up -d` (DynamoDB Local em `localhost:8000`).
 2. API (PowerShell, em `mystic-box-back/`): `.\.venv\Scripts\python.exe local\dev_server.py` (porta 3000). Lê rotas, variáveis e tabelas do `template.yaml`; uma Lambda nova no template aparece sozinha, e tabelas ou índices novos são criados no banco local ao subir. `SUMMON_COOLDOWN_SECONDS` pode ser sobrescrito pelo ambiente.
 3. Frontend (em `mystic-box/`): `npm run dev:local` (usa `.env.localapi`, copiado de `.env.localapi.example`).
+4. Monitorar a **produção** (opcional): `docker compose -f local/docker-compose.yml --profile monitoring up -d grafana` sobe um Grafana em `http://localhost:3001` que lê o CloudWatch da conta (usuário IAM só de leitura `mystic-box-grafana`, chave em `local/monitoring/grafana.env`, fora do git). Lambdas e tabelas novas aparecem sozinhas (busca pelo nome do stack). Não ligue `MetricsEnabled` no `MethodSettings` da API: métricas por rota são cobradas. Detalhes e custo em `mystic-box-back/local/monitoring/README.md`.
 
 O disco C está sem espaço: Docker, WSL (`D:\WSL\Ubuntu`), `.venv` e dados ficam no D. Não instale nada que grave no C.
 

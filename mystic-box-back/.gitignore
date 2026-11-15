@@ -245,3 +245,6 @@ $RECYCLE.BIN/
 
 # Artefatos do SAM CLI (sam build / sam deploy)
 .aws-sam/
+
+# Chave do usuário IAM do Grafana local (local/monitoring/README)
+local/monitoring/grafana.env
