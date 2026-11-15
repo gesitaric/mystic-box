@@ -25,7 +25,15 @@
 export const ARENA_TABS = ["pve", "campaign", "pvp"];
 export const SHOP_TABS = ["buy", "sell", "mine"];
 export const PLAYERS_TABS = ["name", "titles", "search"];
-export const GRIMOIRE_CHAPTERS = ["start", "summon", "shop", "ascension", "battle", "progression"];
+export const GRIMOIRE_CHAPTERS = [
+  "start",
+  "summon",
+  "shop",
+  "ascension",
+  "relics",
+  "battle",
+  "progression",
+];
 
 const OVERLAYS = ["collection", "shop", "players", "world", "grimoire"];
 const ARENA_SEGMENTS = { campaign: "campaign", duel: "pvp", battle: "battle" };

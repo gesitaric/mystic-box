@@ -17,7 +17,8 @@ class FakeDynamo:
 
     def __init__(self):
         self.tables = {"battles": {}, "cards": [], "progress": {}, "wallet": {},
-                       "pvp_players": {}, "ascensions": [], "regions": {}}
+                       "pvp_players": {}, "ascensions": [], "regions": {},
+                       "card_relics": [], "user_relics": {}}
         self.fail_progress_condition = 0
 
     # --- leitura
@@ -31,6 +32,12 @@ class FakeDynamo:
             return {"Items": [
                 {"file_name": {"S": row["file_name"]}, "ascension": {"N": str(row["ascension"])}}
                 for row in self.tables["ascensions"]
+                if row["userId"] == user_id
+            ]}
+        if TableName == "card_relics":
+            return {"Items": [
+                {"file_name": {"S": row["file_name"]}, "relicId": {"S": row["relicId"]}}
+                for row in self.tables["card_relics"]
                 if row["userId"] == user_id
             ]}
         items = [
@@ -87,6 +94,10 @@ class FakeDynamo:
             update = item["Update"]
             values = update["ExpressionAttributeValues"]
             user_id = update["Key"]["userId"]["S"]
+            if update["TableName"] == "user_relics":
+                key = (user_id, update["Key"]["relicId"]["S"])
+                self.tables["user_relics"][key] = self.tables["user_relics"].get(key, 0) + 1
+                continue
             row = self.tables[update["TableName"]].setdefault(
                 user_id, {"userId": {"S": user_id}}
             )
@@ -115,6 +126,8 @@ def db(monkeypatch):
     monkeypatch.setattr(play_battle, "USER_WALLET_TABLE", "wallet")
     monkeypatch.setattr(play_battle, "CARD_ASCENSIONS_TABLE", "ascensions")
     monkeypatch.setattr(play_battle, "REGION_PROGRESS_TABLE", "regions")
+    monkeypatch.setattr(play_battle, "USER_RELICS_TABLE", "user_relics")
+    monkeypatch.setattr(play_battle, "CARD_RELICS_TABLE", "card_relics")
     # Boato da semana fixo numa região sem cartas no time (não depende da data).
     monkeypatch.setattr(play_battle, "public_omen",
                         lambda: {"region": "riftheart", "title": "Quiet week"})
@@ -544,7 +557,7 @@ def test_first_campaign_win_pays_and_unlocks_the_next_stage(authenticated_event,
     reward = campaign.first_clear_reward(1)
     assert data["result"]["campaign"] == {
         "region": "greenhollow", "stage": 1, "boss": False, "firstClear": True,
-        "reward": reward, "epilogue": None,
+        "reward": reward, "relic": None, "epilogue": None,
     }
     assert data["result"]["experienceGained"] == campaign.STAGE_RULES[0]["experience"]
     assert db.tables["regions"][USER]["stage_greenhollow"]["N"] == "1"
@@ -612,3 +625,36 @@ def test_omen_of_the_week_boosts_experience(authenticated_event, db, monkeypatch
     assert data["result"]["experienceGained"] == round(
         base * (1 + play_battle.OMEN_EXPERIENCE_BONUS)
     )
+
+
+def test_first_boss_win_grants_the_region_relic(authenticated_event, db, monkeypatch):
+    from mystic_shared import campaign, relics
+
+    db.tables["regions"][USER] = {
+        "userId": {"S": USER}, "stage_greenhollow": {"N": str(campaign.STAGES_PER_REGION - 1)},
+    }
+    _, data = start_campaign(authenticated_event, stage=campaign.STAGES_PER_REGION)
+    force_win(db, monkeypatch)
+    _, data = act_once(authenticated_event, data["battle"]["battleId"])
+
+    relic_id = relics.relic_for_region("greenhollow")
+    assert data["result"]["campaign"]["relic"] == relics.public_relic(relic_id)
+    assert db.tables["user_relics"][(USER, relic_id)] == 1
+
+    # Vencer o chefe de novo não dá outra.
+    _, data = start_campaign(authenticated_event, stage=campaign.STAGES_PER_REGION)
+    _, data = act_once(authenticated_event, data["battle"]["battleId"])
+    assert data["result"]["campaign"]["relic"] is None
+    assert db.tables["user_relics"][(USER, relic_id)] == 1
+
+
+def test_battle_uses_the_equipped_relics(authenticated_event, db):
+    db.tables["card_relics"].append(
+        {"userId": USER, "file_name": "maelis.jfif", "relicId": "hearthstone-charm"}
+    )
+    _, data = call(play_battle, start_event(authenticated_event,
+                                            {"team": TEAM, "difficulty": "novice"}))
+    maelis = next(u for u in data["battle"]["units"] if u["fileName"] == "maelis.jfif")
+    assert maelis["relic"] == {"id": "hearthstone-charm", "name": "Hearthstone Charm",
+                               "attuned": True}
+    assert any(e["type"] == "relic" for e in data["events"])

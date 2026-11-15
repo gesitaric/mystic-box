@@ -16,6 +16,7 @@ atributo `stage_<região>` (fases vencidas). Nada disso vem do cliente.
 from .cards import get_character
 from .lore import REGIONS
 from .progression import MAX_LEVEL
+from .relics import public_relic, relic_for_region
 
 STAGES_PER_REGION = 3
 
@@ -334,6 +335,7 @@ def public_campaign(progress, player_level):
     for region_id, region in CAMPAIGN.items():
         cleared = progress.get(region_id, 0)
         complete = cleared >= len(region["stages"])
+        relic_id = relic_for_region(region_id)
         stages = []
         for index, spec in enumerate(region["stages"], start=1):
             rules = STAGE_RULES[index - 1]
@@ -343,6 +345,8 @@ def public_campaign(progress, player_level):
                     "name": spec["name"],
                     "intro": spec["intro"],
                     "boss": index == STAGES_PER_REGION,
+                    # A primeira vitória sobre o chefe dá a relíquia da região.
+                    "relicReward": index == STAGES_PER_REGION and relic_id is not None,
                     "enemies": [
                         {
                             "file_name": name,
@@ -367,6 +371,9 @@ def public_campaign(progress, player_level):
                 "complete": complete,
                 # O epílogo só sai do servidor depois de vencer o chefe.
                 "epilogue": region["epilogue"] if complete else None,
+                # Relíquia que o chefe dá; `relicClaimed` = chefe já vencido.
+                "relic": public_relic(relic_id) if relic_id else None,
+                "relicClaimed": complete and relic_id is not None,
                 "stages": stages,
             }
         )

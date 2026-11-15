@@ -1,5 +1,6 @@
 // Telas conferidas em cada tamanho. `ready` é algo que só aparece quando a
-// tela terminou de carregar os dados da API; `setup` troca respostas da API.
+// tela terminou de carregar os dados da API; `setup` troca respostas da API;
+// `act` faz cliques depois de abrir o endereço (painéis sem endereço próprio).
 
 import { fixture } from "./support.js";
 
@@ -39,6 +40,15 @@ export const SCREENS = [
     name: "collection",
     path: "/collection",
     ready: (page) => page.locator(".auth-modal").getByRole("img", { name: FIRST_CARD }).first(),
+  },
+  {
+    name: "collection-relic",
+    path: "/collection",
+    act: async (page) => {
+      await page.getByRole("button", { name: `Open the story and battle details of ${FIRST_CARD}` }).click();
+      await page.getByRole("tab", { name: "Relic" }).click();
+    },
+    ready: (page) => page.locator(".relic-list"),
   },
   {
     name: "shop-buy",
@@ -86,6 +96,11 @@ export const SCREENS = [
     ready: (page) => page.locator(".auth-modal"),
   },
   {
+    name: "grimoire-relics",
+    path: "/grimoire/relics",
+    ready: (page) => page.getByRole("heading", { name: "Attunement" }),
+  },
+  {
     name: "grimoire-battle",
     path: "/grimoire/battle",
     ready: (page) => page.locator(".auth-modal"),
@@ -99,6 +114,11 @@ export const SCREENS = [
     name: "arena-campaign",
     path: "/arena/campaign",
     ready: (page) => page.locator("[aria-label='Battle setup']"),
+  },
+  {
+    name: "arena-campaign-region",
+    path: "/arena/campaign/hrimvald",
+    ready: (page) => page.locator(".campaign-relic"),
   },
   {
     name: "arena-duel",

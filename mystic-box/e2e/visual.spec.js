@@ -11,6 +11,7 @@ for (const screen of SCREENS) {
     if (screen.signedIn !== false) await signIn(page);
     await screen.setup?.(api, page);
     await open(page, screen.path);
+    await screen.act?.(page);
     await expect(screen.ready(page)).toBeVisible();
     await imagesSettled(page);
     await expect(page).toHaveScreenshot(`${screen.name}.png`, {

@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from "react";
 import CampaignPanel from "./CampaignPanel";
 import { getCharacterImage } from "../../characterImages";
+import { RelicIcon } from "../../relicImages";
+import CampaignRelic from "../CampaignRelic";
 import { LevelBadge } from "../HomeScreen";
 import Grimoire from "../Grimoire";
 import Modal from "../Modal";
@@ -280,6 +282,12 @@ function UnitDetails({ unit, elementRider, onClose }) {
             {unit.ascension > 0 && ` · Ascension ${unit.ascension}`}
           </span>
         </h2>
+        {unit.relic && (
+          <p className="battle-inspect-desc">
+            <RelicIcon relicId={unit.relic.id} size={24} /> Relic: <strong>{unit.relic.name}</strong>
+            {unit.relic.attuned && " (attuned)"}
+          </p>
+        )}
         {unit.statuses.length > 0 && (
           <ul className="battle-inspect-statuses">
             {unit.statuses.map((status) => (
@@ -379,6 +387,14 @@ function BattleUnit({
         {rivalNames.length > 0 && (
           <span className="battle-unit-rival" title={`Rival of ${rivalNames.join(" and ")}`}>
             ⚔
+          </span>
+        )}
+        {unit.relic && (
+          <span
+            className={`battle-unit-relic${unit.relic.attuned ? " is-attuned" : ""}`}
+            title={`${unit.relic.name}${unit.relic.attuned ? " (attuned)" : ""}`}
+          >
+            <RelicIcon relicId={unit.relic.id} size={16} />
           </span>
         )}
         <span className="battle-unit-level">Lv {unit.level}</span>
@@ -537,6 +553,14 @@ function CampaignResult({ campaign }) {
         <p className="battle-result-levelup">
           {campaign.boss ? "Champion defeated!" : "Stage cleared!"}
           {campaign.reward > 0 && <> You earned ✧ {campaign.reward}.</>}
+        </p>
+      )}
+      {campaign.relic && (
+        <p className="battle-result-relic">
+          <RelicIcon relicId={campaign.relic.id} size={64} className="is-large" />
+          <span>
+            Relic found: <strong>{campaign.relic.name}</strong>. Equip it from your collection.
+          </span>
         </p>
       )}
       {campaign.epilogue && (
@@ -835,6 +859,7 @@ function BattleScreen({
           sfx.status(false);
           break;
         case "resonance":
+        case "relic":
           sfx.status(true);
           break;
         case "surge":
@@ -938,6 +963,9 @@ function BattleScreen({
           break;
         case "resonance":
           for (const id of event.targets ?? []) addFloat(id, "✦", "resonance");
+          break;
+        case "relic":
+          addFloat(event.target, "◈", "resonance");
           break;
         case "bondTorn":
           addFloat(event.actor, "💔", "bond");
@@ -1569,8 +1597,16 @@ function BattleScreen({
                     ))}
                     <span className="campaign-stage-meta">
                       Foes Lv {stage.enemyLevel} · +{stage.experience} XP
+                      {!stage.cleared && <> · first win ✧ {stage.reward}</>}
                     </span>
                   </div>
+                  {stage.relicReward && !stage.cleared && (
+                    <CampaignRelic
+                      relic={region.relic}
+                      claimed={region.relicClaimed}
+                      regionName={region.regionName}
+                    />
+                  )}
                 </section>
               </TeamSetup>
             )}

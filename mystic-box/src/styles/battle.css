@@ -1675,6 +1675,36 @@
   box-shadow: 0 0 6px rgba(255, 110, 60, 0.7);
 }
 
+/* Relíquia equipada (◈); com sintonia, brilha mais. */
+.battle-unit-relic {
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  display: grid;
+  place-items: center;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: rgba(10, 30, 50, 0.85);
+  color: #9fdcff;
+  font-size: 10px;
+  box-shadow: 0 0 4px rgba(120, 200, 255, 0.5);
+}
+
+.battle-unit-relic.is-attuned {
+  color: #d8f3ff;
+  box-shadow: 0 0 8px rgba(140, 220, 255, 0.95);
+}
+
+.battle-result-relic {
+  margin: 0;
+  color: #bfe8ff;
+}
+
+.battle-result-relic strong {
+  color: #e6f7ff;
+}
+
 /* Ressonância de região */
 
 .battle-resonance {

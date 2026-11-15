@@ -25,6 +25,7 @@ TABLES = {
     "progress": ("userId", None),
     "wallet": ("userId", None),
     "ascensions": ("userId", "file_name"),
+    "card_relics": ("userId", "file_name"),
     "presence": ("lobbyId", "userId"),
     "reactions": ("battleId", "reactionKey"),
 }
@@ -70,6 +71,7 @@ def db(monkeypatch, clock):
         "USER_PROGRESS_TABLE": "progress",
         "USER_WALLET_TABLE": "wallet",
         "CARD_ASCENSIONS_TABLE": "ascensions",
+        "CARD_RELICS_TABLE": "card_relics",
         "PVP_PRESENCE_TABLE": "presence",
         "PVP_REACTIONS_TABLE": "reactions",
     }

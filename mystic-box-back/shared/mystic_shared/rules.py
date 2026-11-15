@@ -1,12 +1,12 @@
 """Regras do jogo explicadas ao jogador (tela de ajuda / Grimório).
 
 Monta, a partir das constantes de `cards.py`, `stats.py`, `battle.py`,
-`pvp.py`, `progression.py` e `ascension.py`, tudo que a tela de regras mostra: chances do sorteio,
+`pvp.py`, `progression.py`, `ascension.py` e `relics.py`, tudo que a tela de regras mostra: chances do sorteio,
 limites do mercado, curva de nível e as regras da batalha. Nada aqui é copiado: mudar uma
 regra nesses módulos muda o que o jogador lê.
 """
 
-from . import ascension, battle, cards, lore, omens, progression, pvp, stats
+from . import ascension, battle, cards, lore, omens, progression, pvp, relics, stats
 
 RARITIES = (5, 4, 3)
 
@@ -241,5 +241,6 @@ def public_rules(cooldown_seconds, token_ttl_seconds):
         "progression": _progression_rules(),
         "battle": _battle_rules(),
         "ascension": _ascension_rules(),
+        "relics": relics.public_rules(),
         "pvp": pvp.public_rules(),
     }

@@ -1,6 +1,6 @@
 """DynamoDB em memória para testes, com as expressões que as Lambdas usam.
 
-Entende condições simples (`a = :v`, `<>`, `<=`, `<`, `>=`, `>`,
+Entende condições simples (`a = :v` ou `a < b` entre dois atributos, `<>`, `<=`, `<`, `>=`, `>`,
 `attribute_exists`, `attribute_not_exists`, ligadas por AND/OR sem
 parênteses), atualizações `SET a = :v, ...`, `ADD a :v, ...` e `REMOVE a`, consultas por
 igualdade da chave (tabela ou índice) com FilterExpression e transações
@@ -12,7 +12,7 @@ import re
 
 from botocore.exceptions import ClientError
 
-COMPARISON = re.compile(r"^(#?\w+)\s*(=|<>|<=|>=|<|>)\s*(:\w+)$")
+COMPARISON = re.compile(r"^(#?\w+)\s*(=|<>|<=|>=|<|>)\s*(:\w+|#?\w+)$")
 FUNCTION = re.compile(r"^(attribute_exists|attribute_not_exists)\((#?\w+)\)$")
 
 
@@ -56,7 +56,13 @@ class FakeDynamo:
             if item is None or resolve(match.group(1)) not in item:
                 return False
             left = _value(item[resolve(match.group(1))])
-            right = _value(values[match.group(3)])
+            operand = match.group(3)
+            if operand.startswith(":"):
+                right = _value(values[operand])
+            elif resolve(operand) in item:
+                right = _value(item[resolve(operand)])
+            else:
+                return False
             op = match.group(2)
             return {
                 "=": left == right,

@@ -1,0 +1,815 @@
+{
+  "relics": [
+    {
+      "id": "frostgate-pennant",
+      "name": "Frostgate Pennant",
+      "lore": "The banner the knights of the pass raise when the wind-wolves howl. It has never been lowered, only frozen in place.",
+      "region": "hrimvald",
+      "regionName": "Hrimvald",
+      "bonuses": [
+        {
+          "stat": "bulwark",
+          "label": "Bulwark",
+          "percent": 12
+        },
+        {
+          "stat": "resolve",
+          "label": "Resolve",
+          "percent": 10
+        }
+      ],
+      "penalties": [
+        {
+          "stat": "celerity",
+          "label": "Celerity",
+          "percent": 10
+        }
+      ],
+      "attunedBonuses": [
+        {
+          "stat": "bulwark",
+          "label": "Bulwark",
+          "percent": 18
+        },
+        {
+          "stat": "resolve",
+          "label": "Resolve",
+          "percent": 15
+        }
+      ],
+      "awakening": "Starts with a shield worth 15% of max vitality.",
+      "owned": 0,
+      "equipped": 0,
+      "free": 0,
+      "equippedOn": [],
+      "unlocked": false,
+      "canForge": false,
+      "forCard": {
+        "id": "frostgate-pennant",
+        "name": "Frostgate Pennant",
+        "region": "hrimvald",
+        "attuned": false,
+        "changes": [
+          {
+            "stat": "bulwark",
+            "label": "Bulwark",
+            "percent": 12
+          },
+          {
+            "stat": "resolve",
+            "label": "Resolve",
+            "percent": 10
+          },
+          {
+            "stat": "celerity",
+            "label": "Celerity",
+            "percent": -10
+          }
+        ],
+        "awakening": null
+      }
+    },
+    {
+      "id": "windcaller-compass",
+      "name": "Windcaller's Compass",
+      "lore": "Its needle points wherever the empress wants the isles to go. Nobody else has ever made it move.",
+      "region": "zephyrine",
+      "regionName": "The Zephyrine Isles",
+      "bonuses": [
+        {
+          "stat": "celerity",
+          "label": "Celerity",
+          "percent": 15
+        }
+      ],
+      "penalties": [
+        {
+          "stat": "vitality",
+          "label": "Vitality",
+          "percent": 8
+        }
+      ],
+      "attunedBonuses": [
+        {
+          "stat": "celerity",
+          "label": "Celerity",
+          "percent": 22
+        }
+      ],
+      "awakening": "The team starts with +1 Aether.",
+      "owned": 0,
+      "equipped": 0,
+      "free": 0,
+      "equippedOn": [],
+      "unlocked": false,
+      "canForge": false,
+      "forCard": {
+        "id": "windcaller-compass",
+        "name": "Windcaller's Compass",
+        "region": "zephyrine",
+        "attuned": true,
+        "changes": [
+          {
+            "stat": "celerity",
+            "label": "Celerity",
+            "percent": 22
+          },
+          {
+            "stat": "vitality",
+            "label": "Vitality",
+            "percent": -8
+          }
+        ],
+        "awakening": "The team starts with +1 Aether."
+      }
+    },
+    {
+      "id": "gravebloom-lantern",
+      "name": "Gravebloom Lantern",
+      "lore": "A lantern lit with the flowers that grow on Nocthaven's graves. Its light makes shadows step back, and sometimes bow.",
+      "region": "nocthaven",
+      "regionName": "Nocthaven",
+      "bonuses": [
+        {
+          "stat": "arcana",
+          "label": "Arcana",
+          "percent": 14
+        }
+      ],
+      "penalties": [
+        {
+          "stat": "vitality",
+          "label": "Vitality",
+          "percent": 8
+        }
+      ],
+      "attunedBonuses": [
+        {
+          "stat": "arcana",
+          "label": "Arcana",
+          "percent": 21
+        }
+      ],
+      "awakening": "Starts Guarded until its first turn.",
+      "owned": 0,
+      "equipped": 0,
+      "free": 0,
+      "equippedOn": [],
+      "unlocked": false,
+      "canForge": false,
+      "forCard": {
+        "id": "gravebloom-lantern",
+        "name": "Gravebloom Lantern",
+        "region": "nocthaven",
+        "attuned": false,
+        "changes": [
+          {
+            "stat": "arcana",
+            "label": "Arcana",
+            "percent": 14
+          },
+          {
+            "stat": "vitality",
+            "label": "Vitality",
+            "percent": -8
+          }
+        ],
+        "awakening": null
+      }
+    },
+    {
+      "id": "fallen-star-shard",
+      "name": "Fallen Star Shard",
+      "lore": "A splinter of a star that fell through the cracked sky. The astrologers swear it still remembers where it came from.",
+      "region": "skyspire",
+      "regionName": "The Skyspire",
+      "bonuses": [
+        {
+          "stat": "fate",
+          "label": "Fate",
+          "percent": 40
+        },
+        {
+          "stat": "arcana",
+          "label": "Arcana",
+          "percent": 6
+        }
+      ],
+      "penalties": [
+        {
+          "stat": "bulwark",
+          "label": "Bulwark",
+          "percent": 8
+        }
+      ],
+      "attunedBonuses": [
+        {
+          "stat": "fate",
+          "label": "Fate",
+          "percent": 60
+        },
+        {
+          "stat": "arcana",
+          "label": "Arcana",
+          "percent": 9
+        }
+      ],
+      "awakening": "Starts Empowered for 2 turns.",
+      "owned": 0,
+      "equipped": 0,
+      "free": 0,
+      "equippedOn": [],
+      "unlocked": false,
+      "canForge": false,
+      "forCard": {
+        "id": "fallen-star-shard",
+        "name": "Fallen Star Shard",
+        "region": "skyspire",
+        "attuned": false,
+        "changes": [
+          {
+            "stat": "fate",
+            "label": "Fate",
+            "percent": 40
+          },
+          {
+            "stat": "arcana",
+            "label": "Arcana",
+            "percent": 6
+          },
+          {
+            "stat": "bulwark",
+            "label": "Bulwark",
+            "percent": -8
+          }
+        ],
+        "awakening": null
+      }
+    },
+    {
+      "id": "hearthstone-charm",
+      "name": "Hearthstone Charm",
+      "lore": "A smooth stone from a farmhouse hearth, still warm years later. Every child of the vale carries one when they leave home.",
+      "region": "greenhollow",
+      "regionName": "Greenhollow Vale",
+      "bonuses": [
+        {
+          "stat": "vitality",
+          "label": "Vitality",
+          "percent": 14
+        }
+      ],
+      "penalties": [
+        {
+          "stat": "might",
+          "label": "Might",
+          "percent": 8
+        }
+      ],
+      "attunedBonuses": [
+        {
+          "stat": "vitality",
+          "label": "Vitality",
+          "percent": 21
+        }
+      ],
+      "awakening": "Starts with Regen for 3 turns.",
+      "owned": 0,
+      "equipped": 0,
+      "free": 0,
+      "equippedOn": [],
+      "unlocked": false,
+      "canForge": false,
+      "forCard": {
+        "id": "hearthstone-charm",
+        "name": "Hearthstone Charm",
+        "region": "greenhollow",
+        "attuned": false,
+        "changes": [
+          {
+            "stat": "vitality",
+            "label": "Vitality",
+            "percent": 14
+          },
+          {
+            "stat": "might",
+            "label": "Might",
+            "percent": -8
+          }
+        ],
+        "awakening": null
+      }
+    },
+    {
+      "id": "moonbloom-circlet",
+      "name": "Moonbloom Circlet",
+      "lore": "Woven from moon flowers that only open for those the forest trusts. It wilts on anyone who lies.",
+      "region": "sylvaran",
+      "regionName": "The Sylvaran Wilds",
+      "bonuses": [
+        {
+          "stat": "resolve",
+          "label": "Resolve",
+          "percent": 12
+        },
+        {
+          "stat": "arcana",
+          "label": "Arcana",
+          "percent": 6
+        }
+      ],
+      "penalties": [
+        {
+          "stat": "might",
+          "label": "Might",
+          "percent": 8
+        }
+      ],
+      "attunedBonuses": [
+        {
+          "stat": "resolve",
+          "label": "Resolve",
+          "percent": 18
+        },
+        {
+          "stat": "arcana",
+          "label": "Arcana",
+          "percent": 9
+        }
+      ],
+      "awakening": "Starts with Regen for 2 turns.",
+      "owned": 0,
+      "equipped": 0,
+      "free": 0,
+      "equippedOn": [],
+      "unlocked": false,
+      "canForge": false,
+      "forCard": {
+        "id": "moonbloom-circlet",
+        "name": "Moonbloom Circlet",
+        "region": "sylvaran",
+        "attuned": false,
+        "changes": [
+          {
+            "stat": "resolve",
+            "label": "Resolve",
+            "percent": 12
+          },
+          {
+            "stat": "arcana",
+            "label": "Arcana",
+            "percent": 6
+          },
+          {
+            "stat": "might",
+            "label": "Might",
+            "percent": -8
+          }
+        ],
+        "awakening": null
+      }
+    },
+    {
+      "id": "sunsworn-aegis",
+      "name": "Sunsworn Aegis",
+      "lore": "The shield of the knight who held the Dominion's gates shut. It is heavy with everything that knight could not save.",
+      "region": "aurelian",
+      "regionName": "The Aurelian Dominion",
+      "bonuses": [
+        {
+          "stat": "bulwark",
+          "label": "Bulwark",
+          "percent": 15
+        }
+      ],
+      "penalties": [
+        {
+          "stat": "celerity",
+          "label": "Celerity",
+          "percent": 8
+        }
+      ],
+      "attunedBonuses": [
+        {
+          "stat": "bulwark",
+          "label": "Bulwark",
+          "percent": 22
+        }
+      ],
+      "awakening": "Starts with Taunt for 2 turns.",
+      "owned": 0,
+      "equipped": 0,
+      "free": 0,
+      "equippedOn": [],
+      "unlocked": false,
+      "canForge": false,
+      "forCard": {
+        "id": "sunsworn-aegis",
+        "name": "Sunsworn Aegis",
+        "region": "aurelian",
+        "attuned": false,
+        "changes": [
+          {
+            "stat": "bulwark",
+            "label": "Bulwark",
+            "percent": 15
+          },
+          {
+            "stat": "celerity",
+            "label": "Celerity",
+            "percent": -8
+          }
+        ],
+        "awakening": null
+      }
+    },
+    {
+      "id": "petalfall-tsuba",
+      "name": "Petalfall Tsuba",
+      "lore": "A sword guard carved with falling petals. Its clan says a blade that wears it never strikes twice, because it never needs to.",
+      "region": "hoshigane",
+      "regionName": "The Hoshigane Isles",
+      "bonuses": [
+        {
+          "stat": "might",
+          "label": "Might",
+          "percent": 12
+        },
+        {
+          "stat": "fate",
+          "label": "Fate",
+          "percent": 25
+        }
+      ],
+      "penalties": [
+        {
+          "stat": "vitality",
+          "label": "Vitality",
+          "percent": 10
+        }
+      ],
+      "attunedBonuses": [
+        {
+          "stat": "might",
+          "label": "Might",
+          "percent": 18
+        },
+        {
+          "stat": "fate",
+          "label": "Fate",
+          "percent": 38
+        }
+      ],
+      "awakening": "Starts Empowered for 2 turns.",
+      "owned": 0,
+      "equipped": 0,
+      "free": 0,
+      "equippedOn": [],
+      "unlocked": false,
+      "canForge": false,
+      "forCard": {
+        "id": "petalfall-tsuba",
+        "name": "Petalfall Tsuba",
+        "region": "hoshigane",
+        "attuned": false,
+        "changes": [
+          {
+            "stat": "might",
+            "label": "Might",
+            "percent": 12
+          },
+          {
+            "stat": "fate",
+            "label": "Fate",
+            "percent": 25
+          },
+          {
+            "stat": "vitality",
+            "label": "Vitality",
+            "percent": -10
+          }
+        ],
+        "awakening": null
+      }
+    },
+    {
+      "id": "smugglers-signet",
+      "name": "Smuggler's Signet",
+      "lore": "A ring that opens every back door in Spirehollow. Its last three owners all left town in a hurry.",
+      "region": "spirehollow",
+      "regionName": "Spirehollow",
+      "bonuses": [
+        {
+          "stat": "celerity",
+          "label": "Celerity",
+          "percent": 12
+        },
+        {
+          "stat": "fate",
+          "label": "Fate",
+          "percent": 25
+        }
+      ],
+      "penalties": [
+        {
+          "stat": "bulwark",
+          "label": "Bulwark",
+          "percent": 10
+        }
+      ],
+      "attunedBonuses": [
+        {
+          "stat": "celerity",
+          "label": "Celerity",
+          "percent": 18
+        },
+        {
+          "stat": "fate",
+          "label": "Fate",
+          "percent": 38
+        }
+      ],
+      "awakening": "Starts Guarded until its first turn.",
+      "owned": 0,
+      "equipped": 0,
+      "free": 0,
+      "equippedOn": [],
+      "unlocked": false,
+      "canForge": false,
+      "forCard": {
+        "id": "smugglers-signet",
+        "name": "Smuggler's Signet",
+        "region": "spirehollow",
+        "attuned": false,
+        "changes": [
+          {
+            "stat": "celerity",
+            "label": "Celerity",
+            "percent": 12
+          },
+          {
+            "stat": "fate",
+            "label": "Fate",
+            "percent": 25
+          },
+          {
+            "stat": "bulwark",
+            "label": "Bulwark",
+            "percent": -10
+          }
+        ],
+        "awakening": null
+      }
+    },
+    {
+      "id": "clanbreaker-torc",
+      "name": "Clanbreaker Torc",
+      "lore": "An iron collar taken from the chief of a rival clan. Wearing it is an insult to half the highlands.",
+      "region": "ironfang",
+      "regionName": "The Ironfang Highlands",
+      "bonuses": [
+        {
+          "stat": "might",
+          "label": "Might",
+          "percent": 15
+        }
+      ],
+      "penalties": [
+        {
+          "stat": "resolve",
+          "label": "Resolve",
+          "percent": 10
+        }
+      ],
+      "attunedBonuses": [
+        {
+          "stat": "might",
+          "label": "Might",
+          "percent": 22
+        }
+      ],
+      "awakening": "Starts Empowered for 1 turn.",
+      "owned": 0,
+      "equipped": 0,
+      "free": 0,
+      "equippedOn": [],
+      "unlocked": false,
+      "canForge": false,
+      "forCard": {
+        "id": "clanbreaker-torc",
+        "name": "Clanbreaker Torc",
+        "region": "ironfang",
+        "attuned": false,
+        "changes": [
+          {
+            "stat": "might",
+            "label": "Might",
+            "percent": 15
+          },
+          {
+            "stat": "resolve",
+            "label": "Resolve",
+            "percent": -10
+          }
+        ],
+        "awakening": null
+      }
+    },
+    {
+      "id": "drowned-bell",
+      "name": "Drowned Bell",
+      "lore": "A small bell from a sunken temple. Underwater it rings on its own; on land it only rings for those about to fall.",
+      "region": "thalassar",
+      "regionName": "The Thalassar Coast",
+      "bonuses": [
+        {
+          "stat": "resolve",
+          "label": "Resolve",
+          "percent": 14
+        }
+      ],
+      "penalties": [
+        {
+          "stat": "celerity",
+          "label": "Celerity",
+          "percent": 8
+        }
+      ],
+      "attunedBonuses": [
+        {
+          "stat": "resolve",
+          "label": "Resolve",
+          "percent": 21
+        }
+      ],
+      "awakening": "Starts with a shield worth 12% of max vitality.",
+      "owned": 0,
+      "equipped": 0,
+      "free": 0,
+      "equippedOn": [],
+      "unlocked": false,
+      "canForge": false,
+      "forCard": {
+        "id": "drowned-bell",
+        "name": "Drowned Bell",
+        "region": "thalassar",
+        "attuned": false,
+        "changes": [
+          {
+            "stat": "resolve",
+            "label": "Resolve",
+            "percent": 14
+          },
+          {
+            "stat": "celerity",
+            "label": "Celerity",
+            "percent": -8
+          }
+        ],
+        "awakening": null
+      }
+    },
+    {
+      "id": "everfire-ember",
+      "name": "Everfire Ember",
+      "lore": "A spark of the Everfire kept in black glass. The dragons of Cinderpeak can smell it from a mountain away.",
+      "region": "cinderpeak",
+      "regionName": "Cinderpeak",
+      "bonuses": [
+        {
+          "stat": "might",
+          "label": "Might",
+          "percent": 8
+        },
+        {
+          "stat": "arcana",
+          "label": "Arcana",
+          "percent": 8
+        }
+      ],
+      "penalties": [
+        {
+          "stat": "resolve",
+          "label": "Resolve",
+          "percent": 10
+        }
+      ],
+      "attunedBonuses": [
+        {
+          "stat": "might",
+          "label": "Might",
+          "percent": 12
+        },
+        {
+          "stat": "arcana",
+          "label": "Arcana",
+          "percent": 12
+        }
+      ],
+      "awakening": "The team starts with +1 Aether.",
+      "owned": 0,
+      "equipped": 0,
+      "free": 0,
+      "equippedOn": [],
+      "unlocked": false,
+      "canForge": false,
+      "forCard": {
+        "id": "everfire-ember",
+        "name": "Everfire Ember",
+        "region": "cinderpeak",
+        "attuned": false,
+        "changes": [
+          {
+            "stat": "might",
+            "label": "Might",
+            "percent": 8
+          },
+          {
+            "stat": "arcana",
+            "label": "Arcana",
+            "percent": 8
+          },
+          {
+            "stat": "resolve",
+            "label": "Resolve",
+            "percent": -10
+          }
+        ],
+        "awakening": null
+      }
+    },
+    {
+      "id": "overclocked-coil",
+      "name": "Overclocked Coil",
+      "lore": "A coil of captured lightning that a baron swore could not be built. It hums a little too fast, and a little too hot.",
+      "region": "cogsreach",
+      "regionName": "Cogsreach",
+      "bonuses": [
+        {
+          "stat": "celerity",
+          "label": "Celerity",
+          "percent": 10
+        },
+        {
+          "stat": "arcana",
+          "label": "Arcana",
+          "percent": 8
+        }
+      ],
+      "penalties": [
+        {
+          "stat": "vitality",
+          "label": "Vitality",
+          "percent": 10
+        }
+      ],
+      "attunedBonuses": [
+        {
+          "stat": "celerity",
+          "label": "Celerity",
+          "percent": 15
+        },
+        {
+          "stat": "arcana",
+          "label": "Arcana",
+          "percent": 12
+        }
+      ],
+      "awakening": "The team starts with +1 Aether.",
+      "owned": 0,
+      "equipped": 0,
+      "free": 0,
+      "equippedOn": [],
+      "unlocked": false,
+      "canForge": false,
+      "forCard": {
+        "id": "overclocked-coil",
+        "name": "Overclocked Coil",
+        "region": "cogsreach",
+        "attuned": false,
+        "changes": [
+          {
+            "stat": "celerity",
+            "label": "Celerity",
+            "percent": 10
+          },
+          {
+            "stat": "arcana",
+            "label": "Arcana",
+            "percent": 8
+          },
+          {
+            "stat": "vitality",
+            "label": "Vitality",
+            "percent": -10
+          }
+        ],
+        "awakening": null
+      }
+    }
+  ],
+  "balance": 0,
+  "forgeCost": 250,
+  "maxCopies": 5,
+  "equipped": null
+}
