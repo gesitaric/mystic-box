@@ -621,7 +621,9 @@ function App() {
         .join(" ")}
     >
       <div className="aurora" />
-      <div className="stars" />
+      <div className="stars">
+        <div className="stars-far" />
+      </div>
       <div className="motes" />
       <div className="vignette" />
       <div className="frame" />

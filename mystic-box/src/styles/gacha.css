@@ -81,63 +81,129 @@ body {
   container-type: size;
 }
 
+/* A aurora borrada é pintada uma vez numa camada interna parada (::before);
+   a animação só desloca a camada de fora. Com o blur no próprio elemento
+   animado, a GPU refazia o desfoque de 46px a cada quadro. */
 .aurora {
   position: absolute;
   inset: -25%;
   z-index: 0;
   pointer-events: none;
+  translate: calc(var(--px) * -30px) calc(var(--py) * -22px);
+  transition: translate 0.8s ease-out;
+  will-change: transform;
+  animation: auroraDrift 20s ease-in-out infinite alternate;
+}
+
+.aurora::before {
+  content: "";
+  position: absolute;
+  inset: 0;
   background:
     radial-gradient(ellipse 38% 24% at 28% 32%, rgba(123, 75, 214, 0.4), transparent 70%),
     radial-gradient(ellipse 34% 22% at 72% 58%, rgba(66, 180, 255, 0.18), transparent 70%),
     radial-gradient(ellipse 30% 20% at 52% 18%, rgba(255, 120, 190, 0.16), transparent 70%);
   filter: blur(46px);
-  translate: calc(var(--px) * -30px) calc(var(--py) * -22px);
-  transition: translate 0.8s ease-out;
-  animation: auroraDrift 20s ease-in-out infinite alternate;
 }
 
+/* Céu estrelado: três camadas de estrelas, cada uma andando um ladrilho
+   inteiro por volta. Elas se movem com transform (o compositor só desloca a
+   imagem já pintada); animar background-position repintava a tela inteira a
+   cada quadro. Cada camada sobra um ladrilho para cada lado, então a posição
+   das estrelas é a mesma de antes e a volta não dá salto. */
 .stars {
   position: absolute;
   inset: 0;
   z-index: 0;
   pointer-events: none;
-  background-image:
-    radial-gradient(rgba(255, 255, 255, 0.95) 1px, transparent 1.5px),
-    radial-gradient(rgba(229, 194, 255, 0.9) 1px, transparent 1.5px),
-    radial-gradient(rgba(160, 220, 255, 0.8) 0.8px, transparent 1.2px);
-  background-size:
-    130px 130px,
-    190px 190px,
-    95px 95px;
-  background-position:
-    0 0,
-    48px 64px,
-    22px 12px;
   translate: calc(var(--px) * -10px) calc(var(--py) * -8px);
   transition: translate 0.5s ease-out;
-  animation:
-    stars 60s linear infinite,
-    twinkle 7s ease-in-out infinite alternate;
+  animation: twinkle 7s ease-in-out infinite alternate;
 }
 
+.stars::before,
+.stars::after,
+.stars-far {
+  content: "";
+  position: absolute;
+  inset: calc(var(--tile) * -1);
+  background-image: radial-gradient(var(--star) var(--core), transparent var(--edge));
+  background-size: var(--tile) var(--tile);
+  will-change: transform;
+  animation: starsDrift 60s linear infinite;
+}
+
+.stars::before {
+  --tile: 130px;
+  --star: rgba(255, 255, 255, 0.95);
+  --core: 1px;
+  --edge: 1.5px;
+  --drift-x: 130px;
+  --drift-y: 130px;
+  background-position: 0 0;
+}
+
+.stars::after {
+  --tile: 190px;
+  --star: rgba(229, 194, 255, 0.9);
+  --core: 1px;
+  --edge: 1.5px;
+  --drift-x: -190px;
+  --drift-y: 190px;
+  background-position: 48px 64px;
+}
+
+.stars-far {
+  --tile: 95px;
+  --star: rgba(160, 220, 255, 0.8);
+  --core: 0.8px;
+  --edge: 1.2px;
+  --drift-x: 95px;
+  --drift-y: -95px;
+  background-position: 22px 12px;
+}
+
+/* Poeira dourada: duas camadas movidas com transform, como as estrelas, com
+   o mesmo deslocamento por volta que o background-position tinha. */
 .motes {
   position: absolute;
   inset: 0;
   z-index: 1;
   pointer-events: none;
   opacity: 0.55;
-  background-image:
-    radial-gradient(circle, rgba(255, 222, 160, 0.9) 0 1.8px, transparent 3px),
-    radial-gradient(circle, rgba(190, 150, 255, 0.85) 0 1.4px, transparent 3px);
-  background-size:
-    240px 240px,
-    360px 360px;
-  background-position:
-    0 0,
-    120px 60px;
   -webkit-mask-image: radial-gradient(circle at center, #000 25%, transparent 78%);
   mask-image: radial-gradient(circle at center, #000 25%, transparent 78%);
+}
+
+.motes::before,
+.motes::after {
+  content: "";
+  position: absolute;
+  inset: var(--pad);
+  background-image: radial-gradient(circle, var(--mote) 0 var(--core), transparent 3px);
+  background-size: var(--tile) var(--tile);
+  will-change: transform;
   animation: motesDrift 30s linear infinite;
+}
+
+.motes::before {
+  --tile: 240px;
+  --pad: -240px;
+  --mote: rgba(255, 222, 160, 0.9);
+  --core: 1.8px;
+  --drift-x: 40px;
+  --drift-y: -240px;
+  background-position: 0 0;
+}
+
+.motes::after {
+  --tile: 360px;
+  --pad: -720px;
+  --mote: rgba(190, 150, 255, 0.85);
+  --core: 1.4px;
+  --drift-x: -180px;
+  --drift-y: -420px;
+  background-position: 120px 60px;
 }
 
 .vignette {
@@ -220,7 +286,11 @@ h1 {
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
-  animation: gildedFlow 9s linear infinite;
+  /* O ouro escorrendo é pintado (background-position não é composto): em
+     ~24 passos por segundo em vez de um por quadro, o título é repintado
+     menos da metade das vezes; o passo é de poucos pixels num degradê
+     suave, então o movimento continua parecendo contínuo. */
+  animation: gildedFlow 9s steps(216) infinite;
   filter:
     drop-shadow(0 0 18px rgba(255, 190, 90, 0.45))
     drop-shadow(0 2px 2px rgba(0, 0, 0, 0.6));
@@ -931,12 +1001,9 @@ h1 {
   }
 }
 
-@keyframes stars {
+@keyframes starsDrift {
   to {
-    background-position:
-      130px 130px,
-      -142px 254px,
-      117px -83px;
+    transform: translate3d(var(--drift-x), var(--drift-y), 0);
   }
 }
 
@@ -952,9 +1019,7 @@ h1 {
 
 @keyframes motesDrift {
   to {
-    background-position:
-      40px -240px,
-      -60px -360px;
+    transform: translate3d(var(--drift-x), var(--drift-y), 0);
   }
 }
 
@@ -1336,7 +1401,11 @@ h1 {
   .auth-header h2,
   .aurora,
   .stars,
-  .motes,
+  .stars::before,
+  .stars::after,
+  .stars-far,
+  .motes::before,
+  .motes::after,
   .machine,
   .box::before,
   .subtitle,
@@ -1362,6 +1431,29 @@ h1 {
     animation-duration: 0.01ms;
     animation-delay: 0ms;
   }
+}
+
+/* Com uma janela aberta (coleção, loja, Grimório, mapa, login…) ou o portal
+   de invocação na frente, o fundo fica parado: o véu da janela cobre quase
+   tudo (e, com o fundo mexendo, o backdrop-filter da janela refazia o
+   desfoque da tela inteira a cada quadro) e o portal o cobre por inteiro.
+   Pausa (não remove), então tudo continua do mesmo ponto ao fechar. */
+body:has(.auth-overlay, .portal-page) .scene::before,
+body:has(.auth-overlay, .portal-page) .scene h1,
+body:has(.auth-overlay, .portal-page) .aurora,
+body:has(.auth-overlay, .portal-page) .stars,
+body:has(.auth-overlay, .portal-page) .stars::before,
+body:has(.auth-overlay, .portal-page) .stars::after,
+body:has(.auth-overlay, .portal-page) .stars-far,
+body:has(.auth-overlay, .portal-page) .motes::before,
+body:has(.auth-overlay, .portal-page) .motes::after,
+body:has(.auth-overlay, .portal-page) .machine,
+body:has(.auth-overlay, .portal-page) .box::before,
+body:has(.auth-overlay, .portal-page) .subtitle,
+body:has(.auth-overlay, .portal-page) .summon-wrap::after,
+body:has(.auth-overlay, .portal-page) .lobby-portal-glow::before,
+body:has(.auth-overlay, .portal-page) .lobby-portal-glow::after {
+  animation-play-state: paused;
 }
 
 /* ---------- Session ---------- */
@@ -1671,7 +1763,7 @@ h1 {
   text-indent: 4px;
   background: var(--gilded-text);
   background-size: 200% 100%;
-  animation: gildedFlow 12s linear infinite;
+  animation: gildedFlow 12s steps(288) infinite;
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;

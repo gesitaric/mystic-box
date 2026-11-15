@@ -18,8 +18,8 @@ export const NOTE_TYPES = {
 
 export const releases = [
   {
-    version: "0.10",
-    date: "2026-11-12",
+    version: "0.11",
+    date: "2026-11-15",
     name: "Relics of Aethra",
     tagline: "Every land guards a treasure. Claim it, and choose who carries it.",
     notes: [
@@ -28,6 +28,20 @@ export const releases = [
         title: "Relics",
         text: "Defeat a land's champion in the campaign to claim its relic, then equip it on a champion from your collection. The campaign shows which relic each champion guards. Each relic has its own illustration, shown in your collection, in battle and in the Grimoire. Every relic trades one strength for another, and in the hands of a champion from its own land it grows stronger and awakens at the start of battle. Forge more copies with Arcane Shards, and read all about them in the new Relics chapter of the Grimoire.",
         prs: [87],
+      },
+    ],
+  },
+  {
+    version: "0.10",
+    date: "2026-11-14",
+    name: "A Lighter Spell",
+    tagline: "The same night sky, with a cooler touch.",
+    notes: [
+      {
+        type: "improved",
+        title: "Smoother and cooler on phones",
+        text: "The starry sky, the aurora and the gilded titles look exactly the same but take far less work to draw, and the sky rests while a window or the summoning portal is open. Your phone stays cooler and the battery lasts longer.",
+        prs: [89],
       },
     ],
   },
