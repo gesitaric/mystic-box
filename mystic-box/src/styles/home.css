@@ -375,16 +375,32 @@
     linear-gradient(105deg, transparent 0 50.4%, rgba(140, 90, 255, 0.35) 50.6%);
 }
 
+/* Luz do portal respirando. Só opacidade: dentro do cartão (transform 3D e
+   cantos arredondados) uma animação de transform cai no processador e
+   repintava o cartão a cada quadro. O "inchar" vem de uma cópia 8% maior
+   (::after) que acende enquanto a luz base apaga. */
 .lobby-portal-glow {
   position: absolute;
   bottom: -30%;
-  left: 50%;
+  left: 15%;
   width: 70%;
   aspect-ratio: 1;
+}
+
+.lobby-portal-glow::before,
+.lobby-portal-glow::after {
+  content: "";
+  position: absolute;
+  inset: 0;
   border-radius: 50%;
   background: radial-gradient(circle, rgba(255, 220, 150, 0.55), transparent 65%);
-  transform: translateX(-50%);
   animation: lobbyPulse 3s ease-in-out infinite;
+}
+
+.lobby-portal-glow::after {
+  opacity: 0;
+  transform: scale(1.08);
+  animation-name: lobbyPulseSwell;
 }
 
 .lobby-fan {
@@ -568,11 +584,19 @@
   0%,
   100% {
     opacity: 0.7;
-    transform: translateX(-50%) scale(1);
+  }
+  50% {
+    opacity: 0;
+  }
+}
+
+@keyframes lobbyPulseSwell {
+  0%,
+  100% {
+    opacity: 0;
   }
   50% {
     opacity: 1;
-    transform: translateX(-50%) scale(1.08);
   }
 }
 
@@ -647,7 +671,8 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .lobby-portal-glow {
+  .lobby-portal-glow::before,
+  .lobby-portal-glow::after {
     animation: none;
   }
 

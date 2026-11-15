@@ -18,6 +18,20 @@ export const NOTE_TYPES = {
 
 export const releases = [
   {
+    version: "0.10",
+    date: "2026-11-14",
+    name: "A Lighter Spell",
+    tagline: "The same night sky, with a cooler touch.",
+    notes: [
+      {
+        type: "improved",
+        title: "Smoother and cooler on phones",
+        text: "The starry sky, the aurora and the gilded titles look exactly the same but take far less work to draw, and the sky rests while a window or the summoning portal is open. Your phone stays cooler and the battery lasts longer.",
+        prs: [89],
+      },
+    ],
+  },
+  {
     version: "0.9",
     date: "2026-11-11",
     name: "The Celestial Grimoire",
