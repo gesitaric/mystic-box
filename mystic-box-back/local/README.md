@@ -55,6 +55,12 @@ frontend precisam ser iniciados em cada sessão.
 Para parar o banco: `docker compose -f local/docker-compose.yml down`
 (com `-v` apaga também os dados locais).
 
+## Monitorar a produção (Grafana)
+
+Um Grafana local (perfil `monitoring` do `docker-compose.yml`, em
+http://localhost:3001) lê o CloudWatch da conta de produção, só para leitura.
+Passo a passo, usuário IAM e custo em [`monitoring/README.md`](monitoring/README.md).
+
 ## Diferenças em relação à AWS
 
 - A assinatura do token do Cognito **não** é verificada localmente (só `exp`,

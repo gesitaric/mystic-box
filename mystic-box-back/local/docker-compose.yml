@@ -1,5 +1,9 @@
 # DynamoDB Local para rodar o backend na máquina (ver local/README.md).
 # Os dados ficam no volume `mystic-box-dynamodb` (dentro do disco do WSL).
+#
+# Grafana (perfil `monitoring`): painel local que lê o CloudWatch de PRODUÇÃO
+# (ver local/monitoring/README.md). Não sobe com o `up -d` de sempre:
+#   docker compose -f local/docker-compose.yml --profile monitoring up -d
 services:
   dynamodb:
     image: amazon/dynamodb-local:latest
@@ -12,5 +16,32 @@ services:
       - mystic-box-dynamodb:/data
     restart: unless-stopped
 
+  grafana:
+    image: grafana/grafana-oss:12.0.0
+    container_name: mystic-box-grafana
+    profiles: [monitoring]
+    # Só na própria máquina: abre o painel sem login (Viewer anônimo); para
+    # editar painéis ou usar o Explore, "Sign in" com admin / admin.
+    ports:
+      - "127.0.0.1:3001:3000"
+    env_file:
+      - path: monitoring/grafana.env
+        required: false
+    environment:
+      GF_AUTH_ANONYMOUS_ENABLED: "true"
+      GF_AUTH_ANONYMOUS_ORG_ROLE: Viewer
+      GF_SECURITY_DISABLE_INITIAL_ADMIN_CHANGE_PASSWORD: "true"
+      GF_ANALYTICS_REPORTING_ENABLED: "false"
+      GF_ANALYTICS_CHECK_FOR_UPDATES: "false"
+      GF_ANALYTICS_CHECK_FOR_PLUGIN_UPDATES: "false"
+      GF_NEWS_NEWS_FEED_ENABLED: "false"
+      GF_DASHBOARDS_DEFAULT_HOME_DASHBOARD_PATH: /etc/grafana/dashboards/mystic-box-producao.json
+    volumes:
+      - mystic-box-grafana:/var/lib/grafana
+      - ./monitoring/grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./monitoring/grafana/dashboards:/etc/grafana/dashboards:ro
+    restart: unless-stopped
+
 volumes:
   mystic-box-dynamodb:
+  mystic-box-grafana:
