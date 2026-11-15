@@ -1,0 +1,17 @@
+# Fonte de dados do Grafana local: CloudWatch da conta de produção, só leitura.
+# A chave é do usuário IAM mystic-box-grafana (policy em local/monitoring/iam-policy.json)
+# e vem do arquivo local/monitoring/grafana.env (fora do git).
+apiVersion: 1
+
+datasources:
+  - name: CloudWatch
+    uid: cloudwatch
+    type: cloudwatch
+    isDefault: true
+    editable: false
+    jsonData:
+      authType: keys
+      defaultRegion: $AWS_REGION
+    secureJsonData:
+      accessKey: $AWS_ACCESS_KEY_ID
+      secretKey: $AWS_SECRET_ACCESS_KEY

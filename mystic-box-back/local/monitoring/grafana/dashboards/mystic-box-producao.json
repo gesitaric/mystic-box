@@ -1,0 +1,1901 @@
+{
+  "uid": "mystic-box-producao",
+  "title": "Mystic Box: produção",
+  "description": "CloudWatch da stack mystic-box-back (us-east-1). Somente leitura.",
+  "tags": [
+    "mystic-box",
+    "producao"
+  ],
+  "timezone": "browser",
+  "editable": true,
+  "graphTooltip": 1,
+  "refresh": "5m",
+  "time": {
+    "from": "now-24h",
+    "to": "now"
+  },
+  "timepicker": {
+    "refresh_intervals": [
+      "5m",
+      "15m",
+      "30m",
+      "1h"
+    ]
+  },
+  "schemaVersion": 39,
+  "version": 1,
+  "templating": {
+    "list": []
+  },
+  "annotations": {
+    "list": []
+  },
+  "links": [],
+  "panels": [
+    {
+      "id": 1,
+      "type": "row",
+      "title": "Visão geral",
+      "collapsed": false,
+      "gridPos": {
+        "x": 0,
+        "y": 0,
+        "w": 24,
+        "h": 1
+      },
+      "panels": []
+    },
+    {
+      "id": 2,
+      "type": "stat",
+      "title": "Pedidos à API",
+      "description": "Todos os pedidos que chegaram ao API Gateway (stage Prod).",
+      "datasource": {
+        "type": "cloudwatch",
+        "uid": "cloudwatch"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 1,
+        "w": 4,
+        "h": 4
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "cloudwatch",
+            "uid": "cloudwatch"
+          },
+          "queryMode": "Metrics",
+          "region": "default",
+          "metricQueryType": 0,
+          "metricEditorMode": 0,
+          "expression": "",
+          "id": "",
+          "label": "Pedidos",
+          "period": "",
+          "statistic": "Sum",
+          "namespace": "AWS/ApiGateway",
+          "metricName": "Count",
+          "dimensions": {
+            "ApiName": "mystic-box-back",
+            "Stage": "Prod"
+          },
+          "matchExact": true
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "decimals": 0,
+          "noValue": "0",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "text",
+                "value": null
+              }
+            ]
+          },
+          "color": {
+            "mode": "thresholds"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "sum"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "colorMode": "value",
+        "graphMode": "area",
+        "textMode": "value",
+        "justifyMode": "auto",
+        "orientation": "auto"
+      }
+    },
+    {
+      "id": 3,
+      "type": "stat",
+      "title": "Erros 5xx",
+      "description": "Respostas 5xx do API Gateway: Lambda que quebrou ou estourou o tempo.",
+      "datasource": {
+        "type": "cloudwatch",
+        "uid": "cloudwatch"
+      },
+      "gridPos": {
+        "x": 4,
+        "y": 1,
+        "w": 4,
+        "h": 4
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "cloudwatch",
+            "uid": "cloudwatch"
+          },
+          "queryMode": "Metrics",
+          "region": "default",
+          "metricQueryType": 0,
+          "metricEditorMode": 0,
+          "expression": "",
+          "id": "",
+          "label": "5xx",
+          "period": "",
+          "statistic": "Sum",
+          "namespace": "AWS/ApiGateway",
+          "metricName": "5XXError",
+          "dimensions": {
+            "ApiName": "mystic-box-back",
+            "Stage": "Prod"
+          },
+          "matchExact": true
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "decimals": 0,
+          "noValue": "0",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 1
+              }
+            ]
+          },
+          "color": {
+            "mode": "thresholds"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "sum"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "colorMode": "value",
+        "graphMode": "area",
+        "textMode": "value",
+        "justifyMode": "auto",
+        "orientation": "auto"
+      }
+    },
+    {
+      "id": 4,
+      "type": "stat",
+      "title": "Respostas 4xx",
+      "description": "Inclui 401 (token vencido), 429 (limite de pedidos) e 4xx das regras do jogo.",
+      "datasource": {
+        "type": "cloudwatch",
+        "uid": "cloudwatch"
+      },
+      "gridPos": {
+        "x": 8,
+        "y": 1,
+        "w": 4,
+        "h": 4
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "cloudwatch",
+            "uid": "cloudwatch"
+          },
+          "queryMode": "Metrics",
+          "region": "default",
+          "metricQueryType": 0,
+          "metricEditorMode": 0,
+          "expression": "",
+          "id": "",
+          "label": "4xx",
+          "period": "",
+          "statistic": "Sum",
+          "namespace": "AWS/ApiGateway",
+          "metricName": "4XXError",
+          "dimensions": {
+            "ApiName": "mystic-box-back",
+            "Stage": "Prod"
+          },
+          "matchExact": true
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "decimals": 0,
+          "noValue": "0",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "text",
+                "value": null
+              }
+            ]
+          },
+          "color": {
+            "mode": "thresholds"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "sum"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "colorMode": "value",
+        "graphMode": "area",
+        "textMode": "value",
+        "justifyMode": "auto",
+        "orientation": "auto"
+      }
+    },
+    {
+      "id": 5,
+      "type": "stat",
+      "title": "Erros nas Lambdas",
+      "description": "Execuções que terminaram com exceção ou estouro de tempo.",
+      "datasource": {
+        "type": "cloudwatch",
+        "uid": "cloudwatch"
+      },
+      "gridPos": {
+        "x": 12,
+        "y": 1,
+        "w": 4,
+        "h": 4
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "cloudwatch",
+            "uid": "cloudwatch"
+          },
+          "queryMode": "Metrics",
+          "region": "default",
+          "metricQueryType": 0,
+          "metricEditorMode": 1,
+          "expression": "SUM(SEARCH('{AWS/Lambda,FunctionName} MetricName=\"Errors\" FunctionName=mystic-box-back', 'Sum'))",
+          "id": "",
+          "label": "Erros",
+          "period": "",
+          "statistic": "Sum",
+          "namespace": "",
+          "metricName": "",
+          "dimensions": {},
+          "matchExact": true,
+          "hide": false
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "decimals": 0,
+          "noValue": "0",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 1
+              }
+            ]
+          },
+          "color": {
+            "mode": "thresholds"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "sum"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "colorMode": "value",
+        "graphMode": "area",
+        "textMode": "value",
+        "justifyMode": "auto",
+        "orientation": "auto"
+      }
+    },
+    {
+      "id": 6,
+      "type": "stat",
+      "title": "Throttles nas Lambdas",
+      "description": "Execuções recusadas por limite de concorrência.",
+      "datasource": {
+        "type": "cloudwatch",
+        "uid": "cloudwatch"
+      },
+      "gridPos": {
+        "x": 16,
+        "y": 1,
+        "w": 4,
+        "h": 4
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "cloudwatch",
+            "uid": "cloudwatch"
+          },
+          "queryMode": "Metrics",
+          "region": "default",
+          "metricQueryType": 0,
+          "metricEditorMode": 1,
+          "expression": "SUM(SEARCH('{AWS/Lambda,FunctionName} MetricName=\"Throttles\" FunctionName=mystic-box-back', 'Sum'))",
+          "id": "",
+          "label": "Throttles",
+          "period": "",
+          "statistic": "Sum",
+          "namespace": "",
+          "metricName": "",
+          "dimensions": {},
+          "matchExact": true,
+          "hide": false
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "decimals": 0,
+          "noValue": "0",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "orange",
+                "value": 1
+              }
+            ]
+          },
+          "color": {
+            "mode": "thresholds"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "sum"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "colorMode": "value",
+        "graphMode": "area",
+        "textMode": "value",
+        "justifyMode": "auto",
+        "orientation": "auto"
+      }
+    },
+    {
+      "id": 7,
+      "type": "stat",
+      "title": "Logins",
+      "description": "Logins com sucesso no Cognito.",
+      "datasource": {
+        "type": "cloudwatch",
+        "uid": "cloudwatch"
+      },
+      "gridPos": {
+        "x": 20,
+        "y": 1,
+        "w": 4,
+        "h": 4
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "cloudwatch",
+            "uid": "cloudwatch"
+          },
+          "queryMode": "Metrics",
+          "region": "default",
+          "metricQueryType": 0,
+          "metricEditorMode": 1,
+          "expression": "SUM(SEARCH('{AWS/Cognito,UserPool,UserPoolClient} MetricName=\"SignInSuccesses\"', 'Sum'))",
+          "id": "",
+          "label": "Logins",
+          "period": "",
+          "statistic": "Sum",
+          "namespace": "",
+          "metricName": "",
+          "dimensions": {},
+          "matchExact": true,
+          "hide": false
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "decimals": 0,
+          "noValue": "0",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "text",
+                "value": null
+              }
+            ]
+          },
+          "color": {
+            "mode": "thresholds"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "sum"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "colorMode": "value",
+        "graphMode": "area",
+        "textMode": "value",
+        "justifyMode": "auto",
+        "orientation": "auto"
+      }
+    },
+    {
+      "id": 8,
+      "type": "timeseries",
+      "title": "Pedidos à API",
+      "description": "",
+      "datasource": {
+        "type": "cloudwatch",
+        "uid": "cloudwatch"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 5,
+        "w": 12,
+        "h": 8
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "cloudwatch",
+            "uid": "cloudwatch"
+          },
+          "queryMode": "Metrics",
+          "region": "default",
+          "metricQueryType": 0,
+          "metricEditorMode": 0,
+          "expression": "",
+          "id": "",
+          "label": "Pedidos",
+          "period": "",
+          "statistic": "Sum",
+          "namespace": "AWS/ApiGateway",
+          "metricName": "Count",
+          "dimensions": {
+            "ApiName": "mystic-box-back",
+            "Stage": "Prod"
+          },
+          "matchExact": true
+        },
+        {
+          "refId": "B",
+          "datasource": {
+            "type": "cloudwatch",
+            "uid": "cloudwatch"
+          },
+          "queryMode": "Metrics",
+          "region": "default",
+          "metricQueryType": 0,
+          "metricEditorMode": 0,
+          "expression": "",
+          "id": "",
+          "label": "4xx",
+          "period": "",
+          "statistic": "Sum",
+          "namespace": "AWS/ApiGateway",
+          "metricName": "4XXError",
+          "dimensions": {
+            "ApiName": "mystic-box-back",
+            "Stage": "Prod"
+          },
+          "matchExact": true
+        },
+        {
+          "refId": "C",
+          "datasource": {
+            "type": "cloudwatch",
+            "uid": "cloudwatch"
+          },
+          "queryMode": "Metrics",
+          "region": "default",
+          "metricQueryType": 0,
+          "metricEditorMode": 0,
+          "expression": "",
+          "id": "",
+          "label": "5xx",
+          "period": "",
+          "statistic": "Sum",
+          "namespace": "AWS/ApiGateway",
+          "metricName": "5XXError",
+          "dimensions": {
+            "ApiName": "mystic-box-back",
+            "Stage": "Prod"
+          },
+          "matchExact": true
+        }
+      ],
+      "transformations": [],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "min": 0,
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "drawStyle": "line",
+            "lineWidth": 1,
+            "fillOpacity": 10,
+            "showPoints": "never",
+            "spanNulls": true,
+            "insertNulls": false,
+            "stacking": {
+              "mode": "none",
+              "group": "A"
+            }
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "right",
+          "calcs": [
+            "sum"
+          ],
+          "sortBy": "Total",
+          "sortDesc": true,
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      }
+    },
+    {
+      "id": 9,
+      "type": "timeseries",
+      "title": "Latência da API",
+      "description": "Latency: tempo total no API Gateway. IntegrationLatency: só a Lambda.",
+      "datasource": {
+        "type": "cloudwatch",
+        "uid": "cloudwatch"
+      },
+      "gridPos": {
+        "x": 12,
+        "y": 5,
+        "w": 12,
+        "h": 8
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "cloudwatch",
+            "uid": "cloudwatch"
+          },
+          "queryMode": "Metrics",
+          "region": "default",
+          "metricQueryType": 0,
+          "metricEditorMode": 0,
+          "expression": "",
+          "id": "",
+          "label": "Média",
+          "period": "",
+          "statistic": "Average",
+          "namespace": "AWS/ApiGateway",
+          "metricName": "Latency",
+          "dimensions": {
+            "ApiName": "mystic-box-back",
+            "Stage": "Prod"
+          },
+          "matchExact": true
+        },
+        {
+          "refId": "B",
+          "datasource": {
+            "type": "cloudwatch",
+            "uid": "cloudwatch"
+          },
+          "queryMode": "Metrics",
+          "region": "default",
+          "metricQueryType": 0,
+          "metricEditorMode": 0,
+          "expression": "",
+          "id": "",
+          "label": "p95",
+          "period": "",
+          "statistic": "p95",
+          "namespace": "AWS/ApiGateway",
+          "metricName": "Latency",
+          "dimensions": {
+            "ApiName": "mystic-box-back",
+            "Stage": "Prod"
+          },
+          "matchExact": true
+        },
+        {
+          "refId": "C",
+          "datasource": {
+            "type": "cloudwatch",
+            "uid": "cloudwatch"
+          },
+          "queryMode": "Metrics",
+          "region": "default",
+          "metricQueryType": 0,
+          "metricEditorMode": 0,
+          "expression": "",
+          "id": "",
+          "label": "p95 da Lambda",
+          "period": "",
+          "statistic": "p95",
+          "namespace": "AWS/ApiGateway",
+          "metricName": "IntegrationLatency",
+          "dimensions": {
+            "ApiName": "mystic-box-back",
+            "Stage": "Prod"
+          },
+          "matchExact": true
+        }
+      ],
+      "transformations": [],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "ms",
+          "min": 0,
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "drawStyle": "line",
+            "lineWidth": 1,
+            "fillOpacity": 10,
+            "showPoints": "never",
+            "spanNulls": true,
+            "insertNulls": false,
+            "stacking": {
+              "mode": "none",
+              "group": "A"
+            }
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "right",
+          "calcs": [
+            "mean",
+            "max"
+          ],
+          "sortBy": "Max",
+          "sortDesc": true,
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      }
+    },
+    {
+      "id": 10,
+      "type": "row",
+      "title": "Atividade do jogo",
+      "collapsed": false,
+      "gridPos": {
+        "x": 0,
+        "y": 13,
+        "w": 24,
+        "h": 1
+      },
+      "panels": []
+    },
+    {
+      "id": 11,
+      "type": "bargauge",
+      "title": "Chamadas por Lambda",
+      "description": "Cada Lambda é uma ação do jogo: OpenBox = invocar, SaveUserCard = guardar o sorteio, BuyListing = compra no mercado, PlayBattle = turnos contra o computador, PvpBattle = duelo online.",
+      "datasource": {
+        "type": "cloudwatch",
+        "uid": "cloudwatch"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 14,
+        "w": 12,
+        "h": 14
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "cloudwatch",
+            "uid": "cloudwatch"
+          },
+          "queryMode": "Metrics",
+          "region": "default",
+          "metricQueryType": 0,
+          "metricEditorMode": 1,
+          "expression": "SEARCH('{AWS/Lambda,FunctionName} MetricName=\"Invocations\" FunctionName=mystic-box-back', 'Sum')",
+          "id": "",
+          "label": "${PROP('Dim.FunctionName')}",
+          "period": "",
+          "statistic": "Sum",
+          "namespace": "",
+          "metricName": "",
+          "dimensions": {},
+          "matchExact": true,
+          "hide": false
+        }
+      ],
+      "transformations": [
+        {
+          "id": "renameByRegex",
+          "options": {
+            "regex": "mystic-box-back-(.+?)Function-.*",
+            "renamePattern": "$1"
+          }
+        },
+        {
+          "id": "reduce",
+          "options": {
+            "reducers": [
+              "sum"
+            ],
+            "mode": "seriesToRows",
+            "includeTimeField": false
+          }
+        },
+        {
+          "id": "filterByValue",
+          "options": {
+            "type": "exclude",
+            "match": "any",
+            "filters": [
+              {
+                "fieldName": "Total",
+                "config": {
+                  "id": "lowerOrEqual",
+                  "options": {
+                    "value": 0
+                  }
+                }
+              }
+            ]
+          }
+        },
+        {
+          "id": "sortBy",
+          "options": {
+            "sort": [
+              {
+                "field": "Total",
+                "desc": true
+              }
+            ]
+          }
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "decimals": 0,
+          "min": 0,
+          "noValue": "0",
+          "color": {
+            "mode": "fixed",
+            "fixedColor": "blue"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "sum"
+          ],
+          "fields": "/^Total$/",
+          "values": true
+        },
+        "orientation": "horizontal",
+        "displayMode": "gradient",
+        "valueMode": "color",
+        "namePlacement": "left",
+        "showUnfilled": true,
+        "sizing": "auto",
+        "minVizHeight": 10,
+        "maxVizHeight": 24
+      }
+    },
+    {
+      "id": 12,
+      "type": "timeseries",
+      "title": "Ações do jogo ao longo do tempo",
+      "description": "Invocar, anunciar e comprar no mercado, turnos contra o computador, ascender e desafios de duelo.",
+      "datasource": {
+        "type": "cloudwatch",
+        "uid": "cloudwatch"
+      },
+      "gridPos": {
+        "x": 12,
+        "y": 14,
+        "w": 12,
+        "h": 14
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "cloudwatch",
+            "uid": "cloudwatch"
+          },
+          "queryMode": "Metrics",
+          "region": "default",
+          "metricQueryType": 0,
+          "metricEditorMode": 1,
+          "expression": "SEARCH('{AWS/Lambda,FunctionName} MetricName=\"Invocations\" FunctionName=mystic-box-back (FunctionName=OpenBoxFunction OR FunctionName=BuyListingFunction OR FunctionName=CreateListingFunction OR FunctionName=PlayBattleFunction OR FunctionName=AscendCardFunction OR FunctionName=PvpChallengesFunction)', 'Sum')",
+          "id": "",
+          "label": "${PROP('Dim.FunctionName')}",
+          "period": "",
+          "statistic": "Sum",
+          "namespace": "",
+          "metricName": "",
+          "dimensions": {},
+          "matchExact": true,
+          "hide": false
+        }
+      ],
+      "transformations": [
+        {
+          "id": "renameByRegex",
+          "options": {
+            "regex": "mystic-box-back-(.+?)Function-.*",
+            "renamePattern": "$1"
+          }
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "min": 0,
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "drawStyle": "bars",
+            "lineWidth": 1,
+            "fillOpacity": 60,
+            "showPoints": "never",
+            "spanNulls": true,
+            "insertNulls": false,
+            "stacking": {
+              "mode": "normal",
+              "group": "A"
+            }
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "right",
+          "calcs": [
+            "sum"
+          ],
+          "sortBy": "Total",
+          "sortDesc": true,
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      }
+    },
+    {
+      "id": 17,
+      "type": "row",
+      "title": "Lambdas em detalhe (abre sob demanda: cada gráfico lê uma métrica por Lambda)",
+      "collapsed": true,
+      "gridPos": {
+        "x": 0,
+        "y": 28,
+        "w": 24,
+        "h": 1
+      },
+      "panels": [
+        {
+          "id": 13,
+          "type": "timeseries",
+          "title": "Erros por Lambda",
+          "description": "",
+          "datasource": {
+            "type": "cloudwatch",
+            "uid": "cloudwatch"
+          },
+          "gridPos": {
+            "x": 0,
+            "y": 29,
+            "w": 12,
+            "h": 8
+          },
+          "targets": [
+            {
+              "refId": "A",
+              "datasource": {
+                "type": "cloudwatch",
+                "uid": "cloudwatch"
+              },
+              "queryMode": "Metrics",
+              "region": "default",
+              "metricQueryType": 0,
+              "metricEditorMode": 1,
+              "expression": "SEARCH('{AWS/Lambda,FunctionName} MetricName=\"Errors\" FunctionName=mystic-box-back', 'Sum')",
+              "id": "",
+              "label": "${PROP('Dim.FunctionName')}",
+              "period": "",
+              "statistic": "Sum",
+              "namespace": "",
+              "metricName": "",
+              "dimensions": {},
+              "matchExact": true,
+              "hide": false
+            }
+          ],
+          "transformations": [
+            {
+              "id": "renameByRegex",
+              "options": {
+                "regex": "mystic-box-back-(.+?)Function-.*",
+                "renamePattern": "$1"
+              }
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "unit": "short",
+              "min": 0,
+              "color": {
+                "mode": "palette-classic"
+              },
+              "custom": {
+                "drawStyle": "line",
+                "lineWidth": 1,
+                "fillOpacity": 10,
+                "showPoints": "never",
+                "spanNulls": true,
+                "insertNulls": false,
+                "stacking": {
+                  "mode": "none",
+                  "group": "A"
+                }
+              }
+            },
+            "overrides": []
+          },
+          "options": {
+            "legend": {
+              "displayMode": "table",
+              "placement": "right",
+              "calcs": [
+                "sum"
+              ],
+              "sortBy": "Total",
+              "sortDesc": true,
+              "showLegend": true
+            },
+            "tooltip": {
+              "mode": "multi",
+              "sort": "desc"
+            }
+          }
+        },
+        {
+          "id": 14,
+          "type": "timeseries",
+          "title": "Duração p95 por Lambda",
+          "description": "O limite é o Timeout do template.yaml.",
+          "datasource": {
+            "type": "cloudwatch",
+            "uid": "cloudwatch"
+          },
+          "gridPos": {
+            "x": 12,
+            "y": 29,
+            "w": 12,
+            "h": 8
+          },
+          "targets": [
+            {
+              "refId": "A",
+              "datasource": {
+                "type": "cloudwatch",
+                "uid": "cloudwatch"
+              },
+              "queryMode": "Metrics",
+              "region": "default",
+              "metricQueryType": 0,
+              "metricEditorMode": 1,
+              "expression": "SEARCH('{AWS/Lambda,FunctionName} MetricName=\"Duration\" FunctionName=mystic-box-back', 'p95')",
+              "id": "",
+              "label": "${PROP('Dim.FunctionName')}",
+              "period": "",
+              "statistic": "Sum",
+              "namespace": "",
+              "metricName": "",
+              "dimensions": {},
+              "matchExact": true,
+              "hide": false
+            }
+          ],
+          "transformations": [
+            {
+              "id": "renameByRegex",
+              "options": {
+                "regex": "mystic-box-back-(.+?)Function-.*",
+                "renamePattern": "$1"
+              }
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "unit": "ms",
+              "min": 0,
+              "color": {
+                "mode": "palette-classic"
+              },
+              "custom": {
+                "drawStyle": "line",
+                "lineWidth": 1,
+                "fillOpacity": 10,
+                "showPoints": "never",
+                "spanNulls": true,
+                "insertNulls": false,
+                "stacking": {
+                  "mode": "none",
+                  "group": "A"
+                }
+              }
+            },
+            "overrides": []
+          },
+          "options": {
+            "legend": {
+              "displayMode": "table",
+              "placement": "right",
+              "calcs": [
+                "mean",
+                "max"
+              ],
+              "sortBy": "Max",
+              "sortDesc": true,
+              "showLegend": true
+            },
+            "tooltip": {
+              "mode": "multi",
+              "sort": "desc"
+            }
+          }
+        },
+        {
+          "id": 15,
+          "type": "timeseries",
+          "title": "Throttles por Lambda",
+          "description": "",
+          "datasource": {
+            "type": "cloudwatch",
+            "uid": "cloudwatch"
+          },
+          "gridPos": {
+            "x": 0,
+            "y": 37,
+            "w": 12,
+            "h": 8
+          },
+          "targets": [
+            {
+              "refId": "A",
+              "datasource": {
+                "type": "cloudwatch",
+                "uid": "cloudwatch"
+              },
+              "queryMode": "Metrics",
+              "region": "default",
+              "metricQueryType": 0,
+              "metricEditorMode": 1,
+              "expression": "SEARCH('{AWS/Lambda,FunctionName} MetricName=\"Throttles\" FunctionName=mystic-box-back', 'Sum')",
+              "id": "",
+              "label": "${PROP('Dim.FunctionName')}",
+              "period": "",
+              "statistic": "Sum",
+              "namespace": "",
+              "metricName": "",
+              "dimensions": {},
+              "matchExact": true,
+              "hide": false
+            }
+          ],
+          "transformations": [
+            {
+              "id": "renameByRegex",
+              "options": {
+                "regex": "mystic-box-back-(.+?)Function-.*",
+                "renamePattern": "$1"
+              }
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "unit": "short",
+              "min": 0,
+              "color": {
+                "mode": "palette-classic"
+              },
+              "custom": {
+                "drawStyle": "line",
+                "lineWidth": 1,
+                "fillOpacity": 10,
+                "showPoints": "never",
+                "spanNulls": true,
+                "insertNulls": false,
+                "stacking": {
+                  "mode": "none",
+                  "group": "A"
+                }
+              }
+            },
+            "overrides": []
+          },
+          "options": {
+            "legend": {
+              "displayMode": "table",
+              "placement": "right",
+              "calcs": [
+                "sum"
+              ],
+              "sortBy": "Total",
+              "sortDesc": true,
+              "showLegend": true
+            },
+            "tooltip": {
+              "mode": "multi",
+              "sort": "desc"
+            }
+          }
+        },
+        {
+          "id": 16,
+          "type": "timeseries",
+          "title": "Execuções simultâneas",
+          "description": "",
+          "datasource": {
+            "type": "cloudwatch",
+            "uid": "cloudwatch"
+          },
+          "gridPos": {
+            "x": 12,
+            "y": 37,
+            "w": 12,
+            "h": 8
+          },
+          "targets": [
+            {
+              "refId": "A",
+              "datasource": {
+                "type": "cloudwatch",
+                "uid": "cloudwatch"
+              },
+              "queryMode": "Metrics",
+              "region": "default",
+              "metricQueryType": 0,
+              "metricEditorMode": 1,
+              "expression": "SEARCH('{AWS/Lambda,FunctionName} MetricName=\"ConcurrentExecutions\" FunctionName=mystic-box-back', 'Maximum')",
+              "id": "",
+              "label": "${PROP('Dim.FunctionName')}",
+              "period": "",
+              "statistic": "Sum",
+              "namespace": "",
+              "metricName": "",
+              "dimensions": {},
+              "matchExact": true,
+              "hide": false
+            }
+          ],
+          "transformations": [
+            {
+              "id": "renameByRegex",
+              "options": {
+                "regex": "mystic-box-back-(.+?)Function-.*",
+                "renamePattern": "$1"
+              }
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "unit": "short",
+              "min": 0,
+              "color": {
+                "mode": "palette-classic"
+              },
+              "custom": {
+                "drawStyle": "line",
+                "lineWidth": 1,
+                "fillOpacity": 10,
+                "showPoints": "never",
+                "spanNulls": true,
+                "insertNulls": false,
+                "stacking": {
+                  "mode": "normal",
+                  "group": "A"
+                }
+              }
+            },
+            "overrides": []
+          },
+          "options": {
+            "legend": {
+              "displayMode": "table",
+              "placement": "right",
+              "calcs": [
+                "sum"
+              ],
+              "sortBy": "Total",
+              "sortDesc": true,
+              "showLegend": true
+            },
+            "tooltip": {
+              "mode": "multi",
+              "sort": "desc"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": 22,
+      "type": "row",
+      "title": "DynamoDB (abre sob demanda: cada gráfico lê uma métrica por tabela)",
+      "collapsed": true,
+      "gridPos": {
+        "x": 0,
+        "y": 29,
+        "w": 24,
+        "h": 1
+      },
+      "panels": [
+        {
+          "id": 18,
+          "type": "timeseries",
+          "title": "Leituras consumidas por tabela",
+          "description": "Unidades de leitura. On-demand: cobrança por pedido de leitura.",
+          "datasource": {
+            "type": "cloudwatch",
+            "uid": "cloudwatch"
+          },
+          "gridPos": {
+            "x": 0,
+            "y": 30,
+            "w": 12,
+            "h": 8
+          },
+          "targets": [
+            {
+              "refId": "A",
+              "datasource": {
+                "type": "cloudwatch",
+                "uid": "cloudwatch"
+              },
+              "queryMode": "Metrics",
+              "region": "default",
+              "metricQueryType": 0,
+              "metricEditorMode": 1,
+              "expression": "SEARCH('{AWS/DynamoDB,TableName} MetricName=\"ConsumedReadCapacityUnits\" TableName=mystic-box-back', 'Sum')",
+              "id": "",
+              "label": "${PROP('Dim.TableName')}",
+              "period": "",
+              "statistic": "Sum",
+              "namespace": "",
+              "metricName": "",
+              "dimensions": {},
+              "matchExact": true,
+              "hide": false
+            }
+          ],
+          "transformations": [
+            {
+              "id": "renameByRegex",
+              "options": {
+                "regex": "mystic-box-back-(.+?)Table-.*",
+                "renamePattern": "$1"
+              }
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "unit": "short",
+              "min": 0,
+              "color": {
+                "mode": "palette-classic"
+              },
+              "custom": {
+                "drawStyle": "line",
+                "lineWidth": 1,
+                "fillOpacity": 10,
+                "showPoints": "never",
+                "spanNulls": true,
+                "insertNulls": false,
+                "stacking": {
+                  "mode": "normal",
+                  "group": "A"
+                }
+              }
+            },
+            "overrides": []
+          },
+          "options": {
+            "legend": {
+              "displayMode": "table",
+              "placement": "right",
+              "calcs": [
+                "sum"
+              ],
+              "sortBy": "Total",
+              "sortDesc": true,
+              "showLegend": true
+            },
+            "tooltip": {
+              "mode": "multi",
+              "sort": "desc"
+            }
+          }
+        },
+        {
+          "id": 19,
+          "type": "timeseries",
+          "title": "Gravações consumidas por tabela",
+          "description": "",
+          "datasource": {
+            "type": "cloudwatch",
+            "uid": "cloudwatch"
+          },
+          "gridPos": {
+            "x": 12,
+            "y": 30,
+            "w": 12,
+            "h": 8
+          },
+          "targets": [
+            {
+              "refId": "A",
+              "datasource": {
+                "type": "cloudwatch",
+                "uid": "cloudwatch"
+              },
+              "queryMode": "Metrics",
+              "region": "default",
+              "metricQueryType": 0,
+              "metricEditorMode": 1,
+              "expression": "SEARCH('{AWS/DynamoDB,TableName} MetricName=\"ConsumedWriteCapacityUnits\" TableName=mystic-box-back', 'Sum')",
+              "id": "",
+              "label": "${PROP('Dim.TableName')}",
+              "period": "",
+              "statistic": "Sum",
+              "namespace": "",
+              "metricName": "",
+              "dimensions": {},
+              "matchExact": true,
+              "hide": false
+            }
+          ],
+          "transformations": [
+            {
+              "id": "renameByRegex",
+              "options": {
+                "regex": "mystic-box-back-(.+?)Table-.*",
+                "renamePattern": "$1"
+              }
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "unit": "short",
+              "min": 0,
+              "color": {
+                "mode": "palette-classic"
+              },
+              "custom": {
+                "drawStyle": "line",
+                "lineWidth": 1,
+                "fillOpacity": 10,
+                "showPoints": "never",
+                "spanNulls": true,
+                "insertNulls": false,
+                "stacking": {
+                  "mode": "normal",
+                  "group": "A"
+                }
+              }
+            },
+            "overrides": []
+          },
+          "options": {
+            "legend": {
+              "displayMode": "table",
+              "placement": "right",
+              "calcs": [
+                "sum"
+              ],
+              "sortBy": "Total",
+              "sortDesc": true,
+              "showLegend": true
+            },
+            "tooltip": {
+              "mode": "multi",
+              "sort": "desc"
+            }
+          }
+        },
+        {
+          "id": 20,
+          "type": "timeseries",
+          "title": "Pedidos recusados (throttle) por tabela",
+          "description": "",
+          "datasource": {
+            "type": "cloudwatch",
+            "uid": "cloudwatch"
+          },
+          "gridPos": {
+            "x": 0,
+            "y": 38,
+            "w": 12,
+            "h": 8
+          },
+          "targets": [
+            {
+              "refId": "A",
+              "datasource": {
+                "type": "cloudwatch",
+                "uid": "cloudwatch"
+              },
+              "queryMode": "Metrics",
+              "region": "default",
+              "metricQueryType": 0,
+              "metricEditorMode": 1,
+              "expression": "SEARCH('{AWS/DynamoDB,Operation,TableName} MetricName=\"ThrottledRequests\" TableName=mystic-box-back', 'Sum')",
+              "id": "",
+              "label": "${PROP('Dim.TableName')} ${PROP('Dim.Operation')}",
+              "period": "",
+              "statistic": "Sum",
+              "namespace": "",
+              "metricName": "",
+              "dimensions": {},
+              "matchExact": true,
+              "hide": false
+            }
+          ],
+          "transformations": [
+            {
+              "id": "renameByRegex",
+              "options": {
+                "regex": "mystic-box-back-(.+?)Table-.*",
+                "renamePattern": "$1"
+              }
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "unit": "short",
+              "min": 0,
+              "color": {
+                "mode": "palette-classic"
+              },
+              "custom": {
+                "drawStyle": "line",
+                "lineWidth": 1,
+                "fillOpacity": 10,
+                "showPoints": "never",
+                "spanNulls": true,
+                "insertNulls": false,
+                "stacking": {
+                  "mode": "none",
+                  "group": "A"
+                }
+              }
+            },
+            "overrides": []
+          },
+          "options": {
+            "legend": {
+              "displayMode": "table",
+              "placement": "right",
+              "calcs": [
+                "sum"
+              ],
+              "sortBy": "Total",
+              "sortDesc": true,
+              "showLegend": true
+            },
+            "tooltip": {
+              "mode": "multi",
+              "sort": "desc"
+            }
+          }
+        },
+        {
+          "id": 21,
+          "type": "timeseries",
+          "title": "Erros do DynamoDB",
+          "description": "UserErrors é da conta inteira e inclui condições de transação recusadas (ex.: dois jogadores comprando o mesmo anúncio).",
+          "datasource": {
+            "type": "cloudwatch",
+            "uid": "cloudwatch"
+          },
+          "gridPos": {
+            "x": 12,
+            "y": 38,
+            "w": 12,
+            "h": 8
+          },
+          "targets": [
+            {
+              "refId": "A",
+              "datasource": {
+                "type": "cloudwatch",
+                "uid": "cloudwatch"
+              },
+              "queryMode": "Metrics",
+              "region": "default",
+              "metricQueryType": 0,
+              "metricEditorMode": 1,
+              "expression": "SEARCH('{AWS/DynamoDB,Operation,TableName} MetricName=\"SystemErrors\" TableName=mystic-box-back', 'Sum')",
+              "id": "",
+              "label": "Sistema: ${PROP('Dim.TableName')} ${PROP('Dim.Operation')}",
+              "period": "",
+              "statistic": "Sum",
+              "namespace": "",
+              "metricName": "",
+              "dimensions": {},
+              "matchExact": true,
+              "hide": false
+            },
+            {
+              "refId": "B",
+              "datasource": {
+                "type": "cloudwatch",
+                "uid": "cloudwatch"
+              },
+              "queryMode": "Metrics",
+              "region": "default",
+              "metricQueryType": 0,
+              "metricEditorMode": 0,
+              "expression": "",
+              "id": "",
+              "label": "Do cliente (conta toda)",
+              "period": "",
+              "statistic": "Sum",
+              "namespace": "AWS/DynamoDB",
+              "metricName": "UserErrors",
+              "dimensions": {},
+              "matchExact": true
+            }
+          ],
+          "transformations": [
+            {
+              "id": "renameByRegex",
+              "options": {
+                "regex": "mystic-box-back-(.+?)Table-.*",
+                "renamePattern": "$1"
+              }
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "unit": "short",
+              "min": 0,
+              "color": {
+                "mode": "palette-classic"
+              },
+              "custom": {
+                "drawStyle": "line",
+                "lineWidth": 1,
+                "fillOpacity": 10,
+                "showPoints": "never",
+                "spanNulls": true,
+                "insertNulls": false,
+                "stacking": {
+                  "mode": "none",
+                  "group": "A"
+                }
+              }
+            },
+            "overrides": []
+          },
+          "options": {
+            "legend": {
+              "displayMode": "table",
+              "placement": "right",
+              "calcs": [
+                "sum"
+              ],
+              "sortBy": "Total",
+              "sortDesc": true,
+              "showLegend": true
+            },
+            "tooltip": {
+              "mode": "multi",
+              "sort": "desc"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": 23,
+      "type": "row",
+      "title": "Logs",
+      "collapsed": false,
+      "gridPos": {
+        "x": 0,
+        "y": 30,
+        "w": 24,
+        "h": 1
+      },
+      "panels": []
+    },
+    {
+      "id": 24,
+      "type": "table",
+      "title": "Erros e avisos nas Lambdas",
+      "description": "Logs Insights nos grupos de log das Lambdas (cobrado por GB lido; os logs são pequenos). Lambda nova: acrescente o grupo de log dela aqui (o teste test_monitoring_dashboard confere).",
+      "datasource": {
+        "type": "cloudwatch",
+        "uid": "cloudwatch"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 31,
+        "w": 24,
+        "h": 8
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "cloudwatch",
+            "uid": "cloudwatch"
+          },
+          "queryMode": "Logs",
+          "region": "default",
+          "id": "",
+          "expression": "fields @timestamp, level, coalesce(message, errorMessage, record.status, @message) as detalhe\n| parse @log \"/aws/lambda/mystic-box-back/*\" as lambda\n| filter level in [\"WARN\", \"WARNING\", \"ERROR\", \"CRITICAL\", \"FATAL\"]\n    or ispresent(errorType)\n    or (ispresent(record.status) and record.status != \"success\")\n    or @message like /Task timed out/\n| display @timestamp, lambda, level, detalhe\n| sort @timestamp desc\n| limit 200",
+          "statsGroups": [],
+          "logGroups": [
+            {
+              "arn": "/aws/lambda/mystic-box-back/AscendCardFunction",
+              "name": "/aws/lambda/mystic-box-back/AscendCardFunction"
+            },
+            {
+              "arn": "/aws/lambda/mystic-box-back/BuyListingFunction",
+              "name": "/aws/lambda/mystic-box-back/BuyListingFunction"
+            },
+            {
+              "arn": "/aws/lambda/mystic-box-back/CancelListingFunction",
+              "name": "/aws/lambda/mystic-box-back/CancelListingFunction"
+            },
+            {
+              "arn": "/aws/lambda/mystic-box-back/ClaimRegionFunction",
+              "name": "/aws/lambda/mystic-box-back/ClaimRegionFunction"
+            },
+            {
+              "arn": "/aws/lambda/mystic-box-back/CreateListingFunction",
+              "name": "/aws/lambda/mystic-box-back/CreateListingFunction"
+            },
+            {
+              "arn": "/aws/lambda/mystic-box-back/GetBattleFunction",
+              "name": "/aws/lambda/mystic-box-back/GetBattleFunction"
+            },
+            {
+              "arn": "/aws/lambda/mystic-box-back/GetCampaignFunction",
+              "name": "/aws/lambda/mystic-box-back/GetCampaignFunction"
+            },
+            {
+              "arn": "/aws/lambda/mystic-box-back/GetProfileFunction",
+              "name": "/aws/lambda/mystic-box-back/GetProfileFunction"
+            },
+            {
+              "arn": "/aws/lambda/mystic-box-back/GetRulesFunction",
+              "name": "/aws/lambda/mystic-box-back/GetRulesFunction"
+            },
+            {
+              "arn": "/aws/lambda/mystic-box-back/GetShopListingsFunction",
+              "name": "/aws/lambda/mystic-box-back/GetShopListingsFunction"
+            },
+            {
+              "arn": "/aws/lambda/mystic-box-back/GetSummonStatusFunction",
+              "name": "/aws/lambda/mystic-box-back/GetSummonStatusFunction"
+            },
+            {
+              "arn": "/aws/lambda/mystic-box-back/GetUserCardsFunction",
+              "name": "/aws/lambda/mystic-box-back/GetUserCardsFunction"
+            },
+            {
+              "arn": "/aws/lambda/mystic-box-back/GetWalletFunction",
+              "name": "/aws/lambda/mystic-box-back/GetWalletFunction"
+            },
+            {
+              "arn": "/aws/lambda/mystic-box-back/GetWorldFunction",
+              "name": "/aws/lambda/mystic-box-back/GetWorldFunction"
+            },
+            {
+              "arn": "/aws/lambda/mystic-box-back/OpenBoxFunction",
+              "name": "/aws/lambda/mystic-box-back/OpenBoxFunction"
+            },
+            {
+              "arn": "/aws/lambda/mystic-box-back/PlayBattleFunction",
+              "name": "/aws/lambda/mystic-box-back/PlayBattleFunction"
+            },
+            {
+              "arn": "/aws/lambda/mystic-box-back/PvpBattleFunction",
+              "name": "/aws/lambda/mystic-box-back/PvpBattleFunction"
+            },
+            {
+              "arn": "/aws/lambda/mystic-box-back/PvpChallengesFunction",
+              "name": "/aws/lambda/mystic-box-back/PvpChallengesFunction"
+            },
+            {
+              "arn": "/aws/lambda/mystic-box-back/RelicsFunction",
+              "name": "/aws/lambda/mystic-box-back/RelicsFunction"
+            },
+            {
+              "arn": "/aws/lambda/mystic-box-back/SaveUserCardFunction",
+              "name": "/aws/lambda/mystic-box-back/SaveUserCardFunction"
+            },
+            {
+              "arn": "/aws/lambda/mystic-box-back/SearchUsersFunction",
+              "name": "/aws/lambda/mystic-box-back/SearchUsersFunction"
+            },
+            {
+              "arn": "/aws/lambda/mystic-box-back/SetTitleFunction",
+              "name": "/aws/lambda/mystic-box-back/SetTitleFunction"
+            },
+            {
+              "arn": "/aws/lambda/mystic-box-back/SetUsernameFunction",
+              "name": "/aws/lambda/mystic-box-back/SetUsernameFunction"
+            }
+          ]
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "cellOptions": {
+              "type": "auto"
+            },
+            "inspect": true
+          },
+          "noValue": "Nenhum erro ou aviso no período"
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "@timestamp"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 190
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "lambda"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 200
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "level"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 90
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "showHeader": true,
+        "cellHeight": "sm"
+      }
+    }
+  ]
+}

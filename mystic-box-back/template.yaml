@@ -457,8 +457,12 @@ Resources:
       - !Ref SharedLayer
       Environment:
         Variables:
+          USER_SUMMON_STATE_TABLE: !Ref UserSummonStateTable
           SUMMON_TOKEN_PARAMETER: /mystic-box/summon-token-key
       Policies:
+      # Tempo de espera e sorteio pendente do jogador.
+      - DynamoDBCrudPolicy:
+          TableName: !Ref UserSummonStateTable
       # Chave HMAC do summonToken: SecureString criada fora do template (ver README).
       - SSMParameterReadPolicy:
           ParameterName: mystic-box/summon-token-key
@@ -683,12 +687,18 @@ Resources:
         LogGroup: !Ref GetSummonStatusFunctionLogGroup
       Architectures:
       - x86_64
+      Layers:
+      - !Ref SharedLayer
       Environment:
         Variables:
           USER_SUMMON_STATE_TABLE: !Ref UserSummonStateTable
+          SUMMON_TOKEN_PARAMETER: /mystic-box/summon-token-key
       Policies:
       - DynamoDBReadPolicy:
           TableName: !Ref UserSummonStateTable
+      # Confere o token do sorteio pendente (pendingSummon).
+      - SSMParameterReadPolicy:
+          ParameterName: mystic-box/summon-token-key
       Events:
         GetSummonStatus:
           Type: Api
