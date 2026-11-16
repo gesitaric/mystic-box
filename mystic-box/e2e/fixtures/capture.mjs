@@ -13,6 +13,7 @@
 //      node e2e/fixtures/capture.mjs seed
 //   2. Reinicie a API sem SUMMON_COOLDOWN_SECONDS (as regras gravadas saem
 //      com o tempo de espera real) e rode:
+//      node e2e/fixtures/capture.mjs market   (uma vez: pedidos e vendas)
 //      node e2e/fixtures/capture.mjs capture
 //
 // API_URL muda o endereço (padrão http://localhost:3100).
@@ -82,6 +83,81 @@ async function listSome(user, count) {
   }
 }
 
+async function balanceOf(user) {
+  return (await api(user, "GET", "/users/me/wallet")).balance ?? 0;
+}
+
+// Fragmentos só vêm de jogar: batalhas no automático contra o computador até o
+// saldo chegar em `target` (subir de nível dá Fragmentos).
+async function earnShards(user, target) {
+  for (let battles = 0; (await balanceOf(user)) < target; battles += 1) {
+    if (battles > 60) throw new Error(`${user.username} could not earn ${target} shards.`);
+    const current = await api(user, "GET", "/battles/current");
+    if (current.battle) {
+      await api(user, "POST", "/battles/current/actions", {
+        battleId: current.battle.battleId,
+        type: "forfeit",
+      });
+    }
+    const { cards } = await api(user, "GET", "/users/me/cards?sort=rarity&order=desc");
+    const team = cards.slice(0, current.teamSize ?? 3).map((card) => card.file_name);
+    let { battle } = await api(user, "POST", "/battles", { team, difficulty: "novice" });
+    while (battle.status === "active") {
+      ({ battle } = await api(user, "POST", "/battles/current/actions", {
+        battleId: battle.battleId,
+        type: "auto",
+      }));
+    }
+  }
+}
+
+// Pedido pelo menor preço aceito; o servidor recusa (409) se já houver uma
+// cópia à venda por esse preço, e aí a carta fica sem pedido.
+async function requestCard(user, option) {
+  try {
+    return await api(user, "POST", "/shop/orders", {
+      fileName: option.file_name,
+      price: option.priceRange.min,
+    });
+  } catch (error) {
+    console.warn(`  sem pedido de ${option.name}: ${error.message}`);
+    return null;
+  }
+}
+
+// Mercado com pedidos e vendas: o rival compra um anúncio do jogador e pede
+// cartas (algumas o jogador tem), o jogador atende um pedido e pede uma carta.
+async function seedMarket() {
+  const shop = await api(RIVAL, "GET", "/shop/listings");
+  const playerListing = shop.cards[0];
+  await earnShards(RIVAL, (playerListing?.price ?? 0) + 200);
+  if (playerListing) {
+    await api(RIVAL, "POST", `/shop/listings/${playerListing.listingId}/buy`);
+  }
+
+  const { cards: playerCards } = await api(PLAYER, "GET", "/users/me/cards?sort=rarity&order=desc");
+  const owned = new Set(playerCards.map((card) => card.file_name));
+  const options = shop.orderOptions.filter((option) => option.rarity <= 4);
+  const ownedOptions = options.filter((option) => owned.has(option.file_name));
+  const missing = options.filter((option) => !owned.has(option.file_name));
+  for (const option of [...ownedOptions.slice(0, 4), ...missing.slice(0, 2)]) {
+    await requestCard(RIVAL, option);
+  }
+
+  const forPlayer = await api(PLAYER, "GET", "/shop/listings");
+  const fillable = forPlayer.orders.find((order) => order.canFill);
+  if (fillable) await api(PLAYER, "POST", `/shop/orders/${fillable.orderId}/fill`);
+  const rivalOwned = new Set(
+    (await api(RIVAL, "GET", "/users/me/cards")).cards.map((card) => card.file_name),
+  );
+  const wish = forPlayer.orderOptions.find(
+    (option) => option.rarity === 3 && !owned.has(option.file_name) && !rivalOwned.has(option.file_name),
+  );
+  if (wish) await requestCard(PLAYER, wish);
+  await listSome(PLAYER, 1);
+  console.log("Mercado pronto.");
+}
+
 async function seed() {
   await ensureUsername(PLAYER);
   await ensureUsername(RIVAL);
@@ -103,8 +179,12 @@ async function capture() {
 
   await save("rules", await api(null, "GET", "/rules"));
   await save("world", await api(null, "GET", "/world"));
-  // Invocar exige login; abrir a caixa não gasta o tempo de espera (só guardar).
-  await save("box-open", await api(PLAYER, "POST", "/box/open"));
+  // Invocar exige login. Abrir a caixa gasta o tempo de espera e deixa o
+  // sorteio pendente (abrir de novo devolve o mesmo); guardar as cartas logo
+  // em seguida deixa o status sem sorteio pendente, como numa sessão normal.
+  const opened = await api(PLAYER, "POST", "/box/open");
+  await save("box-open", opened);
+  await api(PLAYER, "POST", "/users/me/cards", { summonToken: opened.summonToken });
 
   await save("wallet", await api(PLAYER, "GET", "/users/me/wallet"));
   await save("profile", await api(PLAYER, "GET", "/users/me/profile"));
@@ -117,7 +197,16 @@ async function capture() {
     "relics",
     await api(PLAYER, "GET", `/users/me/relics?fileName=${encodeURIComponent(firstCard)}`),
   );
-  await save("shop-listings", await api(PLAYER, "GET", "/shop/listings"));
+  const shop = await api(PLAYER, "GET", "/shop/listings");
+  await save("shop-listings", shop);
+  // Histórico de preços: a primeira carta (na ordem das opções de pedido) que
+  // já teve vendas. A tela de pedidos escolhe essa carta.
+  let history = null;
+  for (const option of shop.orderOptions) {
+    history = await api(PLAYER, "GET", `/shop/history?fileName=${encodeURIComponent(option.file_name)}`);
+    if (history.summary) break;
+  }
+  await save("shop-history", history);
   await save("campaign", await api(PLAYER, "GET", "/users/me/campaign"));
   await save("pvp", await api(PLAYER, "GET", "/pvp"));
   await save("users-search", await api(PLAYER, "GET", `/users/search?q=${RIVAL.username.slice(0, 3)}`));
@@ -151,8 +240,9 @@ async function capture() {
 
 const command = process.argv[2];
 if (command === "seed") await seed();
+else if (command === "market") await seedMarket();
 else if (command === "capture") await capture();
 else {
-  console.error("Uso: node e2e/fixtures/capture.mjs seed|capture");
+  console.error("Uso: node e2e/fixtures/capture.mjs seed|market|capture");
   process.exit(1);
 }

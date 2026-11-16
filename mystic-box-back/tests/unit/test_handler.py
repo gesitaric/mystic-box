@@ -78,6 +78,7 @@ def test_get_user_cards_groups_repeated_cards(authenticated_event, monkeypatch):
 
     assert ret["statusCode"] == 200
     assert data["totalCards"] == 4
+    assert data["marketFeePercent"] == cards.MARKET_FEE_PERCENT
     assert data["cards"] == [
         {
             "file_name": "astra.jfif",

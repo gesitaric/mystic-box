@@ -162,7 +162,7 @@ Each folder holds one handler. Grouped by feature:
 | --- | --- | --- |
 | Summon | `open_box`, `save_user_card`, `get_summon_status` | `POST /box/open`, `POST /users/me/cards`, `GET /users/me/summon-status` |
 | Collection | `get_user_cards`, `ascend_card`, `relics` | `GET /users/me/cards`, `POST /users/me/cards/ascend`, `/users/me/relics[/forge\|/equip]` |
-| Economy and market | `get_wallet`, `shop_listings`, `create_listing`, `buy_listing`, `cancel_listing` | `GET /users/me/wallet`, `GET\|POST /shop/listings`, `POST /shop/listings/{id}/buy\|cancel` |
+| Economy and market | `get_wallet`, `shop_listings`, `create_listing`, `buy_listing`, `cancel_listing`, `buy_orders` | `GET /users/me/wallet`, `GET\|POST /shop/listings`, `POST /shop/listings/{id}/buy\|cancel`, `GET /shop/history`, `POST /shop/orders`, `POST /shop/orders/{id}/fill\|cancel` |
 | Profile | `get_profile`, `set_username`, `set_title`, `search_users` | `GET /users/me/profile`, `POST /users/me/username\|title`, `GET /users/search` |
 | PvE battles | `get_battle`, `play_battle`, `get_campaign`, `claim_region` | `GET /battles/current`, `POST /battles`, `POST /battles/current/actions`, `GET /users/me/campaign`, `POST /users/me/regions/claim` |
 | Online duels | `pvp_challenges`, `pvp_battle` | `GET /pvp`, `/pvp/challenges/*`, `/pvp/battle*`, `/pvp/watch`, `/pvp/leave` |
@@ -173,7 +173,7 @@ Each folder holds one handler. Grouped by feature:
 All tables use on-demand billing and are keyed by player (`userId`) wherever the data belongs to a player. Main groups:
 
 - **Collection and summons:** `UserCardsTable`, `UserSummonStateTable`, `SummonTokensTable`, `CardsTable`
-- **Economy:** `UserWalletTable`, `ShopListingsTable`
+- **Economy:** `UserWalletTable`, `ShopListingsTable`, `BuyOrdersTable`, `MarketSalesTable` (price history, TTL)
 - **Progression:** `UserProgressTable`, `CardAscensionsTable`, `UserRelicsTable`, `CardRelicsTable`, `RegionProgressTable`
 - **Profiles:** `UserProfilesTable` (with the `UsernameSearchIndex` prefix-search index), `UsernamesTable` (one owner per name)
 - **Battles:** `BattlesTable`, `PvpChallengesTable`, `PvpBattlesTable` (with the sparse `LiveDuelsIndex`), `PvpPlayersTable`, `PvpPresenceTable`, `PvpReactionsTable`

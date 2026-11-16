@@ -104,6 +104,21 @@ MAX_LISTING_QUANTITY = 10
 # Anúncios ativos por jogador ao mesmo tempo.
 MAX_ACTIVE_LISTINGS = 30
 
+# Taxa de cada venda (anúncio comprado ou ordem atendida), descontada do
+# vendedor: o comprador paga o preço inteiro. Tira Fragmentos de circulação e
+# encarece passar moeda de uma conta para outra pelo mercado.
+MARKET_FEE_PERCENT = 10
+MARKET_FEE_MINIMUM = 1
+
+# Ordens de compra: o jogador pede uma cópia por um preço (na mesma faixa dos
+# anúncios) e os Fragmentos ficam reservados até alguém vender ou ele cancelar.
+MAX_ACTIVE_ORDERS = 10
+
+# Histórico de preços: cada venda fica guardada por MARKET_HISTORY_DAYS dias e
+# a consulta devolve as MARKET_HISTORY_SIZE mais recentes de uma carta.
+MARKET_HISTORY_DAYS = 30
+MARKET_HISTORY_SIZE = 20
+
 # Pesos por carta: ao mudar a quantidade de cartas de cada raridade, revise-os
 # para manter a chance total de cada raridade (hoje ~4,5% 5★, ~44% 4★, ~51% 3★,
 # com 18 cartas 5★, 33 4★ e 17 3★).
@@ -139,6 +154,21 @@ def max_listing_quantity(character, owned_quantity):
     if character is None:
         return 0
     return min(owned_quantity, MAX_LISTING_QUANTITY)
+
+
+def market_fee(price):
+    """Fragmentos descontados do vendedor numa venda pelo preço `price`.
+
+    Arredonda para o inteiro mais próximo, nunca abaixo de MARKET_FEE_MINIMUM e
+    nunca acima do próprio preço.
+    """
+    fee = (price * MARKET_FEE_PERCENT + 50) // 100
+    return min(price, max(MARKET_FEE_MINIMUM, fee))
+
+
+def seller_proceeds(price):
+    """Quanto o vendedor recebe numa venda pelo preço `price` (já sem a taxa)."""
+    return price - market_fee(price)
 
 
 def public_card(character):

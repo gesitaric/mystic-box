@@ -1,34 +1,34 @@
 {
   "cards": [
     {
-      "file_name": "vaelora.jfif",
-      "name": "Vaelora",
+      "file_name": "lunara.jfif",
+      "name": "Lunara",
       "rarity": 5,
       "quantity": 1,
-      "firstObtainedAt": "2026-11-12T01:38:39+00:00",
-      "lastObtainedAt": "2026-11-12T01:38:39+00:00",
+      "firstObtainedAt": "2026-11-15T22:12:52+00:00",
+      "lastObtainedAt": "2026-11-15T22:12:52+00:00",
       "listingPriceRange": {
         "min": 125,
         "max": 12500
       },
       "maxListingQuantity": 1,
       "battle": {
-        "element": "gale",
-        "elementLabel": "Gale",
+        "element": "tide",
+        "elementLabel": "Tide",
         "strongAgainst": [
-          "terra"
+          "ember"
         ],
-        "archetype": "summoner",
-        "archetypeLabel": "Summoner",
-        "archetypeDescription": "Fights beside a bonded monster that keeps striking foes.",
+        "archetype": "mystic",
+        "archetypeLabel": "Mystic",
+        "archetypeDescription": "Channels light and life to mend and revive allies.",
         "stats": {
-          "vitality": 152,
-          "might": 32,
-          "arcana": 42,
-          "bulwark": 23,
-          "resolve": 26,
-          "celerity": 16,
-          "fate": 13
+          "vitality": 153,
+          "might": 15,
+          "arcana": 39,
+          "bulwark": 20,
+          "resolve": 34,
+          "celerity": 12,
+          "fate": 10
         },
         "skills": [
           {
@@ -46,79 +46,67 @@
             "target": "self"
           },
           {
-            "id": "call_companion",
-            "name": "Call Companion",
-            "description": "The bonded monster pounces on a foe (0.8x hybrid) and stays for 3 turns as a Companion.",
+            "id": "mending_light",
+            "name": "Mending Light",
+            "description": "Heals one ally based on Arcana and removes its debuffs.",
             "cost": 3,
-            "target": "enemy"
+            "target": "ally"
           },
           {
-            "id": "beast_rampage",
-            "name": "Beast Rampage",
-            "description": "Hybrid assault on every foe (0.75x). With a Companion out, also Exposes them.",
+            "id": "sanctuary",
+            "name": "Sanctuary",
+            "description": "Heals every ally and grants Regen for 3 turns.",
             "cost": 5,
-            "target": "all_enemies"
+            "target": "all_allies"
           },
           {
-            "id": "primal_awakening",
-            "name": "Primal Awakening",
-            "description": "Supreme. The monster reveals its true form: massive hybrid blow (2.0x), then stays as a Companion and Empowers this card.",
+            "id": "rebirth_hymn",
+            "name": "Rebirth Hymn",
+            "description": "Supreme. Brings a fallen ally back with 50% vitality and Empowers it.",
             "cost": 7,
-            "target": "enemy"
+            "target": "fallen_ally"
           }
         ],
-        "duos": [
-          {
-            "partner": "kyrielle.jfif",
-            "skill": {
-              "id": "sky_guard_storm",
-              "name": "Storm of the Sky Guard",
-              "description": "The empress calls the wind, her captain rides it: magical blow to every foe (1.3x) that Slows them for 2 turns.",
-              "cost": 5,
-              "target": "all_enemies",
-              "duo": true
-            }
-          }
-        ]
+        "duos": []
       },
       "relic": null,
       "lore": {
-        "title": "Empress of the Floating Isles",
+        "title": "Keeper of the Moon Tides",
         "story": [
-          "When the Sundering tore the western hills into the sky, a young noblewoman named Vaelora refused to let them fall. She bound the winds with a jeweled scepter and steered the broken land into the clouds, and the survivors crowned her empress of the Zephyrine Isles.",
-          "Her crystal dragon, Lirien, hatched from a gem in her crown on the day she was crowned. Her sky guard is led by Kyrielle and her storm dragon, and her court is visited each year by the dragon sovereign Draemir, whose citadel drifts at the edge of her isles.",
-          "She is elegant, merciless toward tyrants and endlessly generous toward travelers. When her isles drift over a realm at war, the fighting tends to stop, not out of fear, but because no one wants to be the one Lirien decides to dislike."
+          "The moon pulls the oceans, and Lunara pulls the moon. She was raised by the tide-witches of the Amethyst Shoals, who taught her to sing the crystals awake and to hear the rhythm of the sea in every living heart.",
+          "When the Sundering drowned half the Thalassar Coast, the tide-witches sang for three days to stop the flood, and only Lunara survived the song. She has kept the tides calm alone ever since, with the help of Celestine above and Isolde's knights along the shore.",
+          "She heals the wounded by drawing pain out like a receding wave, and those she mends hear the ocean for days. But each full moon the tide pulls toward the Riftheart instead of the shore, and Lunara is starting to suspect the Mystic Box is calling the sea itself."
         ],
         "region": {
-          "id": "zephyrine",
-          "name": "The Zephyrine Isles",
-          "element": "gale",
+          "id": "thalassar",
+          "name": "The Thalassar Coast",
+          "element": "tide",
           "resonance": {
-            "region": "zephyrine",
-            "regionName": "The Zephyrine Isles",
-            "name": "Tailwind",
-            "description": "The isles' winds carry the team: +20% celerity."
+            "region": "thalassar",
+            "regionName": "The Thalassar Coast",
+            "name": "Tide Hymn",
+            "description": "The drowned temples sing along: +15% arcana."
           }
         },
         "bonds": [
           {
-            "name": "Draemir",
-            "file_name": "draemir.jfif",
-            "rarity": 5,
-            "relation": "An ancient ally who visits her court every year.",
+            "name": "Isolde",
+            "file_name": "isolde.jfif",
+            "rarity": 4,
+            "relation": "The knight she trusts with the shore.",
             "owned": false
           },
           {
-            "name": "Kyrielle",
-            "file_name": "kyrielle.jfif",
+            "name": "Celestine",
+            "file_name": "celestine.png",
             "rarity": 5,
-            "relation": "Captain of her sky guard and her most trusted rider.",
+            "relation": "Keeps the tides calm with her from above.",
             "owned": false
           }
         ],
         "rivals": [],
         "secret": {
-          "title": "The Drift",
+          "title": "The Song That Was Not Hers",
           "unlockAscension": 1,
           "unlocked": false,
           "text": null
@@ -136,15 +124,15 @@
       }
     },
     {
-      "file_name": "amethia.jfif",
-      "name": "Amethia",
-      "rarity": 4,
+      "file_name": "malachar.jfif",
+      "name": "Malachar",
+      "rarity": 5,
       "quantity": 1,
-      "firstObtainedAt": "2026-11-12T01:38:39+00:00",
-      "lastObtainedAt": "2026-11-12T01:38:39+00:00",
+      "firstObtainedAt": "2026-11-15T22:12:52+00:00",
+      "lastObtainedAt": "2026-11-15T22:12:52+00:00",
       "listingPriceRange": {
-        "min": 25,
-        "max": 2500
+        "min": 125,
+        "max": 12500
       },
       "maxListingQuantity": 1,
       "battle": {
@@ -157,13 +145,13 @@
         "archetypeLabel": "Arcanist",
         "archetypeDescription": "Wielder of raw elements, fragile but devastating.",
         "stats": {
-          "vitality": 111,
-          "might": 10,
-          "arcana": 40,
-          "bulwark": 15,
-          "resolve": 21,
-          "celerity": 14,
-          "fate": 11
+          "vitality": 138,
+          "might": 11,
+          "arcana": 51,
+          "bulwark": 17,
+          "resolve": 28,
+          "celerity": 13,
+          "fate": 14
         },
         "skills": [
           {
@@ -193,17 +181,36 @@
             "description": "Magical storm (0.8x) on every foe, each hit carrying the element effect.",
             "cost": 5,
             "target": "all_enemies"
+          },
+          {
+            "id": "cataclysm",
+            "name": "Cataclysm",
+            "description": "Supreme. Devastating spell (2.3x) that ignores half of the target's Resolve, with the element effect.",
+            "cost": 7,
+            "target": "enemy"
           }
         ],
-        "duos": []
+        "duos": [
+          {
+            "partner": "mortis.jfif",
+            "skill": {
+              "id": "last_laugh",
+              "name": "Last Laugh of Nocthaven",
+              "description": "The master reads, the jester laughs: magical blow to every foe (1.3x) that Weakens them for 2 turns.",
+              "cost": 5,
+              "target": "all_enemies",
+              "duo": true
+            }
+          }
+        ]
       },
       "relic": null,
       "lore": {
-        "title": "The Starlit Librarian",
+        "title": "The Warden Who Opened the Box",
         "story": [
-          "Amethia catalogs spells the way other librarians catalog books, and she has never lost a single one. She guards the Warden Archive of Nocthaven, the library Malachar left behind, including the dangerous shelves that read their readers back.",
-          "She is the younger sister of the sorceress Nocturna, and the two have not spoken since Nocturna left the archive to serve Zarathor. Amethia sends her a letter every year anyway. None have been answered, but none have been returned either.",
-          "She is gentle, patient and very hard to anger, which makes it all the more terrifying when she finally opens one of those books in battle."
+          "Malachar was the youngest of the Seven Wardens and the keeper of their archive, a quiet scholar who knew the name of every star and every poison. When the plague came to Nocthaven he read every forbidden tome for a cure, and every tome pointed to the same place: inside the Mystic Box.",
+          "He opened it. He found no cure, only the Hollow, and the Hollow breathed out. The Sundering cracked the world, and the plague dead of Nocthaven rose and would not lie down again. Malachar bound their souls into his tome so they would not be devoured, and has carried them ever since.",
+          "He rules Nocthaven's endless graveyards now, called a tyrant by the living and a jailer by the dead. Only he knows the truth: if he ever lets the souls go, the Hollow will eat them. He answers the Box because he made it what it is, and he means to be there when it finally closes."
         ],
         "region": {
           "id": "nocthaven",
@@ -218,23 +225,57 @@
         },
         "bonds": [
           {
-            "name": "Malachar",
-            "file_name": "malachar.jfif",
+            "name": "Mortis",
+            "file_name": "mortis.jfif",
             "rarity": 5,
-            "relation": "She guards his books, and the guilt written in their margins.",
+            "relation": "Pulled him from his grave. Regrets it daily.",
             "owned": false
           },
           {
-            "name": "Nocturna",
-            "file_name": "nocturna.jfif",
+            "name": "Zarathor",
+            "file_name": "zarathor.jfif",
+            "rarity": 5,
+            "relation": "A fool who wants to open the Box all the way.",
+            "owned": false
+          },
+          {
+            "name": "Ravenna",
+            "file_name": "ravenna.png",
             "rarity": 4,
-            "relation": "Her elder sister. Writes to her every year.",
+            "relation": "She would free the souls he guards, and let the Hollow eat them.",
             "owned": true
+          },
+          {
+            "name": "Uriel",
+            "file_name": "uriel.jfif",
+            "rarity": 5,
+            "relation": "The angel who warned him. Its pity is unbearable.",
+            "owned": false
+          },
+          {
+            "name": "Amethia",
+            "file_name": "amethia.jfif",
+            "rarity": 4,
+            "relation": "The keeper of his old archive. He trusts her with his secrets.",
+            "owned": false
           }
         ],
-        "rivals": [],
+        "rivals": [
+          {
+            "name": "Zarathor",
+            "file_name": "zarathor.jfif",
+            "rarity": 5,
+            "line": "You would open the Box all the way? Then you will have to go through me."
+          },
+          {
+            "name": "Uriel",
+            "file_name": "uriel.jfif",
+            "rarity": 5,
+            "line": "Keep your pity, angel. It burns worse than the Hollow."
+          }
+        ],
         "secret": {
-          "title": "The Torn Page",
+          "title": "Lira",
           "unlockAscension": 1,
           "unlocked": false,
           "text": null
@@ -248,7 +289,7 @@
         "nextStatBonusPercent": 5,
         "canAscend": false,
         "skillUnlockLevel": 3,
-        "unlocksSkill": true
+        "unlocksSkill": false
       }
     },
     {
@@ -1365,7 +1406,7 @@
             "file_name": "amethia.jfif",
             "rarity": 4,
             "relation": "Her younger sister. Keeps every letter, unopened.",
-            "owned": true
+            "owned": false
           }
         ],
         "rivals": [],
@@ -1488,7 +1529,7 @@
             "file_name": "corvus.jfif",
             "rarity": 3,
             "relation": "The guild's enforcer. Strangely slow to come for her.",
-            "owned": false
+            "owned": true
           }
         ],
         "rivals": [
@@ -1843,7 +1884,7 @@
             "file_name": "malachar.jfif",
             "rarity": 5,
             "relation": "He keeps the dead in a cage and calls it mercy.",
-            "owned": false
+            "owned": true
           },
           {
             "name": "Morwen",
@@ -2548,6 +2589,122 @@
         "nextCost": 1,
         "nextStatBonusPercent": 5,
         "canAscend": true,
+        "skillUnlockLevel": 3,
+        "unlocksSkill": true
+      }
+    },
+    {
+      "file_name": "corvus.jfif",
+      "name": "Corvus",
+      "rarity": 3,
+      "quantity": 1,
+      "firstObtainedAt": "2026-11-15T22:12:52+00:00",
+      "lastObtainedAt": "2026-11-15T22:12:52+00:00",
+      "listingPriceRange": {
+        "min": 5,
+        "max": 500
+      },
+      "maxListingQuantity": 1,
+      "battle": {
+        "element": "umbra",
+        "elementLabel": "Umbra",
+        "strongAgainst": [
+          "lumen"
+        ],
+        "archetype": "trickster",
+        "archetypeLabel": "Trickster",
+        "archetypeDescription": "Cunning schemer who curses foes and steals Aether.",
+        "stats": {
+          "vitality": 92,
+          "might": 23,
+          "arcana": 25,
+          "bulwark": 12,
+          "resolve": 13,
+          "celerity": 19,
+          "fate": 13
+        },
+        "skills": [
+          {
+            "id": "strike",
+            "name": "Strike",
+            "description": "Basic attack with the card's best power. Generates +1 extra Aether.",
+            "cost": 0,
+            "target": "enemy"
+          },
+          {
+            "id": "guard",
+            "name": "Guard",
+            "description": "Halves damage taken until this card's next turn. Generates +1 extra Aether.",
+            "cost": 0,
+            "target": "self"
+          },
+          {
+            "id": "hexing_shiv",
+            "name": "Hexing Shiv",
+            "description": "Cursed stab (1.0x hybrid) that Weakens and Exposes the target.",
+            "cost": 3,
+            "target": "enemy"
+          }
+        ],
+        "duos": []
+      },
+      "relic": null,
+      "lore": {
+        "title": "The Crow Among Thieves",
+        "story": [
+          "Corvus never shows his face and never gives his real name. He is the enforcer of the Spirehollow thieves' guild, and the guild is a little afraid of him. He is afraid of only one person: Vesper, who trained him.",
+          "He fights dirty, with poisoned daggers and tricks in the dark, and he has no shame about it. Honor, he says, is for people who can afford to lose.",
+          "The guild has ordered him to bring Nyra down. He has been finding reasons to delay for a year."
+        ],
+        "region": {
+          "id": "spirehollow",
+          "name": "Spirehollow",
+          "element": "umbra",
+          "resonance": {
+            "region": "spirehollow",
+            "regionName": "Spirehollow",
+            "name": "Rooftop Ambush",
+            "description": "Strike from the shadows: every foe starts Exposed for 2 turns."
+          }
+        },
+        "bonds": [
+          {
+            "name": "Nyra",
+            "file_name": "nyra.jfif",
+            "rarity": 4,
+            "relation": "Ordered to bring her down. Keeps finding reasons to wait.",
+            "owned": true
+          },
+          {
+            "name": "Vesper",
+            "file_name": "vesper.jfif",
+            "rarity": 4,
+            "relation": "The only person he fears.",
+            "owned": false
+          }
+        ],
+        "rivals": [
+          {
+            "name": "Nyra",
+            "file_name": "nyra.jfif",
+            "rarity": 4,
+            "line": "Lower your blade. Please. Just this once."
+          }
+        ],
+        "secret": {
+          "title": "His Real Name",
+          "unlockAscension": 1,
+          "unlocked": false,
+          "text": null
+        }
+      },
+      "ascension": {
+        "level": 0,
+        "max": 3,
+        "statBonusPercent": 0,
+        "nextCost": 1,
+        "nextStatBonusPercent": 5,
+        "canAscend": false,
         "skillUnlockLevel": 3,
         "unlocksSkill": true
       }
@@ -3404,5 +3561,6 @@
       }
     }
   ],
-  "totalCards": 44
+  "totalCards": 45,
+  "marketFeePercent": 10
 }

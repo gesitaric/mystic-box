@@ -5,6 +5,8 @@
 import { fixture } from "./support.js";
 
 const FIRST_CARD = fixture("cards").cards[0].name;
+// Carta com vendas no histórico gravado (escolhida na tela de pedidos).
+const HISTORY_CARD = fixture("shop-history").name;
 
 export const SCREENS = [
   {
@@ -59,6 +61,15 @@ export const SCREENS = [
     name: "shop-sell",
     path: "/shop/sell",
     ready: (page) => page.locator(".auth-modal"),
+  },
+  {
+    name: "shop-orders",
+    path: "/shop/orders",
+    act: async (page) => {
+      await page.getByRole("searchbox", { name: "Card" }).fill(HISTORY_CARD);
+      await page.getByRole("button", { name: HISTORY_CARD }).click();
+    },
+    ready: (page) => page.locator(".price-history-summary"),
   },
   {
     name: "shop-mine",

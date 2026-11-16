@@ -24,6 +24,7 @@ test("os endereços conhecidos voltam iguais depois de lidos", () => {
     "/collection",
     "/shop",
     "/shop/sell",
+    "/shop/orders",
     "/shop/mine",
     "/players",
     "/players/titles",

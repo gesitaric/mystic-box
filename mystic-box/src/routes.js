@@ -15,7 +15,7 @@
 // Painéis (modais) entram no fim do endereço da tela de baixo:
 //
 //   /collection
-//   /shop[/sell|/mine]
+//   /shop[/sell|/orders|/mine]
 //   /players[/titles|/search]
 //   /world[/chronicle|/:region]
 //   /grimoire[/:chapter]
@@ -23,7 +23,7 @@
 // Ex.: /arena/grimoire/battle é o Grimório aberto em cima da arena.
 
 export const ARENA_TABS = ["pve", "campaign", "pvp"];
-export const SHOP_TABS = ["buy", "sell", "mine"];
+export const SHOP_TABS = ["buy", "sell", "orders", "mine"];
 export const PLAYERS_TABS = ["name", "titles", "search"];
 export const GRIMOIRE_CHAPTERS = [
   "start",

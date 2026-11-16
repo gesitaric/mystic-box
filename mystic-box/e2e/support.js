@@ -32,6 +32,7 @@ const DEFAULT_ROUTES = {
   "GET /users/me/cards": "cards",
   "GET /users/me/relics": "relics",
   "GET /shop/listings": "shop-listings",
+  "GET /shop/history": "shop-history",
   "GET /users/me/campaign": "campaign",
   "GET /pvp": "pvp",
   "POST /pvp/leave": { body: {} },

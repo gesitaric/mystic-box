@@ -69,17 +69,23 @@ def shop_client(monkeypatch):
     monkeypatch.setattr(shop_listings, "_client", client)
     monkeypatch.setattr(shop_listings, "SHOP_LISTINGS_TABLE", "listings")
     monkeypatch.setattr(shop_listings, "USER_WALLET_TABLE", "wallet")
+    monkeypatch.setattr(shop_listings, "USER_CARDS_TABLE", "user-cards")
+    monkeypatch.setattr(shop_listings, "BUY_ORDERS_TABLE", "orders")
+    monkeypatch.setattr(shop_listings, "MARKET_SALES_TABLE", "sales")
     client.get_item.return_value = wallet_item(300)
-    client.scan.return_value = {
-        "Items": [
+    client.tables = {
+        "listings": [
             listing_item("a-exp", "other", "astra.jfif", 900),
             listing_item("a-cheap", "other-2", "astra.jfif", 280),
             listing_item("r1", "other", "rowan.jfif", 20),
             listing_item("mine-1", "user-123", "kaito.jfif", 60, "2026-01-01T00:00:00+00:00"),
             listing_item("mine-2", "user-123", "rowan.jfif", 15, "2026-01-02T00:00:00+00:00"),
             listing_item("old", "other", "antiga.jfif", 10),
-        ]
+        ],
+        "orders": [],
     }
+    client.scan.side_effect = lambda TableName, **kwargs: {"Items": client.tables[TableName]}
+    client.query.return_value = {"Items": []}
     return client
 
 
@@ -118,12 +124,14 @@ def test_shop_lists_only_cards_other_players_put_up_for_sale(authenticated_event
         "rarity": 3,
         "file_name": "rowan.jfif",
         "price": 15,
+        "fee": cards.market_fee(15),
+        "proceeds": 15 - cards.market_fee(15),
         "listedAt": "2026-01-02T00:00:00+00:00",
     }
 
 
 def test_shop_is_empty_without_listings(authenticated_event, shop_client):
-    shop_client.scan.return_value = {"Items": []}
+    shop_client.tables["listings"] = []
 
     data = json.loads(
         shop_listings.lambda_handler(authenticated_event(httpMethod="GET"), "")["body"]
@@ -145,10 +153,10 @@ def test_shop_can_afford_uses_server_balance(authenticated_event, shop_client):
 
 
 def test_shop_reads_every_page(authenticated_event, shop_client):
-    shop_client.scan.return_value = None
     shop_client.scan.side_effect = [
         {"Items": [listing_item("r1", "other", "rowan.jfif", 20)], "LastEvaluatedKey": {"k": 1}},
         {"Items": [listing_item("r2", "other", "rowan.jfif", 10)]},
+        {"Items": []},
     ]
 
     data = json.loads(
@@ -188,7 +196,9 @@ def create_client(monkeypatch):
     monkeypatch.setattr(create_listing, "USER_CARDS_TABLE", "user-cards")
     monkeypatch.setattr(create_listing, "USER_WALLET_TABLE", "wallet")
     monkeypatch.setattr(create_listing, "SHOP_LISTINGS_TABLE", "listings")
+    monkeypatch.setattr(create_listing, "BUY_ORDERS_TABLE", "orders")
     monkeypatch.setattr(create_listing.time, "time", lambda: 10_000)
+    client.scan.return_value = {"Items": []}
     client.query.return_value = owned_copies(
         ("old", "2026-01-01T00:00:00+00:00"),
         ("newest", "2026-01-03T00:00:00+00:00"),
@@ -342,6 +352,7 @@ def buy_client(monkeypatch):
     monkeypatch.setattr(buy_listing, "USER_CARDS_TABLE", "user-cards")
     monkeypatch.setattr(buy_listing, "USER_WALLET_TABLE", "wallet")
     monkeypatch.setattr(buy_listing, "SHOP_LISTINGS_TABLE", "listings")
+    monkeypatch.setattr(buy_listing, "MARKET_SALES_TABLE", "sales")
     monkeypatch.setattr(buy_listing.time, "time", lambda: 10_000)
 
     def get_item(TableName, Key, **kwargs):
@@ -373,7 +384,9 @@ def test_buy_listing_pays_seller_and_moves_card(authenticated_event, buy_client)
     assert data["card"]["name"] == "Astra"
     assert data["card"]["rarity"] == 5
 
-    delete, buyer, seller, put = buy_client.transact_write_items.call_args.kwargs["TransactItems"]
+    delete, buyer, seller, put, sale = buy_client.transact_write_items.call_args.kwargs[
+        "TransactItems"
+    ]
     assert delete["Delete"]["TableName"] == "listings"
     assert delete["Delete"]["Key"] == {"listingId": {"S": "l1"}}
     assert delete["Delete"]["ExpressionAttributeValues"] == {
@@ -384,10 +397,19 @@ def test_buy_listing_pays_seller_and_moves_card(authenticated_event, buy_client)
     assert buyer["Update"]["ConditionExpression"] == "balance >= :price"
     assert buyer["Update"]["ExpressionAttributeValues"] == {":price": {"N": "300"}}
     assert seller["Update"]["Key"] == {"userId": {"S": "seller-9"}}
+    # O vendedor recebe o preço menos a taxa.
     assert seller["Update"]["ExpressionAttributeValues"] == {
-        ":price": {"N": "300"},
+        ":proceeds": {"N": str(300 - cards.market_fee(300))},
         ":minusOne": {"N": "-1"},
     }
+    assert cards.market_fee(300) == 30
+    # A venda entra no histórico de preços, sem comprador nem vendedor.
+    assert sale["Put"]["TableName"] == "sales"
+    assert sale["Put"]["Item"]["file_name"] == {"S": "astra.jfif"}
+    assert sale["Put"]["Item"]["price"] == {"N": "300"}
+    assert sale["Put"]["Item"]["saleId"]["S"].endswith("#l1")
+    assert "buyerId" not in sale["Put"]["Item"]
+    assert "sellerId" not in sale["Put"]["Item"]
     assert put["Put"]["TableName"] == "user-cards"
     assert put["Put"]["Item"]["userId"] == {"S": "user-123"}
     assert put["Put"]["Item"]["file_name"] == {"S": "astra.jfif"}

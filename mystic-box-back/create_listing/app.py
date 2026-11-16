@@ -12,6 +12,8 @@ from mystic_shared.cards import (
     get_character,
     is_valid_listing_price,
     listing_price_range,
+    market_fee,
+    seller_proceeds,
 )
 
 CORS_HEADERS = {
@@ -23,6 +25,7 @@ CORS_HEADERS = {
 USER_CARDS_TABLE = os.environ.get("USER_CARDS_TABLE")
 USER_WALLET_TABLE = os.environ.get("USER_WALLET_TABLE")
 SHOP_LISTINGS_TABLE = os.environ.get("SHOP_LISTINGS_TABLE")
+BUY_ORDERS_TABLE = os.environ.get("BUY_ORDERS_TABLE")
 
 MAX_FILE_NAME_LENGTH = 64
 
@@ -126,6 +129,34 @@ def get_owned_copies(user_id, file_name):
     return copies
 
 
+def best_matching_order(user_id, file_name, price):
+    """Maior ordem de compra de outro jogador pela carta com preço >= `price`.
+
+    Se existir, anunciar por `price` seria vender por menos do que alguém já
+    oferece: o jogador deve vender para a ordem. Devolve None se não houver.
+    """
+    best = None
+    scan_kwargs = {
+        "TableName": BUY_ORDERS_TABLE,
+        "FilterExpression": "file_name = :fileName AND buyerId <> :me AND price >= :price",
+        "ExpressionAttributeValues": {
+            ":fileName": {"S": file_name},
+            ":me": {"S": user_id},
+            ":price": {"N": str(price)},
+        },
+    }
+    while True:
+        result = get_client().scan(**scan_kwargs)
+        for item in result.get("Items", []):
+            order = {"orderId": item["orderId"]["S"], "price": int(item["price"]["N"])}
+            if best is None or order["price"] > best["price"]:
+                best = order
+        last_key = result.get("LastEvaluatedKey")
+        if not last_key:
+            return best
+        scan_kwargs["ExclusiveStartKey"] = last_key
+
+
 def get_failed_conditions(error):
     """Índices dos itens da transação cuja condição falhou."""
     if error.response.get("Error", {}).get("Code") != "TransactionCanceledException":
@@ -172,6 +203,7 @@ def lambda_handler(event, context):
 
     try:
         copies = get_owned_copies(user_id, file_name)
+        order = best_matching_order(user_id, file_name, price) if copies else None
     except ClientError:
         return response(500, {"message": "Could not list the card."})
 
@@ -184,6 +216,18 @@ def lambda_handler(event, context):
             {
                 "message": f"You only have {len(copies)} copy(ies) of this card.",
                 "available": len(copies),
+            },
+        )
+
+    if order is not None:
+        return response(
+            409,
+            {
+                "message": (
+                    f"A player is already offering {order['price']} Arcane Shards for "
+                    "this card. Sell to their request in the shop instead."
+                ),
+                "order": order,
             },
         )
 
@@ -289,5 +333,7 @@ def lambda_handler(event, context):
             "listingIds": [listing["listingId"] for listing in listings],
             "remainingQuantity": len(copies) - quantity,
             "price": price,
+            "fee": market_fee(price),
+            "proceeds": seller_proceeds(price),
         },
     )

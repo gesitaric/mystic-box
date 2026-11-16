@@ -1735,7 +1735,7 @@
     {
       "region": "zephyrine",
       "regionName": "The Zephyrine Isles",
-      "owned": 1,
+      "owned": 0,
       "total": 3,
       "complete": false,
       "claimed": false,
@@ -1798,7 +1798,7 @@
     {
       "region": "spirehollow",
       "regionName": "Spirehollow",
-      "owned": 4,
+      "owned": 5,
       "total": 7,
       "complete": false,
       "claimed": false,
@@ -1816,7 +1816,7 @@
     {
       "region": "thalassar",
       "regionName": "The Thalassar Coast",
-      "owned": 2,
+      "owned": 3,
       "total": 5,
       "complete": false,
       "claimed": false,

@@ -1,6 +1,6 @@
 {
   "battle": {
-    "battleId": "0e617405-ac9e-455c-a6fd-972a700d9ee4",
+    "battleId": "c46d9f73-cced-4480-8fcb-505f536a197b",
     "mode": "pve",
     "status": "active",
     "endReason": null,
@@ -16,53 +16,45 @@
       "healPenaltyPercent": 0
     },
     "aether": {
-      "player": 1,
-      "enemy": 0
+      "player": 5,
+      "enemy": 2
     },
     "maxAether": 10,
-    "turn": "p1",
+    "turn": "p0",
     "yourTurn": true,
     "upcoming": [
-      "e0",
-      "e2",
-      "p2"
+      "p2",
+      "e1"
     ],
     "units": [
       {
         "id": "p0",
         "side": "player",
-        "fileName": "vaelora.jfif",
-        "name": "Vaelora",
+        "fileName": "lunara.jfif",
+        "name": "Lunara",
         "rarity": 5,
-        "element": "gale",
-        "elementLabel": "Gale",
-        "archetype": "summoner",
-        "archetypeLabel": "Summoner",
+        "element": "tide",
+        "elementLabel": "Tide",
+        "archetype": "mystic",
+        "archetypeLabel": "Mystic",
         "level": 1,
         "ascension": 0,
+        "relic": null,
         "bonds": [],
         "rivals": [],
         "stats": {
-          "vitality": 152,
-          "might": 32,
-          "arcana": 42,
-          "bulwark": 23,
-          "resolve": 26,
-          "celerity": 16,
-          "fate": 13
+          "vitality": 153,
+          "might": 15,
+          "arcana": 39,
+          "bulwark": 20,
+          "resolve": 34,
+          "celerity": 12,
+          "fate": 10
         },
-        "maxHp": 152,
-        "hp": 152,
+        "maxHp": 153,
+        "hp": 115,
         "alive": true,
-        "statuses": [
-          {
-            "id": "companion",
-            "label": "Companion",
-            "kind": "buff",
-            "description": "Its bonded monster strikes a foe (0.75x hybrid) at the start of each of this card's turns.",
-            "turns": 3
-          }
-        ],
+        "statuses": [],
         "skills": [
           {
             "id": "strike",
@@ -79,53 +71,54 @@
             "target": "self"
           },
           {
-            "id": "call_companion",
-            "name": "Call Companion",
-            "description": "The bonded monster pounces on a foe (0.8x hybrid) and stays for 3 turns as a Companion.",
+            "id": "mending_light",
+            "name": "Mending Light",
+            "description": "Heals one ally based on Arcana and removes its debuffs.",
             "cost": 3,
-            "target": "enemy"
+            "target": "ally"
           },
           {
-            "id": "beast_rampage",
-            "name": "Beast Rampage",
-            "description": "Hybrid assault on every foe (0.75x). With a Companion out, also Exposes them.",
+            "id": "sanctuary",
+            "name": "Sanctuary",
+            "description": "Heals every ally and grants Regen for 3 turns.",
             "cost": 5,
-            "target": "all_enemies"
+            "target": "all_allies"
           },
           {
-            "id": "primal_awakening",
-            "name": "Primal Awakening",
-            "description": "Supreme. The monster reveals its true form: massive hybrid blow (2.0x), then stays as a Companion and Empowers this card.",
+            "id": "rebirth_hymn",
+            "name": "Rebirth Hymn",
+            "description": "Supreme. Brings a fallen ally back with 50% vitality and Empowers it.",
             "cost": 7,
-            "target": "enemy"
+            "target": "fallen_ally"
           }
         ]
       },
       {
         "id": "p1",
         "side": "player",
-        "fileName": "amethia.jfif",
-        "name": "Amethia",
-        "rarity": 4,
+        "fileName": "malachar.jfif",
+        "name": "Malachar",
+        "rarity": 5,
         "element": "umbra",
         "elementLabel": "Umbra",
         "archetype": "arcanist",
         "archetypeLabel": "Arcanist",
         "level": 1,
         "ascension": 0,
+        "relic": null,
         "bonds": [],
         "rivals": [],
         "stats": {
-          "vitality": 111,
-          "might": 10,
-          "arcana": 40,
-          "bulwark": 15,
-          "resolve": 21,
-          "celerity": 14,
-          "fate": 11
+          "vitality": 138,
+          "might": 11,
+          "arcana": 51,
+          "bulwark": 17,
+          "resolve": 28,
+          "celerity": 13,
+          "fate": 14
         },
-        "maxHp": 111,
-        "hp": 111,
+        "maxHp": 138,
+        "hp": 138,
         "alive": true,
         "statuses": [],
         "skills": [
@@ -156,6 +149,13 @@
             "description": "Magical storm (0.8x) on every foe, each hit carrying the element effect.",
             "cost": 5,
             "target": "all_enemies"
+          },
+          {
+            "id": "cataclysm",
+            "name": "Cataclysm",
+            "description": "Supreme. Devastating spell (2.3x) that ignores half of the target's Resolve, with the element effect.",
+            "cost": 7,
+            "target": "enemy"
           }
         ]
       },
@@ -171,6 +171,7 @@
         "archetypeLabel": "Vanguard",
         "level": 1,
         "ascension": 0,
+        "relic": null,
         "bonds": [],
         "rivals": [],
         "stats": {
@@ -183,24 +184,9 @@
           "fate": 7
         },
         "maxHp": 156,
-        "hp": 128,
+        "hp": 156,
         "alive": true,
-        "statuses": [
-          {
-            "id": "weaken",
-            "label": "Weaken",
-            "kind": "debuff",
-            "description": "Deals 25% less damage.",
-            "turns": 2
-          },
-          {
-            "id": "expose",
-            "label": "Expose",
-            "kind": "debuff",
-            "description": "Takes 25% more damage.",
-            "turns": 2
-          }
-        ],
+        "statuses": [],
         "skills": [
           {
             "id": "strike",
@@ -244,6 +230,7 @@
         "archetypeLabel": "Arcanist",
         "level": 1,
         "ascension": 0,
+        "relic": null,
         "bonds": [],
         "rivals": [],
         "stats": {
@@ -256,7 +243,7 @@
           "fate": 10
         },
         "maxHp": 76,
-        "hp": 76,
+        "hp": 46,
         "alive": true,
         "statuses": [],
         "skills": [
@@ -286,28 +273,29 @@
       {
         "id": "e1",
         "side": "enemy",
-        "fileName": "rosalind.jfif",
-        "name": "Rosalind",
-        "rarity": 4,
+        "fileName": "brannoc.jfif",
+        "name": "Brannoc",
+        "rarity": 3,
         "element": "terra",
         "elementLabel": "Terra",
-        "archetype": "trickster",
-        "archetypeLabel": "Trickster",
+        "archetype": "vanguard",
+        "archetypeLabel": "Vanguard",
         "level": 1,
         "ascension": 0,
+        "relic": null,
         "bonds": [],
         "rivals": [],
         "stats": {
-          "vitality": 89,
-          "might": 25,
-          "arcana": 24,
-          "bulwark": 11,
-          "resolve": 14,
-          "celerity": 18,
-          "fate": 13
+          "vitality": 116,
+          "might": 19,
+          "arcana": 9,
+          "bulwark": 20,
+          "resolve": 17,
+          "celerity": 9,
+          "fate": 5
         },
-        "maxHp": 89,
-        "hp": 42,
+        "maxHp": 116,
+        "hp": 116,
         "alive": true,
         "statuses": [],
         "skills": [
@@ -326,46 +314,40 @@
             "target": "self"
           },
           {
-            "id": "hexing_shiv",
-            "name": "Hexing Shiv",
-            "description": "Cursed stab (1.0x hybrid) that Weakens and Exposes the target.",
+            "id": "bastion_call",
+            "name": "Bastion Call",
+            "description": "Taunts all foes for 2 turns and raises a shield worth 25% of max vitality.",
             "cost": 3,
-            "target": "enemy"
-          },
-          {
-            "id": "aether_siphon",
-            "name": "Aether Siphon",
-            "description": "Light hybrid hit (0.5x) that Slows every foe and steals up to 2 of their Aether.",
-            "cost": 5,
-            "target": "all_enemies"
+            "target": "self"
           }
         ]
       },
       {
         "id": "e2",
         "side": "enemy",
-        "fileName": "annelise.jfif",
-        "name": "Annelise",
+        "fileName": "wren.jfif",
+        "name": "Wren",
         "rarity": 3,
-        "element": "lumen",
-        "elementLabel": "Lumen",
-        "archetype": "mystic",
-        "archetypeLabel": "Mystic",
+        "element": "tide",
+        "elementLabel": "Tide",
+        "archetype": "summoner",
+        "archetypeLabel": "Summoner",
         "level": 1,
         "ascension": 0,
+        "relic": null,
         "bonds": [],
         "rivals": [],
         "stats": {
-          "vitality": 84,
-          "might": 8,
-          "arcana": 22,
+          "vitality": 83,
+          "might": 20,
+          "arcana": 21,
           "bulwark": 12,
-          "resolve": 19,
-          "celerity": 11,
-          "fate": 6
+          "resolve": 14,
+          "celerity": 12,
+          "fate": 9
         },
-        "maxHp": 84,
-        "hp": 84,
+        "maxHp": 83,
+        "hp": 83,
         "alive": true,
         "statuses": [],
         "skills": [
@@ -384,11 +366,11 @@
             "target": "self"
           },
           {
-            "id": "mending_light",
-            "name": "Mending Light",
-            "description": "Heals one ally based on Arcana and removes its debuffs.",
+            "id": "call_companion",
+            "name": "Call Companion",
+            "description": "The bonded monster pounces on a foe (0.8x hybrid) and stays for 3 turns as a Companion.",
             "cost": 3,
-            "target": "ally"
+            "target": "enemy"
           }
         ]
       }
@@ -417,25 +399,43 @@
         "usable": true,
         "reason": null,
         "targets": [
-          "p1"
+          "p0"
         ]
       },
       {
-        "id": "elemental_bolt",
-        "name": "Elemental Bolt",
-        "description": "Magical bolt (1.45x) carrying this card's element effect.",
+        "id": "mending_light",
+        "name": "Mending Light",
+        "description": "Heals one ally based on Arcana and removes its debuffs.",
         "cost": 3,
-        "target": "enemy",
-        "usable": false,
-        "reason": "Not enough Aether.",
-        "targets": []
+        "target": "ally",
+        "usable": true,
+        "reason": null,
+        "targets": [
+          "p0",
+          "p1",
+          "p2"
+        ]
       },
       {
-        "id": "arcane_tempest",
-        "name": "Arcane Tempest",
-        "description": "Magical storm (0.8x) on every foe, each hit carrying the element effect.",
+        "id": "sanctuary",
+        "name": "Sanctuary",
+        "description": "Heals every ally and grants Regen for 3 turns.",
         "cost": 5,
-        "target": "all_enemies",
+        "target": "all_allies",
+        "usable": true,
+        "reason": null,
+        "targets": [
+          "p0",
+          "p1",
+          "p2"
+        ]
+      },
+      {
+        "id": "rebirth_hymn",
+        "name": "Rebirth Hymn",
+        "description": "Supreme. Brings a fallen ally back with 50% vitality and Empowers it.",
+        "cost": 7,
+        "target": "fallen_ally",
         "usable": false,
         "reason": "Not enough Aether.",
         "targets": []
@@ -447,11 +447,10 @@
       "enemy": null
     },
     "elementRiders": {
-      "lumen": "Heals the most wounded ally for 30% of the damage.",
+      "terra": "Crushes the target's strength (Weaken).",
       "umbra": "Drains 35% of the damage as vitality.",
-      "volt": "Lightning arcs to the weakest other foe for 35% of the damage.",
-      "gale": "Tears the target's guard open (Expose).",
-      "terra": "Crushes the target's strength (Weaken)."
+      "tide": "Drenches the target (Slow).",
+      "volt": "Lightning arcs to the weakest other foe for 35% of the damage."
     }
   },
   "pvpBattleId": null,
@@ -492,6 +491,6 @@
     "levelExperience": 0,
     "nextLevelExperience": 100,
     "wins": 0,
-    "losses": 0
+    "losses": 3
   }
 }

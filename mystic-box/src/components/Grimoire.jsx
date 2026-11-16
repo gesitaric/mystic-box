@@ -281,9 +281,43 @@ function ShopChapter({ rules }) {
           A card on sale leaves your collection until it is sold or you cancel the sale; you
           cannot battle with it meanwhile.
         </li>
-        <li>When a card is sold, its full price goes to your balance.</li>
+        <li>
+          When a card is sold, its price goes to your balance minus a <b>{shop.feePercent}%</b>{" "}
+          market fee (at least <Shards>{shop.feeMinimum}</Shards>). The buyer pays the full
+          price.
+        </li>
         <li>The shop always offers the cheapest copy of each card first.</li>
         <li>You can only buy a card if your balance covers its price.</li>
+      </ul>
+
+      <h3 className="gr-heading">Requests</h3>
+      <ul className="gr-list">
+        <li>
+          Can't find a card? <b>Request</b> it for a price within its rarity range. The shards
+          leave your balance right away and are set aside until someone sells it to you.
+        </li>
+        <li>
+          Any player who owns the card can sell a copy to the highest request. They receive the
+          offer minus the market fee, and the card goes straight to your collection.
+        </li>
+        <li>
+          Cancel a request at any time to get the shards back. You can have up to{" "}
+          <b>{shop.maxActiveOrders}</b> open requests.
+        </li>
+        <li>
+          You can't request a card for as much as or more than a copy already on sale (buy it
+          instead), nor put a card on sale for as little as or less than an open request (sell
+          to it instead).
+        </li>
+      </ul>
+
+      <h3 className="gr-heading">Price history</h3>
+      <ul className="gr-list">
+        <li>
+          Every sale is recorded for <b>{shop.historyDays}</b> days. When you sell or request a
+          card, the shop shows its last <b>{shop.historySize}</b> sales with the latest, average
+          and range of prices.
+        </li>
       </ul>
     </>
   );

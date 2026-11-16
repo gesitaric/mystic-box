@@ -1,0 +1,19 @@
+{
+  "fileName": "seraphiel.jfif",
+  "name": "Seraphiel",
+  "rarity": 5,
+  "days": 30,
+  "sales": [
+    {
+      "price": 125,
+      "soldAt": "2026-11-15T21:46:41+00:00"
+    }
+  ],
+  "summary": {
+    "count": 1,
+    "last": 125,
+    "average": 125,
+    "min": 125,
+    "max": 125
+  }
+}
