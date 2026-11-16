@@ -35,6 +35,11 @@ def _shop_rules():
     return {
         "maxListingQuantity": cards.MAX_LISTING_QUANTITY,
         "maxActiveListings": cards.MAX_ACTIVE_LISTINGS,
+        "feePercent": cards.MARKET_FEE_PERCENT,
+        "feeMinimum": cards.MARKET_FEE_MINIMUM,
+        "maxActiveOrders": cards.MAX_ACTIVE_ORDERS,
+        "historyDays": cards.MARKET_HISTORY_DAYS,
+        "historySize": cards.MARKET_HISTORY_SIZE,
         "listingPrices": [
             {"rarity": rarity, **cards.LISTING_PRICE_LIMITS[rarity]}
             for rarity in RARITIES

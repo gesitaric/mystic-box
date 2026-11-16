@@ -46,6 +46,11 @@
   "shop": {
     "maxListingQuantity": 10,
     "maxActiveListings": 30,
+    "feePercent": 10,
+    "feeMinimum": 1,
+    "maxActiveOrders": 10,
+    "historyDays": 30,
+    "historySize": 20,
     "listingPrices": [
       {
         "rarity": 5,

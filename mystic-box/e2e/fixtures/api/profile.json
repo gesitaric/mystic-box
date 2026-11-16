@@ -5,12 +5,12 @@
   "levelExperience": 0,
   "nextLevelExperience": 100,
   "wins": 0,
-  "losses": 0,
+  "losses": 3,
   "userId": "e2e-player",
   "username": "Seraphine",
   "usernameChange": {
     "canChange": false,
-    "retryAfterSeconds": 2591659,
+    "retryAfterSeconds": 2258745,
     "nextChangeAt": 1797039517
   },
   "usernameRules": {

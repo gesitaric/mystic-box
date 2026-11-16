@@ -41,6 +41,24 @@ export const releases = [
         text: "Forging a relic with Arcane Shards no longer fails with an error. Once you've defeated a land's champion, you can forge more copies of its relic.",
         prs: [96],
       },
+      {
+        type: "new",
+        title: "Requests in the shop",
+        text: "Can't find the card you want? Request it in the new Requests tab for the price you're willing to pay. Your shards are set aside, and any player who owns the card can sell it to you in one tap. Cancel whenever you like to get your shards back.",
+        prs: [107],
+      },
+      {
+        type: "new",
+        title: "Price history",
+        text: "When you sell or request a card, the shop shows its recent sales with the latest, average and range of prices, so you know what it's really worth.",
+        prs: [107],
+      },
+      {
+        type: "improved",
+        title: "Market fee",
+        text: "A small fee is now taken from the seller on every sale in the shop, so shards don't pile up endlessly. The buyer still pays the listed price, and the shop shows how much you receive before you sell.",
+        prs: [107],
+      },
     ],
   },
   {

@@ -5,6 +5,7 @@ import { ELEMENT_STYLE } from "./battle/battlePresentation";
 import { SkillList, StatGrid } from "./battle/TeamSetup";
 import { CardFace } from "./GachaCard";
 import Modal from "./Modal";
+import PriceHistory from "./PriceHistory";
 import RelicPanel from "./RelicPanel";
 import { RelicIcon } from "../relicImages";
 import "../styles/battle.css";
@@ -25,9 +26,20 @@ function copiesLabel(count) {
 }
 
 // Modal de anúncio no mercado: quantas cópias e o preço pedido por cópia. O
-// limite de cópias (`maxListingQuantity`) e a faixa de preço
-// (`listingPriceRange`) vêm do servidor, que valida tudo de novo ao anunciar.
-function ListingModal({ card, listing, error, onConfirm, onClose }) {
+// limite de cópias (`maxListingQuantity`), a faixa de preço
+// (`listingPriceRange`) e a taxa (`marketFeePercent`) vêm do servidor, que
+// valida tudo de novo ao anunciar e diz quanto o vendedor recebe.
+function ListingModal({
+  card,
+  listing,
+  error,
+  feePercent,
+  apiUrl,
+  session,
+  onSessionExpired,
+  onConfirm,
+  onClose,
+}) {
   const max = card.maxListingQuantity;
   const range = card.listingPriceRange;
   const rarity = Number(card.rarity) || 0;
@@ -140,7 +152,21 @@ function ListingModal({ card, listing, error, onConfirm, onClose }) {
               ? `You keep ${copiesLabel(keepsCount)} in your collection`
               : "Leaves your collection while on sale"}
           </span>
+          {feePercent != null && (
+            <span className="collection-sell-keeps">
+              A {feePercent}% market fee is taken from each sale
+            </span>
+          )}
         </p>
+
+        {apiUrl && (
+          <PriceHistory
+            apiUrl={apiUrl}
+            session={session}
+            fileName={card.file_name}
+            onSessionExpired={onSessionExpired}
+          />
+        )}
 
         {error && (
           <p className="auth-error" role="alert">
@@ -489,6 +515,7 @@ function OwnedCards({ apiUrl, session, onSessionExpired, onListed, allowAscend =
   const [listing, setListing] = useState(false);
   const [listError, setListError] = useState("");
   const [listFeedback, setListFeedback] = useState(null);
+  const [marketFeePercent, setMarketFeePercent] = useState(null);
   // Ascensão: carta com o modal aberto, se está enviando e erro no modal.
   const [ascendingCard, setAscendingCard] = useState(null);
   const [ascending, setAscending] = useState(false);
@@ -584,8 +611,9 @@ function OwnedCards({ apiUrl, session, onSessionExpired, onListed, allowAscend =
 
       const data = await response.json().catch(() => ({}));
 
-      // Preço recusado: o modal continua aberto para o jogador corrigir.
-      if (response.status === 400) {
+      // Preço recusado (fora da faixa ou abaixo de um pedido de outro
+      // jogador): o modal continua aberto para o jogador corrigir.
+      if (response.status === 400 || (response.status === 409 && data.order)) {
         setListError(data.message ?? "Check the price and try again.");
         return;
       }
@@ -608,7 +636,11 @@ function OwnedCards({ apiUrl, session, onSessionExpired, onListed, allowAscend =
       setSellingCard(null);
       setListFeedback({
         type: "success",
-        text: `${copiesLabel(data.listedQuantity)} of ${data.name ?? card.name} put on sale for ✧ ${data.price} each.`,
+        text:
+          `${copiesLabel(data.listedQuantity)} of ${data.name ?? card.name} put on sale for ✧ ${data.price} each.` +
+          (typeof data.proceeds === "number"
+            ? ` You receive ✧ ${data.proceeds} per copy sold.`
+            : ""),
       });
       setReloadKey((key) => key + 1);
       onListed?.();
@@ -650,6 +682,7 @@ function OwnedCards({ apiUrl, session, onSessionExpired, onListed, allowAscend =
         if (cancelled) return;
         setCards(data.cards ?? []);
         setTotalCards(data.totalCards ?? 0);
+        setMarketFeePercent(data.marketFeePercent ?? null);
       } catch (loadError) {
         console.error(loadError);
         if (!cancelled) setError("Could not load your collection.");
@@ -851,6 +884,10 @@ function OwnedCards({ apiUrl, session, onSessionExpired, onListed, allowAscend =
           card={sellingCard}
           listing={listing}
           error={listError}
+          feePercent={marketFeePercent}
+          apiUrl={apiUrl}
+          session={session}
+          onSessionExpired={onSessionExpired}
           onConfirm={(quantity, price) => listCards(sellingCard, quantity, price)}
           onClose={() => setSellingCard(null)}
         />

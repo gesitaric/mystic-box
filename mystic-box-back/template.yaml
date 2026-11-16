@@ -146,6 +146,40 @@ Resources:
       - AttributeName: listingId
         KeyType: HASH
 
+  # Ordens de compra: cada item pede uma cópia de uma carta por um preço. Os
+  # Fragmentos já saíram do saldo do comprador (reservados) e voltam se ele
+  # cancelar. Atendidas e canceladas saem da tabela.
+  BuyOrdersTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+      - AttributeName: orderId
+        AttributeType: S
+      KeySchema:
+      - AttributeName: orderId
+        KeyType: HASH
+
+  # Histórico de preços: uma venda por item (carta + instante#id), sem quem
+  # comprou nem quem vendeu. Some sozinho pelo TTL.
+  MarketSalesTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+      - AttributeName: file_name
+        AttributeType: S
+      - AttributeName: saleId
+        AttributeType: S
+      KeySchema:
+      - AttributeName: file_name
+        KeyType: HASH
+      - AttributeName: saleId
+        KeyType: RANGE
+      TimeToLiveSpecification:
+        AttributeName: expiresAt
+        Enabled: true
+
   # Experiência acumulada (o nível é calculado dela), vitórias e derrotas.
   UserProgressTable:
     Type: AWS::DynamoDB::Table
@@ -779,12 +813,35 @@ Resources:
         Variables:
           SHOP_LISTINGS_TABLE: !Ref ShopListingsTable
           USER_WALLET_TABLE: !Ref UserWalletTable
+          USER_CARDS_TABLE: !Ref UserCardsTable
+          BUY_ORDERS_TABLE: !Ref BuyOrdersTable
+          MARKET_SALES_TABLE: !Ref MarketSalesTable
       Policies:
       - DynamoDBReadPolicy:
           TableName: !Ref ShopListingsTable
       - DynamoDBReadPolicy:
           TableName: !Ref UserWalletTable
+      - DynamoDBReadPolicy:
+          TableName: !Ref UserCardsTable
+      - DynamoDBReadPolicy:
+          TableName: !Ref BuyOrdersTable
+      - DynamoDBReadPolicy:
+          TableName: !Ref MarketSalesTable
       Events:
+        GetShopHistory:
+          Type: Api
+          Properties:
+            RestApiId: !Ref MysticBoxApi
+            Path: /shop/history
+            Method: get
+            Auth:
+              Authorizer: CognitoAuthorizer
+        GetShopHistoryOptions:
+          Type: Api
+          Properties:
+            RestApiId: !Ref MysticBoxApi
+            Path: /shop/history
+            Method: options
         GetShopListings:
           Type: Api
           Properties:
@@ -817,7 +874,10 @@ Resources:
           SHOP_LISTINGS_TABLE: !Ref ShopListingsTable
           USER_CARDS_TABLE: !Ref UserCardsTable
           USER_WALLET_TABLE: !Ref UserWalletTable
+          BUY_ORDERS_TABLE: !Ref BuyOrdersTable
       Policies:
+      - DynamoDBReadPolicy:
+          TableName: !Ref BuyOrdersTable
       - DynamoDBCrudPolicy:
           TableName: !Ref ShopListingsTable
       - DynamoDBCrudPolicy:
@@ -851,7 +911,10 @@ Resources:
           SHOP_LISTINGS_TABLE: !Ref ShopListingsTable
           USER_CARDS_TABLE: !Ref UserCardsTable
           USER_WALLET_TABLE: !Ref UserWalletTable
+          MARKET_SALES_TABLE: !Ref MarketSalesTable
       Policies:
+      - DynamoDBWritePolicy:
+          TableName: !Ref MarketSalesTable
       - DynamoDBCrudPolicy:
           TableName: !Ref ShopListingsTable
       - DynamoDBWritePolicy:
@@ -912,6 +975,80 @@ Resources:
           Properties:
             RestApiId: !Ref MysticBoxApi
             Path: /shop/listings/{listingId}/cancel
+            Method: options
+
+  BuyOrdersFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: buy_orders/
+      Handler: app.lambda_handler
+      Runtime: python3.14
+      LoggingConfig:
+        LogGroup: !Ref BuyOrdersFunctionLogGroup
+      Architectures:
+      - x86_64
+      Layers:
+      - !Ref SharedLayer
+      Environment:
+        Variables:
+          BUY_ORDERS_TABLE: !Ref BuyOrdersTable
+          SHOP_LISTINGS_TABLE: !Ref ShopListingsTable
+          USER_CARDS_TABLE: !Ref UserCardsTable
+          USER_WALLET_TABLE: !Ref UserWalletTable
+          MARKET_SALES_TABLE: !Ref MarketSalesTable
+      Policies:
+      - DynamoDBCrudPolicy:
+          TableName: !Ref BuyOrdersTable
+      - DynamoDBReadPolicy:
+          TableName: !Ref ShopListingsTable
+      - DynamoDBCrudPolicy:
+          TableName: !Ref UserCardsTable
+      - DynamoDBCrudPolicy:
+          TableName: !Ref UserWalletTable
+      - DynamoDBWritePolicy:
+          TableName: !Ref MarketSalesTable
+      Events:
+        CreateOrder:
+          Type: Api
+          Properties:
+            RestApiId: !Ref MysticBoxApi
+            Path: /shop/orders
+            Method: post
+            Auth:
+              Authorizer: CognitoAuthorizer
+        CreateOrderOptions:
+          Type: Api
+          Properties:
+            RestApiId: !Ref MysticBoxApi
+            Path: /shop/orders
+            Method: options
+        FillOrder:
+          Type: Api
+          Properties:
+            RestApiId: !Ref MysticBoxApi
+            Path: /shop/orders/{orderId}/fill
+            Method: post
+            Auth:
+              Authorizer: CognitoAuthorizer
+        FillOrderOptions:
+          Type: Api
+          Properties:
+            RestApiId: !Ref MysticBoxApi
+            Path: /shop/orders/{orderId}/fill
+            Method: options
+        CancelOrder:
+          Type: Api
+          Properties:
+            RestApiId: !Ref MysticBoxApi
+            Path: /shop/orders/{orderId}/cancel
+            Method: post
+            Auth:
+              Authorizer: CognitoAuthorizer
+        CancelOrderOptions:
+          Type: Api
+          Properties:
+            RestApiId: !Ref MysticBoxApi
+            Path: /shop/orders/{orderId}/cancel
             Method: options
 
   GetProfileFunction:
@@ -1606,6 +1743,12 @@ Resources:
       LogGroupName: !Sub "/aws/lambda/${AWS::StackName}/CancelListingFunction"
       RetentionInDays: 14
 
+  BuyOrdersFunctionLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub "/aws/lambda/${AWS::StackName}/BuyOrdersFunction"
+      RetentionInDays: 14
+
   GetProfileFunctionLogGroup:
     Type: AWS::Logs::LogGroup
     Properties:
@@ -1877,6 +2020,18 @@ Outputs:
   ShopListingsTable:
     Description: DynamoDB table that stores the cards players put up for sale
     Value: !Ref ShopListingsTable
+  BuyOrdersApi:
+    Description: API Gateway endpoint URL to place a buy order (POST); fill and cancel are under /shop/orders/{orderId}
+    Value: !Sub "https://${MysticBoxApi}.execute-api.${AWS::Region}.${AWS::URLSuffix}/Prod/shop/orders"
+  ShopHistoryApi:
+    Description: API Gateway endpoint URL for a card's recent market sales
+    Value: !Sub "https://${MysticBoxApi}.execute-api.${AWS::Region}.${AWS::URLSuffix}/Prod/shop/history"
+  BuyOrdersTable:
+    Description: DynamoDB table that stores open buy orders (shards already set aside)
+    Value: !Ref BuyOrdersTable
+  MarketSalesTable:
+    Description: DynamoDB table that stores recent market sales for the price history (TTL)
+    Value: !Ref MarketSalesTable
   GetProfileApi:
     Description: API Gateway endpoint URL for the player's level and experience
     Value: !Sub "https://${MysticBoxApi}.execute-api.${AWS::Region}.${AWS::URLSuffix}/Prod/users/me/profile"

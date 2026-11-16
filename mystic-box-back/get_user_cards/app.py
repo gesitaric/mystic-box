@@ -6,7 +6,12 @@ import boto3
 from boto3.dynamodb.conditions import Key
 from botocore.exceptions import ClientError
 from mystic_shared.ascension import public_ascension, read_ascensions
-from mystic_shared.cards import get_character, listing_price_range, max_listing_quantity
+from mystic_shared.cards import (
+    MARKET_FEE_PERCENT,
+    get_character,
+    listing_price_range,
+    max_listing_quantity,
+)
 from mystic_shared.battle import ascension_unlocks_skill, public_duos, public_skills
 from mystic_shared.lore import public_lore
 from mystic_shared.relics import public_equipped, read_equipped
@@ -238,4 +243,11 @@ def lambda_handler(event, context):
 
     cards = sort_cards(group_cards(items, ascensions, relics), sort, order)
 
-    return response(200, {"cards": cards, "totalCards": len(items)})
+    return response(
+        200,
+        {
+            "cards": cards,
+            "totalCards": len(items),
+            "marketFeePercent": MARKET_FEE_PERCENT,
+        },
+    )

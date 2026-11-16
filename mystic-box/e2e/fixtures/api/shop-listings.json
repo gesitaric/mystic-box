@@ -7,7 +7,7 @@
       "available": 1,
       "listingId": "e7aa93a3-6853-48a4-8c84-8c2e89d326c4",
       "price": 25,
-      "canAfford": false
+      "canAfford": true
     },
     {
       "name": "Eldric",
@@ -16,7 +16,7 @@
       "available": 1,
       "listingId": "fea8739e-1e77-41ef-808a-dd7624029369",
       "price": 25,
-      "canAfford": false
+      "canAfford": true
     },
     {
       "name": "Faelyn",
@@ -25,7 +25,7 @@
       "available": 1,
       "listingId": "13169330-7be7-4094-b3bf-49a8a3e09130",
       "price": 25,
-      "canAfford": false
+      "canAfford": true
     },
     {
       "name": "Kaito",
@@ -34,7 +34,7 @@
       "available": 1,
       "listingId": "0b4e9bcc-372e-42d5-af91-cdc6a3a233e4",
       "price": 25,
-      "canAfford": false
+      "canAfford": true
     },
     {
       "name": "Maren",
@@ -43,7 +43,7 @@
       "available": 1,
       "listingId": "d75ee12c-bd14-4c77-aacd-b5d0679d7abf",
       "price": 25,
-      "canAfford": false
+      "canAfford": true
     },
     {
       "name": "Odette",
@@ -52,7 +52,7 @@
       "available": 1,
       "listingId": "56897feb-3fdf-423c-b918-c13b4bb1ad98",
       "price": 25,
-      "canAfford": false
+      "canAfford": true
     },
     {
       "name": "Rowan",
@@ -61,19 +61,710 @@
       "available": 1,
       "listingId": "0002ff1b-75bc-483f-b67f-e415971345a4",
       "price": 5,
-      "canAfford": false
+      "canAfford": true
     }
   ],
   "myListings": [
     {
-      "listingId": "46270d22-ee9a-47b8-9901-72ee1ac4e9c5",
-      "name": "Seraphiel",
+      "listingId": "29457af4-97a0-4102-89f0-8d9c8dd5313c",
+      "name": "Vaelora",
       "rarity": 5,
-      "file_name": "seraphiel.jfif",
+      "file_name": "vaelora.jfif",
       "price": 125,
-      "listedAt": "2026-11-12T01:38:44+00:00"
+      "fee": 13,
+      "proceeds": 112,
+      "listedAt": "2026-11-15T21:46:45+00:00"
     }
   ],
   "maxActiveListings": 30,
-  "balance": 0
+  "orders": [
+    {
+      "name": "Dorian",
+      "rarity": 4,
+      "file_name": "dorian.jfif",
+      "wanted": 1,
+      "orderId": "f030a5fb-d977-48f2-91cd-de1436e0d67c",
+      "price": 25,
+      "fee": 3,
+      "proceeds": 22,
+      "owned": 1,
+      "canFill": true
+    },
+    {
+      "name": "Eldric",
+      "rarity": 4,
+      "file_name": "eldric.png",
+      "wanted": 1,
+      "orderId": "1b33ea6b-f61b-4615-9ab0-4a05bf4a9c84",
+      "price": 25,
+      "fee": 3,
+      "proceeds": 22,
+      "owned": 1,
+      "canFill": true
+    },
+    {
+      "name": "Elowen",
+      "rarity": 4,
+      "file_name": "elowen.jfif",
+      "wanted": 1,
+      "orderId": "69d6abbe-2b59-4a56-a319-01d878633320",
+      "price": 25,
+      "fee": 3,
+      "proceeds": 22,
+      "owned": 3,
+      "canFill": true
+    },
+    {
+      "name": "Aurelius",
+      "rarity": 4,
+      "file_name": "aurelius.jfif",
+      "wanted": 1,
+      "orderId": "88be7ec4-4f6b-4941-b87d-03d29c240312",
+      "price": 25,
+      "fee": 3,
+      "proceeds": 22,
+      "owned": 0,
+      "canFill": false
+    },
+    {
+      "name": "Cassius",
+      "rarity": 4,
+      "file_name": "cassius.png",
+      "wanted": 1,
+      "orderId": "38d6a0f7-cca9-4e75-a6e5-17037f13877f",
+      "price": 25,
+      "fee": 3,
+      "proceeds": 22,
+      "owned": 0,
+      "canFill": false
+    }
+  ],
+  "myOrders": [
+    {
+      "orderId": "8789ef91-da32-4520-92ca-82a720fb8676",
+      "name": "Annelise",
+      "rarity": 3,
+      "file_name": "annelise.jfif",
+      "price": 5,
+      "placedAt": "2026-11-15T21:46:44+00:00"
+    }
+  ],
+  "reservedBalance": 5,
+  "maxActiveOrders": 10,
+  "orderOptions": [
+    {
+      "name": "Astra",
+      "rarity": 5,
+      "file_name": "astra.jfif",
+      "priceRange": {
+        "min": 125,
+        "max": 12500
+      }
+    },
+    {
+      "name": "Boreas",
+      "rarity": 5,
+      "file_name": "boreas.jfif",
+      "priceRange": {
+        "min": 125,
+        "max": 12500
+      }
+    },
+    {
+      "name": "Celestine",
+      "rarity": 5,
+      "file_name": "celestine.png",
+      "priceRange": {
+        "min": 125,
+        "max": 12500
+      }
+    },
+    {
+      "name": "Draemir",
+      "rarity": 5,
+      "file_name": "draemir.jfif",
+      "priceRange": {
+        "min": 125,
+        "max": 12500
+      }
+    },
+    {
+      "name": "Drakara",
+      "rarity": 5,
+      "file_name": "drakara.jfif",
+      "priceRange": {
+        "min": 125,
+        "max": 12500
+      }
+    },
+    {
+      "name": "Elysia",
+      "rarity": 5,
+      "file_name": "elysia.jfif",
+      "priceRange": {
+        "min": 125,
+        "max": 12500
+      }
+    },
+    {
+      "name": "Gorvane",
+      "rarity": 5,
+      "file_name": "gorvane.jfif",
+      "priceRange": {
+        "min": 125,
+        "max": 12500
+      }
+    },
+    {
+      "name": "Ignis",
+      "rarity": 5,
+      "file_name": "ignis.jfif",
+      "priceRange": {
+        "min": 125,
+        "max": 12500
+      }
+    },
+    {
+      "name": "Kyrielle",
+      "rarity": 5,
+      "file_name": "kyrielle.jfif",
+      "priceRange": {
+        "min": 125,
+        "max": 12500
+      }
+    },
+    {
+      "name": "Leoric",
+      "rarity": 5,
+      "file_name": "leoric.jfif",
+      "priceRange": {
+        "min": 125,
+        "max": 12500
+      }
+    },
+    {
+      "name": "Lunara",
+      "rarity": 5,
+      "file_name": "lunara.jfif",
+      "priceRange": {
+        "min": 125,
+        "max": 12500
+      }
+    },
+    {
+      "name": "Lyra",
+      "rarity": 5,
+      "file_name": "lyra.png",
+      "priceRange": {
+        "min": 125,
+        "max": 12500
+      }
+    },
+    {
+      "name": "Malachar",
+      "rarity": 5,
+      "file_name": "malachar.jfif",
+      "priceRange": {
+        "min": 125,
+        "max": 12500
+      }
+    },
+    {
+      "name": "Mortis",
+      "rarity": 5,
+      "file_name": "mortis.jfif",
+      "priceRange": {
+        "min": 125,
+        "max": 12500
+      }
+    },
+    {
+      "name": "Seraphiel",
+      "rarity": 5,
+      "file_name": "seraphiel.jfif",
+      "priceRange": {
+        "min": 125,
+        "max": 12500
+      }
+    },
+    {
+      "name": "Uriel",
+      "rarity": 5,
+      "file_name": "uriel.jfif",
+      "priceRange": {
+        "min": 125,
+        "max": 12500
+      }
+    },
+    {
+      "name": "Vaelora",
+      "rarity": 5,
+      "file_name": "vaelora.jfif",
+      "priceRange": {
+        "min": 125,
+        "max": 12500
+      }
+    },
+    {
+      "name": "Zarathor",
+      "rarity": 5,
+      "file_name": "zarathor.jfif",
+      "priceRange": {
+        "min": 125,
+        "max": 12500
+      }
+    },
+    {
+      "name": "Amethia",
+      "rarity": 4,
+      "file_name": "amethia.jfif",
+      "priceRange": {
+        "min": 25,
+        "max": 2500
+      }
+    },
+    {
+      "name": "Aurelius",
+      "rarity": 4,
+      "file_name": "aurelius.jfif",
+      "priceRange": {
+        "min": 25,
+        "max": 2500
+      }
+    },
+    {
+      "name": "Cassius",
+      "rarity": 4,
+      "file_name": "cassius.png",
+      "priceRange": {
+        "min": 25,
+        "max": 2500
+      }
+    },
+    {
+      "name": "Dorian",
+      "rarity": 4,
+      "file_name": "dorian.jfif",
+      "priceRange": {
+        "min": 25,
+        "max": 2500
+      }
+    },
+    {
+      "name": "Eldric",
+      "rarity": 4,
+      "file_name": "eldric.png",
+      "priceRange": {
+        "min": 25,
+        "max": 2500
+      }
+    },
+    {
+      "name": "Elowen",
+      "rarity": 4,
+      "file_name": "elowen.jfif",
+      "priceRange": {
+        "min": 25,
+        "max": 2500
+      }
+    },
+    {
+      "name": "Faelyn",
+      "rarity": 4,
+      "file_name": "faelyn.jfif",
+      "priceRange": {
+        "min": 25,
+        "max": 2500
+      }
+    },
+    {
+      "name": "Fenric",
+      "rarity": 4,
+      "file_name": "fenric.jfif",
+      "priceRange": {
+        "min": 25,
+        "max": 2500
+      }
+    },
+    {
+      "name": "Glacius",
+      "rarity": 4,
+      "file_name": "glacius.jfif",
+      "priceRange": {
+        "min": 25,
+        "max": 2500
+      }
+    },
+    {
+      "name": "Grizelda",
+      "rarity": 4,
+      "file_name": "grizelda.jfif",
+      "priceRange": {
+        "min": 25,
+        "max": 2500
+      }
+    },
+    {
+      "name": "Hayato",
+      "rarity": 4,
+      "file_name": "hayato.jfif",
+      "priceRange": {
+        "min": 25,
+        "max": 2500
+      }
+    },
+    {
+      "name": "Isolde",
+      "rarity": 4,
+      "file_name": "isolde.jfif",
+      "priceRange": {
+        "min": 25,
+        "max": 2500
+      }
+    },
+    {
+      "name": "Kage",
+      "rarity": 4,
+      "file_name": "kage.jfif",
+      "priceRange": {
+        "min": 25,
+        "max": 2500
+      }
+    },
+    {
+      "name": "Kaito",
+      "rarity": 4,
+      "file_name": "kaito.jfif",
+      "priceRange": {
+        "min": 25,
+        "max": 2500
+      }
+    },
+    {
+      "name": "Lucan",
+      "rarity": 4,
+      "file_name": "lucan.jfif",
+      "priceRange": {
+        "min": 25,
+        "max": 2500
+      }
+    },
+    {
+      "name": "Maren",
+      "rarity": 4,
+      "file_name": "maren.jfif",
+      "priceRange": {
+        "min": 25,
+        "max": 2500
+      }
+    },
+    {
+      "name": "Morwen",
+      "rarity": 4,
+      "file_name": "morwen.jfif",
+      "priceRange": {
+        "min": 25,
+        "max": 2500
+      }
+    },
+    {
+      "name": "Nocturna",
+      "rarity": 4,
+      "file_name": "nocturna.jfif",
+      "priceRange": {
+        "min": 25,
+        "max": 2500
+      }
+    },
+    {
+      "name": "Nyra",
+      "rarity": 4,
+      "file_name": "nyra.jfif",
+      "priceRange": {
+        "min": 25,
+        "max": 2500
+      }
+    },
+    {
+      "name": "Odette",
+      "rarity": 4,
+      "file_name": "odette.jfif",
+      "priceRange": {
+        "min": 25,
+        "max": 2500
+      }
+    },
+    {
+      "name": "Ophira",
+      "rarity": 4,
+      "file_name": "ophira.jfif",
+      "priceRange": {
+        "min": 25,
+        "max": 2500
+      }
+    },
+    {
+      "name": "Pyralis",
+      "rarity": 4,
+      "file_name": "pyralis.jfif",
+      "priceRange": {
+        "min": 25,
+        "max": 2500
+      }
+    },
+    {
+      "name": "Ravenna",
+      "rarity": 4,
+      "file_name": "ravenna.png",
+      "priceRange": {
+        "min": 25,
+        "max": 2500
+      }
+    },
+    {
+      "name": "Rosalind",
+      "rarity": 4,
+      "file_name": "rosalind.jfif",
+      "priceRange": {
+        "min": 25,
+        "max": 2500
+      }
+    },
+    {
+      "name": "Scarlett",
+      "rarity": 4,
+      "file_name": "scarlett.jfif",
+      "priceRange": {
+        "min": 25,
+        "max": 2500
+      }
+    },
+    {
+      "name": "Solara",
+      "rarity": 4,
+      "file_name": "solara.jfif",
+      "priceRange": {
+        "min": 25,
+        "max": 2500
+      }
+    },
+    {
+      "name": "Stellara",
+      "rarity": 4,
+      "file_name": "stellara.jfif",
+      "priceRange": {
+        "min": 25,
+        "max": 2500
+      }
+    },
+    {
+      "name": "Sylva",
+      "rarity": 4,
+      "file_name": "sylva.jfif",
+      "priceRange": {
+        "min": 25,
+        "max": 2500
+      }
+    },
+    {
+      "name": "Tavik",
+      "rarity": 4,
+      "file_name": "tavik.jfif",
+      "priceRange": {
+        "min": 25,
+        "max": 2500
+      }
+    },
+    {
+      "name": "Thalion",
+      "rarity": 4,
+      "file_name": "thalion.jfif",
+      "priceRange": {
+        "min": 25,
+        "max": 2500
+      }
+    },
+    {
+      "name": "Valeria",
+      "rarity": 4,
+      "file_name": "valeria.jfif",
+      "priceRange": {
+        "min": 25,
+        "max": 2500
+      }
+    },
+    {
+      "name": "Verdana",
+      "rarity": 4,
+      "file_name": "verdana.jfif",
+      "priceRange": {
+        "min": 25,
+        "max": 2500
+      }
+    },
+    {
+      "name": "Vesper",
+      "rarity": 4,
+      "file_name": "vesper.jfif",
+      "priceRange": {
+        "min": 25,
+        "max": 2500
+      }
+    },
+    {
+      "name": "Albin",
+      "rarity": 3,
+      "file_name": "albin.jfif",
+      "priceRange": {
+        "min": 5,
+        "max": 500
+      }
+    },
+    {
+      "name": "Annelise",
+      "rarity": 3,
+      "file_name": "annelise.jfif",
+      "priceRange": {
+        "min": 5,
+        "max": 500
+      }
+    },
+    {
+      "name": "Brannoc",
+      "rarity": 3,
+      "file_name": "brannoc.jfif",
+      "priceRange": {
+        "min": 5,
+        "max": 500
+      }
+    },
+    {
+      "name": "Brina",
+      "rarity": 3,
+      "file_name": "brina.jfif",
+      "priceRange": {
+        "min": 5,
+        "max": 500
+      }
+    },
+    {
+      "name": "Corvus",
+      "rarity": 3,
+      "file_name": "corvus.jfif",
+      "priceRange": {
+        "min": 5,
+        "max": 500
+      }
+    },
+    {
+      "name": "Garrick",
+      "rarity": 3,
+      "file_name": "garrick.jfif",
+      "priceRange": {
+        "min": 5,
+        "max": 500
+      }
+    },
+    {
+      "name": "Jory",
+      "rarity": 3,
+      "file_name": "jory.jfif",
+      "priceRange": {
+        "min": 5,
+        "max": 500
+      }
+    },
+    {
+      "name": "Kael",
+      "rarity": 3,
+      "file_name": "kael.jfif",
+      "priceRange": {
+        "min": 5,
+        "max": 500
+      }
+    },
+    {
+      "name": "Liesel",
+      "rarity": 3,
+      "file_name": "liesel.jfif",
+      "priceRange": {
+        "min": 5,
+        "max": 500
+      }
+    },
+    {
+      "name": "Maelis",
+      "rarity": 3,
+      "file_name": "maelis.jfif",
+      "priceRange": {
+        "min": 5,
+        "max": 500
+      }
+    },
+    {
+      "name": "Rowan",
+      "rarity": 3,
+      "file_name": "rowan.jfif",
+      "priceRange": {
+        "min": 5,
+        "max": 500
+      }
+    },
+    {
+      "name": "Ryuji",
+      "rarity": 3,
+      "file_name": "ryuji.jfif",
+      "priceRange": {
+        "min": 5,
+        "max": 500
+      }
+    },
+    {
+      "name": "Silas",
+      "rarity": 3,
+      "file_name": "silas.jfif",
+      "priceRange": {
+        "min": 5,
+        "max": 500
+      }
+    },
+    {
+      "name": "Tobin",
+      "rarity": 3,
+      "file_name": "tobin.jfif",
+      "priceRange": {
+        "min": 5,
+        "max": 500
+      }
+    },
+    {
+      "name": "Torvin",
+      "rarity": 3,
+      "file_name": "torvin.jfif",
+      "priceRange": {
+        "min": 5,
+        "max": 500
+      }
+    },
+    {
+      "name": "Vexa",
+      "rarity": 3,
+      "file_name": "vexa.jfif",
+      "priceRange": {
+        "min": 5,
+        "max": 500
+      }
+    },
+    {
+      "name": "Wren",
+      "rarity": 3,
+      "file_name": "wren.jfif",
+      "priceRange": {
+        "min": 5,
+        "max": 500
+      }
+    }
+  ],
+  "marketFeePercent": 10,
+  "balance": 129
 }

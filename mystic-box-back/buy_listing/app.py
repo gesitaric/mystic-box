@@ -6,7 +6,8 @@ from datetime import datetime, timezone
 
 import boto3
 from botocore.exceptions import ClientError
-from mystic_shared.cards import get_character
+from mystic_shared.cards import get_character, seller_proceeds
+from mystic_shared.market import sale_record_put
 
 CORS_HEADERS = {
     "Access-Control-Allow-Origin": "*",
@@ -17,6 +18,7 @@ CORS_HEADERS = {
 USER_CARDS_TABLE = os.environ.get("USER_CARDS_TABLE")
 USER_WALLET_TABLE = os.environ.get("USER_WALLET_TABLE")
 SHOP_LISTINGS_TABLE = os.environ.get("SHOP_LISTINGS_TABLE")
+MARKET_SALES_TABLE = os.environ.get("MARKET_SALES_TABLE")
 
 MAX_LISTING_ID_LENGTH = 64
 
@@ -138,10 +140,12 @@ def lambda_handler(event, context):
         return response(409, {"message": "You cannot buy your own listing."})
 
     price = listing["price"]
+    proceeds = seller_proceeds(price)
     now = int(time.time())
+    sold_at = datetime.fromtimestamp(now, timezone.utc).isoformat()
     card = {
         "ownedCardId": str(uuid.uuid4()),
-        "obtainedAt": datetime.fromtimestamp(now, timezone.utc).isoformat(),
+        "obtainedAt": sold_at,
         "name": character["name"],
         "rarity": character["rarity"],
         "file_name": character["file_name"],
@@ -150,7 +154,8 @@ def lambda_handler(event, context):
     try:
         # Tudo ou nada: o anúncio sai do mercado (só se ainda existir com o
         # mesmo preço e vendedor), o comprador paga (só se o saldo cobrir), o
-        # vendedor recebe e a carta entra na coleção do comprador.
+        # vendedor recebe o preço menos a taxa, a carta entra na coleção do
+        # comprador e a venda entra no histórico de preços.
         get_client().transact_write_items(
             TransactItems=[
                 {
@@ -181,10 +186,10 @@ def lambda_handler(event, context):
                         "TableName": USER_WALLET_TABLE,
                         "Key": {"userId": {"S": listing["sellerId"]}},
                         "UpdateExpression": (
-                            "ADD balance :price, activeListings :minusOne"
+                            "ADD balance :proceeds, activeListings :minusOne"
                         ),
                         "ExpressionAttributeValues": {
-                            ":price": {"N": str(price)},
+                            ":proceeds": {"N": str(proceeds)},
                             ":minusOne": {"N": "-1"},
                         },
                     }
@@ -203,6 +208,9 @@ def lambda_handler(event, context):
                         "ConditionExpression": "attribute_not_exists(ownedCardId)",
                     }
                 },
+                sale_record_put(
+                    MARKET_SALES_TABLE, card["file_name"], price, sold_at, listing_id, now
+                ),
             ]
         )
     except ClientError as error:

@@ -2400,6 +2400,221 @@ body:has(.auth-overlay, .portal-page) .lobby-portal-glow::after {
   cursor: not-allowed;
 }
 
+@media (max-width: 420px) {
+  .shop-tab {
+    min-width: 0;
+    padding: 8px 12px;
+    letter-spacing: 1px;
+  }
+}
+
+.shop-section-title {
+  margin: 22px 0 0;
+  color: #ffdc8e;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 2px;
+  text-align: center;
+  text-transform: uppercase;
+}
+
+.shop-section-hint {
+  margin: 0;
+  text-align: center;
+}
+
+.shop-request-form {
+  width: 100%;
+  max-width: 360px;
+  margin: 18px auto 0;
+  padding-top: 6px;
+  border-top: 1px solid rgba(255, 220, 142, 0.18);
+}
+
+.shop-request-form .shop-section-title {
+  margin-top: 12px;
+}
+
+.card-picker {
+  display: grid;
+  gap: 8px;
+}
+
+.card-picker-search {
+  text-align: left;
+}
+
+.card-picker-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(96px, 1fr));
+  gap: 8px;
+  max-height: 260px;
+  margin: 0;
+  padding: 2px;
+  overflow-y: auto;
+  list-style: none;
+}
+
+.card-picker-option {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  width: 100%;
+  padding: 6px 4px;
+  border: 1px solid var(--card-rarity, rgba(255, 220, 142, 0.35));
+  border-radius: 10px;
+  background: rgba(10, 4, 24, 0.7);
+  color: #fff3d6;
+  cursor: pointer;
+}
+
+.card-picker-option:hover:not(:disabled),
+.card-picker-option:focus-visible {
+  box-shadow: 0 0 10px var(--card-rarity-glow, rgba(255, 220, 142, 0.4));
+  outline: none;
+}
+
+.card-picker-option .card-picker-thumb {
+  width: 100%;
+  height: auto;
+  aspect-ratio: 3 / 4;
+}
+
+.card-picker-thumb {
+  display: block;
+  width: 56px;
+  height: 75px;
+  object-fit: cover;
+  object-position: top;
+  border-radius: 6px;
+}
+
+.card-picker-label {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-width: 0;
+  max-width: 100%;
+}
+
+.card-picker-name {
+  max-width: 100%;
+  overflow: hidden;
+  font-size: 12px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.card-picker-stars {
+  color: var(--card-rarity, #ffdc8e);
+  font-size: 10px;
+  letter-spacing: 1px;
+}
+
+.card-picker-chosen {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 8px;
+  border: 1px solid var(--card-rarity, rgba(255, 220, 142, 0.35));
+  border-radius: 10px;
+  background: rgba(10, 4, 24, 0.7);
+  color: #fff3d6;
+}
+
+.card-picker-chosen .card-picker-label {
+  flex: 1 1 auto;
+  align-items: flex-start;
+}
+
+.card-picker-chosen .card-picker-name {
+  font-size: 14px;
+}
+
+.card-picker-change {
+  flex: 0 0 auto;
+  padding: 6px 12px;
+  border: 1px solid rgba(255, 220, 142, 0.45);
+  border-radius: 8px;
+  background: transparent;
+  color: #ffdc8e;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.price-history {
+  padding: 10px 12px;
+  border: 1px solid rgba(255, 220, 142, 0.2);
+  border-radius: 10px;
+  background: rgba(10, 4, 24, 0.55);
+}
+
+.price-history-title {
+  margin: 0 0 6px;
+  color: #cbb6ee;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+}
+
+.price-history-empty,
+.price-history-note {
+  margin: 0;
+  color: #9d88c4;
+  font-size: 11px;
+}
+
+.price-history-note {
+  margin-top: 6px;
+}
+
+.price-history-summary {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 6px;
+  margin: 0;
+}
+
+.price-history-summary div {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-width: 0;
+}
+
+.price-history-summary dt {
+  color: #9d88c4;
+  font-size: 10px;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+}
+
+.price-history-summary dd {
+  margin: 0;
+  color: #ffdc8e;
+  font-size: 13px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.price-history-sales {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin: 8px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.price-history-sales li {
+  display: flex;
+  justify-content: space-between;
+  color: #e6dcf7;
+  font-size: 11px;
+}
+
 /* ---------- Summon spread (3 cartas viradas) ---------- */
 
 .summon-spread {

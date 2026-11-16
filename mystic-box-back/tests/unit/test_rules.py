@@ -21,6 +21,11 @@ def test_get_rules_is_public_and_uses_server_constants(apigw_event):
     assert data["summon"]["cooldownSeconds"] == get_rules.SUMMON_COOLDOWN_SECONDS
     assert data["shop"]["maxListingQuantity"] == cards.MAX_LISTING_QUANTITY
     assert data["shop"]["maxActiveListings"] == cards.MAX_ACTIVE_LISTINGS
+    assert data["shop"]["feePercent"] == cards.MARKET_FEE_PERCENT
+    assert data["shop"]["feeMinimum"] == cards.MARKET_FEE_MINIMUM
+    assert data["shop"]["maxActiveOrders"] == cards.MAX_ACTIVE_ORDERS
+    assert data["shop"]["historyDays"] == cards.MARKET_HISTORY_DAYS
+    assert data["shop"]["historySize"] == cards.MARKET_HISTORY_SIZE
     assert data["shop"]["listingPrices"] == [
         {"rarity": r, **cards.LISTING_PRICE_LIMITS[r]} for r in (5, 4, 3)
     ]

@@ -2,8 +2,9 @@
 
 Entende condições simples (`a = :v` ou `a < b` entre dois atributos, `<>`, `<=`, `<`, `>=`, `>`,
 `attribute_exists`, `attribute_not_exists`, ligadas por AND/OR sem
-parênteses), atualizações `SET a = :v, ...`, `ADD a :v, ...` e `REMOVE a`, consultas por
-igualdade da chave (tabela ou índice) com FilterExpression e transações
+parênteses), atualizações `SET a = :v, ...` (ou `a = a - :v`), `ADD a :v, ...` e
+`REMOVE a`, consultas por igualdade da chave (tabela ou índice) com
+FilterExpression, scan com FilterExpression e transações
 (Put, Delete, Update e ConditionCheck) com CancellationReasons.
 """
 
@@ -98,7 +99,15 @@ class FakeDynamo:
                     item.pop(names.get(assignment, assignment), None)
                 elif mode == "SET":
                     name, value = [x.strip() for x in assignment.split("=")]
-                    item[names.get(name, name)] = copy.deepcopy(values[value])
+                    arithmetic = re.match(r"^(#?\w+)\s*([+-])\s*(:\w+)$", value)
+                    if arithmetic:
+                        source, sign, operand = arithmetic.groups()
+                        old = float(item[names.get(source, source)]["N"])
+                        delta = float(values[operand]["N"])
+                        total = old + delta if sign == "+" else old - delta
+                        item[names.get(name, name)] = {"N": str(int(total))}
+                    else:
+                        item[names.get(name, name)] = copy.deepcopy(values[value])
                 else:
                     name, value = assignment.split()
                     name = names.get(name, name)
@@ -134,6 +143,17 @@ class FakeDynamo:
             if item.get(attribute, {}).get("S") == wanted
             and self._check(item, FilterExpression, ExpressionAttributeNames,
                             ExpressionAttributeValues)
+        ]
+        return {"Items": items}
+
+    def scan(self, TableName, FilterExpression=None, ExpressionAttributeNames=None,
+             ExpressionAttributeValues=None, **_):
+        self.calls.append(("scan", TableName))
+        items = [
+            copy.deepcopy(item)
+            for item in self.tables[TableName].values()
+            if self._check(item, FilterExpression, ExpressionAttributeNames,
+                           ExpressionAttributeValues)
         ]
         return {"Items": items}
 
