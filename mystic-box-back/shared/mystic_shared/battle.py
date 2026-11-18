@@ -230,7 +230,7 @@ def _apply_status(state, target, status, turns, events, value=None):
         entry["value"] = max(value, (current or {}).get("value", 0))
     target["statuses"][status] = entry
     events.append({"type": "status", "target": target["id"], "status": status,
-                   "turns": entry["turns"]})
+                   "kind": STATUSES[status]["kind"], "turns": entry["turns"]})
 
 
 def _cleanse(target, events):

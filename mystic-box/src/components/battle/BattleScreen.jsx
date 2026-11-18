@@ -11,7 +11,11 @@ import PvpLobby from "./PvpLobby";
 import TeamSetup, { SkillList, StatGrid } from "./TeamSetup";
 import { SessionExpired, arenaRequest } from "./arenaApi";
 import { ReactionLayer, ReactionPicker } from "./BattleReactions";
+import { BattleFxLayer } from "./BattleFx";
+import { useBattleFx } from "./useBattleFx";
+import { readFxPreference, storeFxPreference } from "./fxPlanning";
 import "../../styles/battle.css";
+import "../../styles/battle-fx.css";
 import {
   ELEMENT_STYLE,
   END_REASON_TEXT,
@@ -186,6 +190,8 @@ function BattleMenu({
   spectating,
   soundOn,
   onToggleSound,
+  fxMode,
+  onToggleFx,
   onRules,
   onLeave,
   canFlee,
@@ -205,6 +211,19 @@ function BattleMenu({
         >
           <span>Sound</span>
           <span className="battle-menu-note">{soundOn ? "On" : "Off"}</span>
+        </button>
+        <button
+          type="button"
+          className="battle-menu-item"
+          onClick={onToggleFx}
+          aria-pressed={fxMode === "full"}
+        >
+          <span>Effects</span>
+          <span className="battle-menu-note">
+            {fxMode === "full"
+              ? "Full: spells, particles and screen shake"
+              : "Lite: lighter on the battery"}
+          </span>
         </button>
         <button type="button" className="battle-menu-item" onClick={onRules}>
           <span>Rules</span>
@@ -328,7 +347,10 @@ function BattleUnit({
   alive,
   active,
   acting,
+  turnTag,
   targetable,
+  previewed,
+  lunge,
   inspected,
   floats,
   bondNames,
@@ -349,6 +371,8 @@ function BattleUnit({
         active && "is-active",
         acting && "is-acting",
         targetable && "is-targetable",
+        previewed && "is-previewed",
+        lunge && "is-lunging",
         inspected && "is-inspected",
         hit && "is-hit",
         unit.ascension > 0 && "is-ascended",
@@ -356,7 +380,11 @@ function BattleUnit({
         .filter(Boolean)
         .join(" ")}
       data-rarity={unit.rarity}
-      style={{ "--element": element?.color }}
+      data-unit-id={unit.id}
+      style={{
+        "--element": element?.color,
+        ...(lunge ? { "--lunge-x": `${lunge.x}px`, "--lunge-y": `${lunge.y}px` } : {}),
+      }}
       {...(clickable
         ? {
             role: "button",
@@ -374,7 +402,18 @@ function BattleUnit({
         targetable ? ", select as target" : ""
       }`}
     >
+      {turnTag && (
+        <span className={`battle-unit-turn-tag is-${turnTag.tone}`} aria-hidden="true">
+          {turnTag.text}
+        </span>
+      )}
+      {(targetable || previewed) && (
+        <span className="battle-unit-reticle" aria-hidden="true">
+          <span className="battle-unit-reticle-mark">◎</span>
+        </span>
+      )}
       <div className="battle-unit-art">
+        {(active || acting) && <i className="battle-unit-halo" aria-hidden="true" />}
         <img src={getCharacterImage(unit.fileName)} alt="" />
         <span className="battle-unit-element" title={unit.elementLabel}>
           {element?.icon}
@@ -700,6 +739,10 @@ function BattleScreen({
   const floatId = useRef(0);
   const logEnd = useRef(null);
   const [soundOn, setSoundOn] = useState(readSoundPreference);
+  // Efeitos especiais: completos ou leves (só conveniência local).
+  const [fxMode, setFxMode] = useState(readFxPreference);
+  const { effects, shaking, lunge, play: playFx, banner: fxBanner, clear: clearFx } =
+    useBattleFx(fxMode);
   const audio = useRef(null);
   // Callbacks do App sem reiniciar a animação quando a identidade muda.
   const callbacks = useRef({ onProgressChange, onBalanceChange });
@@ -724,6 +767,10 @@ function BattleScreen({
     audio.current?.setEnabled(soundOn);
     storeSoundPreference(soundOn);
   }, [soundOn]);
+
+  useEffect(() => {
+    storeFxPreference(fxMode);
+  }, [fxMode]);
 
   const request = useCallback(
     (path, init) => arenaRequest({ apiUrl, session, onSessionExpired }, path, init),
@@ -890,7 +937,7 @@ function BattleScreen({
       }, FLOAT_MS);
     }
 
-    function apply(event) {
+    function apply(event, position) {
       let entry = describeEvent(event, names);
       if (event.type === "end" && next.spectating) {
         const winner = next.players?.[event.winner]?.username;
@@ -903,14 +950,15 @@ function BattleScreen({
 
       if (event.aether) setAetherOverride(event.aether);
       playSound(event);
+      playFx(event, { events, index: position, unitsById });
 
       switch (event.type) {
         case "turn":
           setActingId(event.actor);
           break;
         case "skill":
+          // O nome da habilidade aparece na faixa dos efeitos.
           setActingId(event.actor);
-          addFloat(event.actor, event.skillName, "skill");
           break;
         case "damage":
           setHpOverride((current) => ({
@@ -1014,12 +1062,22 @@ function BattleScreen({
           !autoRef.current
         ) {
           audio.current?.yourTurn();
+          // Faixa "sua vez" com a carta que vai agir (não para quem assiste).
+          const unit = next.spectating ? null : unitsById[next.turn];
+          if (unit) {
+            fxBanner({
+              type: "turn",
+              text: unit.name,
+              sub: "Your turn",
+              fileName: unit.fileName,
+            });
+          }
         }
         return;
       }
       const event = events[index];
+      apply(event, index);
       index += 1;
-      apply(event);
       timer = setTimeout(step, eventDelay(event));
     }
 
@@ -1029,7 +1087,7 @@ function BattleScreen({
       cancelled = true;
       clearTimeout(timer);
     };
-  }, [playback]);
+  }, [playback, playFx, fxBanner]);
 
   useEffect(() => {
     logEnd.current?.scrollIntoView({ block: "nearest" });
@@ -1061,6 +1119,7 @@ function BattleScreen({
       setSelectedSkill(null);
       setInspectedId(null);
       setLog([]);
+      clearFx();
       audio.current?.start();
       setView(freshView(data.battle));
       setPlayback({ events: data.events ?? [], next: data.battle, outcome: data.result });
@@ -1089,6 +1148,7 @@ function BattleScreen({
       setInspectedId(null);
       setAutoMode(false);
       setLog([]);
+      clearFx();
       audio.current?.start();
       setView(freshView(data.battle));
       setPlayback({ events: data.events ?? [], next: received(data.battle), outcome: data.result });
@@ -1104,7 +1164,7 @@ function BattleScreen({
     } finally {
       enteringDuel.current = false;
     }
-  }, [request, resetReactions]);
+  }, [request, resetReactions, clearFx]);
 
   // Abre o duelo de outros jogadores para assistir (só leitura).
   const watchDuel = useCallback(
@@ -1398,8 +1458,9 @@ function BattleScreen({
     setResult(null);
     setView(null);
     setLog([]);
+    clearFx();
     void loadCurrent();
-  }, [loadCurrent]);
+  }, [loadCurrent, clearFx]);
 
   // Endereço e tela andam juntos. O servidor decide se há batalha; o endereço
   // diz onde o jogador quer estar.
@@ -1663,6 +1724,14 @@ function BattleScreen({
   const hintSkill = currentUnit
     ? (view.actions.find((action) => action.id === (selectedSkill?.id ?? peekSkillId)) ?? null)
     : null;
+  // Quem a habilidade escolhida (ou apontada) atinge: os alvos vêm da API.
+  const previewSkill =
+    currentUnit && !autoMode && !busy && targetIds.length === 0 && hintSkill?.usable
+      ? hintSkill
+      : null;
+  const previewIds = previewSkill?.targets ?? [];
+  const choosing = targetIds.length > 0 || previewIds.length > 0;
+  const currentElement = currentUnit ? ELEMENT_STYLE[currentUnit.element] : null;
   const upcoming = (view.upcoming ?? [])
     .map((id) => units.find((unit) => unit.id === id))
     .filter(Boolean);
@@ -1676,6 +1745,21 @@ function BattleScreen({
       </span>
     ) : null;
 
+  // Etiqueta sobre a carta da vez: a do jogador, a que está agindo agora ou a
+  // da vez num duelo assistido.
+  function turnTagFor(unit) {
+    if (currentUnit?.id === unit.id) return { text: "▼ Your turn", tone: "player" };
+    if (turnUnit?.id === unit.id) {
+      return { text: unit.side === "enemy" ? "▲ Turn" : "▼ Turn", tone: unit.side };
+    }
+    if (playback && actingId === unit.id) {
+      return unit.side === "enemy"
+        ? { text: "▲ Foe acts", tone: "enemy" }
+        : { text: "▼ Acting", tone: "player" };
+    }
+    return null;
+  }
+
   function renderUnit(unit) {
     const override = hpOverride[unit.id];
     const targetable = targetIds.includes(unit.id);
@@ -1687,7 +1771,10 @@ function BattleScreen({
         alive={override?.alive ?? unit.alive}
         active={(currentUnit ?? turnUnit)?.id === unit.id}
         acting={actingId === unit.id}
+        turnTag={turnTagFor(unit)}
         targetable={targetable}
+        previewed={!targetable && previewIds.includes(unit.id)}
+        lunge={lunge?.unitId === unit.id ? lunge : null}
         inspected={inspectedId === unit.id}
         floats={floats.filter((float) => float.unitId === unit.id)}
         bondNames={(unit.bonds ?? [])
@@ -1747,7 +1834,15 @@ function BattleScreen({
         </button>
       </div>
 
-      <div className="battle-field">
+      <div
+        className={[
+          "battle-field",
+          choosing && "is-choosing",
+          shaking && `is-shaking-${shaking}`,
+        ]
+          .filter(Boolean)
+          .join(" ")}
+      >
         <div className="battle-side is-enemy">
           <AetherMeter
             label={duel ? rivalName : "Foes"}
@@ -1808,15 +1903,46 @@ function BattleScreen({
         </div>
       </div>
 
-      <div className="battle-actions">
+      <div
+        className="battle-actions"
+        style={currentElement ? { "--element": currentElement.color } : undefined}
+      >
         {currentUnit ? (
           <>
-            <p className="battle-actions-title">
-              {targetIds.length > 0
-                ? `${selectedSkill.name}: choose a target (${TARGET_LABELS[selectedSkill.target]})`
-                : `${currentUnit.name}'s turn`}
-              {timer}
-            </p>
+            <div className="battle-turn-card">
+              <span className="battle-turn-card-art" aria-hidden="true">
+                <i className="battle-unit-halo" />
+                <img src={getCharacterImage(currentUnit.fileName)} alt="" />
+              </span>
+              <p className="battle-turn-card-text battle-actions-title">
+                {targetIds.length > 0 ? (
+                  <>
+                    <span className="battle-turn-card-kicker is-target">
+                      ◎ Choose a target · {TARGET_LABELS[selectedSkill.target]}
+                      {timer}
+                    </span>
+                    <span className="battle-turn-card-name">
+                      {currentUnit.name} · <em>{selectedSkill.name}</em>
+                    </span>
+                  </>
+                ) : (
+                  <>
+                    <span className="battle-turn-card-kicker">
+                      Your turn{timer}
+                    </span>
+                    <span className="battle-turn-card-name">
+                      {currentElement?.icon} {currentUnit.name}
+                      {armedSkill && (
+                        <>
+                          {" "}
+                          · <em>{armedSkill.name}</em>
+                        </>
+                      )}
+                    </span>
+                  </>
+                )}
+              </p>
+            </div>
             {duel && view.missedTurns > 0 && (
               <p className="battle-turn-warning" role="status">
                 You missed {view.missedTurns} of {view.maxMissedTurns} turns in a row. Miss them
@@ -1841,11 +1967,17 @@ function BattleScreen({
                     .join(" ")}
                   disabled={busy || autoMode}
                   aria-disabled={!action.usable}
+                  aria-pressed={selectedSkill?.id === action.id}
                   onClick={() => chooseSkill(action)}
                   onMouseEnter={() => finePointer && setPeekSkillId(action.id)}
                   onMouseLeave={() => finePointer && setPeekSkillId(null)}
                   onFocus={() => setPeekSkillId(action.id)}
                 >
+                  {selectedSkill?.id === action.id && (
+                    <span className="battle-skill-badge" aria-hidden="true">
+                      {needsTarget(action) ? "◎ Target" : "✓ Ready"}
+                    </span>
+                  )}
                   <span className="battle-skill-name">
                     {action.duo && "✦✦ "}
                     {action.name}
@@ -1898,6 +2030,8 @@ function BattleScreen({
         )}
       </div>
 
+      <BattleFxLayer effects={effects} mode={fxMode} />
+
       {duel && <ReactionLayer reactions={reactions} />}
 
       {inspectedUnit && (
@@ -1914,6 +2048,8 @@ function BattleScreen({
           spectating={spectating}
           soundOn={soundOn}
           onToggleSound={() => setSoundOn((on) => !on)}
+          fxMode={fxMode}
+          onToggleFx={() => setFxMode((mode) => (mode === "full" ? "lite" : "full"))}
           onRules={() => {
             setMenuOpen(false);
             navigate(withOverlay(currentRoute(), { name: "grimoire", chapter: "battle" }));
