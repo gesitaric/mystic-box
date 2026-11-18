@@ -98,7 +98,7 @@ def test_attuned_relic_awakens_at_the_start():
     # da vez do jogador).
     after = events[events.index(relic_events[0]) + 1]
     assert after == {"type": "status", "target": boreas["id"], "status": "shield",
-                     "turns": after["turns"]}
+                     "kind": "buff", "turns": after["turns"]}
     assert not any(e["type"] == "status" and e["target"] == rowan["id"]
                    and e["status"] == "shield" for e in events)
 

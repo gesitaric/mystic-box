@@ -18,6 +18,26 @@ export const NOTE_TYPES = {
 
 export const releases = [
   {
+    version: "0.12",
+    date: "2026-11-17",
+    name: "Spellfire",
+    tagline: "Every strike, spell and blessing now lights up the arena.",
+    notes: [
+      {
+        type: "improved",
+        title: "Battle effects",
+        text: "Spells fly across the arena and burst in the colors of their element: flames rise, tides crash, winds swirl, stone shatters, lightning flickers, light flares and shadow implodes. Physical blows slash, critical hits shake the arena, healing rises in pillars of light and fallen champions break apart. Prefer something lighter on your battery? Switch Effects to Lite in the battle menu.",
+        prs: [109],
+      },
+      {
+        type: "improved",
+        title: "Whose turn is it?",
+        text: "A banner announces your turn with the champion who acts, a tag marks who is acting on both sides, and the action bar shows the champion's portrait. The chosen skill glows, its targets are marked with a reticle and everything it cannot reach steps back.",
+        prs: [109],
+      },
+    ],
+  },
+  {
     version: "0.11",
     date: "2026-11-15",
     name: "Relics of Aethra",

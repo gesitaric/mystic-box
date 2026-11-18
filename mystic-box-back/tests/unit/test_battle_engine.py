@@ -243,6 +243,16 @@ def test_burn_ticks_and_expires():
     assert "burn" not in actor["statuses"]
 
 
+def test_status_event_tells_buff_from_debuff():
+    # O frontend escolhe o efeito visual (aura de bônus ou de penalidade) por isso.
+    state, _ = new_battle()
+    actor = unit(state, state["turn"])
+    events = []
+    battle._apply_status(state, actor, "empower", 2, events)
+    battle._apply_status(state, actor, "weaken", 2, events)
+    assert [(e["status"], e["kind"]) for e in events] == [("empower", "buff"), ("weaken", "debuff")]
+
+
 def test_self_buff_lasts_through_enemy_turns():
     state, _ = new_battle()
     actor = unit(state, state["turn"])
